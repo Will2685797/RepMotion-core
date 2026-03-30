@@ -1,0 +1,281 @@
+{
+  "calibration": {
+    "calibrationDone": "Calibration done",
+    "calibrating": "Calibrating...",
+    "readyToCalibrate": "Ready to calibrate",
+    "startCalibrationForRefMvent": "Start the calibration to record you movement of reference."
+  },
+  "profile": {
+    "title": "Profile",
+    "edit": "Edit",
+    "account": "Account",
+    "email": "Email",
+    "username": "Username",
+    "settings": "SETTINGS",
+    "language": "Language",
+    "display": "Display",
+    "twoColumns": "2 columns",
+    "logout": "Log out",
+    "french": "FR",
+    "english": "EN"
+  },
+  "dangerZone": {
+    "title": "DANGER ZONE",
+    "deleteDescription": "Account deletion is permanent and irreversible.",
+    "deleteAccount": "Delete my account",
+    "deleteTitle": "Delete account",
+    "deleteMessage": "This action is irreversible. Do you really want to delete your account?",
+    "cancel": "Cancel",
+    "confirmDelete": "Delete",
+    "deleteError": "Error deleting account"
+  },
+  "editProfile": {
+    "subtitle": "Edit your profile",
+    "profileInfo": "Profile information",
+    "email": "Email",
+    "username": "Username",
+    "emailTooLong": "Email is too long (max {{max}} characters).",
+    "emailInvalid": "Invalid email (ex: name@domain.com)",
+    "usernameTooShort": "Username must contain at least {{min}} characters.",
+    "save": "Save",
+    "security": "Security",
+    "newPassword": "New password (8+)",
+    "confirmPassword": "Confirm new password",
+    "passwordTooShort": "Password must contain at least 8 characters.",
+    "passwordMismatch": "Passwords must match.",
+    "changePassword": "Change password",
+    "mustBeConnected": "You must be logged in.",
+    "requiredFields": "Email and username are required.",
+    "usernameMinError": "Username must contain at least {{min}} characters",
+    "profileUpdated": "Profile updated",
+    "profileUpdateError": "Profile update error",
+    "passwordCheckError": "Check the passwords (8+ characters and matching confirmation).",
+    "passwordChanged": "Password changed",
+    "passwordChangeError": "Password change error"
+  },
+  "login": {
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "invalidCredentials": "Invalid email or password.",
+    "submit": "Log in",
+    "noAccount": "No account?",
+    "createAccount": "Create an account"
+  },
+  "home": {
+    "chooseExercise": "Choose exercise",
+    "setLabel": "SET {{number}}",
+    "phase": {
+      "concentric": "CONCENTRIC",
+      "eccentric": "ECCENTRIC"
+    },
+    "metrics": {
+      "current": "CURRENT",
+      "max": "MAX",
+      "average": "AVERAGE"
+    },
+    "chart": {
+      "title": "VELOCITY · REAL TIME",
+      "unit": "m/s"
+    },
+    "alerts": {
+      "calibrationRequiredTitle": "Calibration required",
+      "calibrationRequiredMessage": "You must calibrate {{exercise}} before starting the session."
+    },
+    "calibration": {
+      "required": "Calibration required",
+      "calibrated": "Calibrated",
+      "validReps": "{{count}} valid reps",
+      "quality": {
+        "low": "Low",
+        "good": "Good",
+        "excellent": "Excellent"
+      }
+    },
+    "formStatus": {
+      "stable": "Stable"
+    },
+    "formDescription": {
+      "mock": "Simulated set analysis."
+    },
+    "declineText": {
+      "mock": "Slight drop in speed on the last reps."
+    },
+    "stickingPointText": {
+      "mock": "Sticking point detected in the middle of the movement"
+    }
+  },
+  "exercises": {
+    "squat": "Squat",
+    "bench_press": "Bench Press",
+    "deadlift": "Deadlift",
+    "incline_bench_press": "Incline Bench Press",
+    "overhead_press": "Overhead Press",
+    "decline_bench_press": "Decline Bench Press"
+  },
+  "setModal": {
+    "title": "New set",
+    "exercise": "Exercise",
+    "weightKg": "Weight (kg)",
+    "cancel": "Cancel",
+    "save": "Save",
+    "selectExercise": "Select an exercise",
+    "selectExerciseFirst": "Choose an exercise first",
+    "configureWeight": "Configure weight",
+    "tapToEditWeight": "Tap to edit weight",
+    "openInteractiveBar": "Open the interactive bar",
+    "displayUnit": "Display: {{unit}}"
+  },
+  "endSessionButton": {
+    "label": "End"
+  },
+  "sessionBanner": {
+    "ready": "Active session · ready for the first set",
+    "active": "Active session · {{exerciseCount}} exercise · {{setsCount}} set",
+    "active_plural_exercise": "Active session · {{exerciseCount}} exercises · {{setsCount}} set",
+    "active_plural_set": "Active session · {{exerciseCount}} exercise · {{setsCount}} sets",
+    "active_plural_both": "Active session · {{exerciseCount}} exercises · {{setsCount}} sets"
+  },
+  "startButton": {
+    "start": "Start",
+    "stop": "Stop"
+  },
+  "analysis": {
+    "empty": {
+      "title": "No analysis available",
+      "text": "Select a session from history or start a new session."
+    },
+    "alerts": {
+      "declineDetected": "Performance drop detected",
+      "decelerationZone": "Pronounced deceleration zone at the bottom phase"
+    }
+  },
+  "analysisSetPicker": {
+    "analysis": "ANALYSIS",
+    "setFallback": "SET",
+    "reps": "reps",
+    "duration": "Duration"
+  },
+  "chartMode": {
+    "bars": "Bars",
+    "curve": "Curve"
+  },
+  "formScore": {
+    "title": "FORM SCORE"
+  },
+  "repBarsChart": {
+    "title": "VELOCITY PER REP",
+    "subTitle": "Velocity profile · range of motion",
+    "repShort": "Rep",
+    "bestRep": "Best rep",
+    "decline": "Decline",
+    "stickingPoint": "Sticking point"
+  },
+  "repCurveChart": {
+    "title": "VELOCITY PER REP",
+    "subTitle": "Velocity profile · range of motion",
+    "spLabel": "SP",
+    "note": "SP = Sticking Point · maximum deceleration zone"
+  },
+  "seriesSummary": {
+    "title": "SET SUMMARY",
+    "reps": "Repetitions",
+    "avgVelocity": "Average velocity",
+    "maxVelocity": "Max velocity",
+    "bestRep": "Best rep",
+    "rom": "ROM",
+    "duration": "Set duration",
+    "repShort": "Rep"
+  },
+  "formScoreCard": {
+    "status": {
+      "stable": "Stable"
+    },
+    "description": {
+      "simulatedSetAnalysis": "Simulated set analysis."
+    }
+  },
+  "analysisAlerts": {
+    "performanceDrop": {
+      "title": "Performance drop detected",
+      "description": "Slight velocity drop on the last repetitions."
+    },
+    "stickingPoint": {
+      "title": "Sticking point detected mid-movement",
+      "description": "Pronounced deceleration zone in the bottom phase."
+    }
+  },
+  "weight": {
+    "title": "Interactive bar",
+    "exerciseLabel": "Exercise: {{exercise}}",
+    "selectLoad": "Load selection",
+    "noPlates": "No plates",
+    "currentConfig": "Current configuration",
+    "confirm": "Confirm {{weight}} {{unit}}"
+  },
+  "weightActions": {
+    "undoLast": "← Remove last",
+    "reset": "Reset"
+  },
+  "weightPlateGrid": {
+    "addPlate": "ADD A PLATE"
+  },
+  "weightTopCard": {
+    "loading": "LOAD",
+    "title": "Interactive bar",
+    "bar": "Bar",
+    "platesX2": "Plates (x2)",
+    "perSide": "/ side"
+  },
+  "history": {
+    "overTitle": "HISTORY",
+    "session_one": "session",
+    "session_other": "sessions",
+    "filters": {
+      "all": "All"
+    }
+  },
+  "deleteSessionModal": {
+    "title": "Delete session",
+    "description": "This action is irreversible. The session, its exercises, and its sets will be permanently deleted.",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "historyFilters": {
+    "all": "All"
+  },
+  "historyCard": {
+    "exercise_one": "exercise",
+    "exercise_other": "exercises",
+    "multi": "MULTI",
+    "sets": "Sets",
+    "reps": "Reps",
+    "avgVelocity": "Avg vel.",
+    "avgTUT": "Avg TUT"
+  },
+  "device": {
+    "title": "DEVICE",
+    "module": "RepMotion module",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "connectHint": "Connect to the module via Wi-Fi",
+    "connectedHint": "Module connected via Wi-Fi",
+    "transport": "Transport",
+    "network": "Network",
+    "ip": "IP address",
+    "signal": "Signal",
+    "wifi": "Wi-Fi",
+    "connectButton": "Connect via Wi-Fi",
+    "disconnectButton": "Disconnect",
+    "settings": "SETTINGS",
+    "speedUnit": "Speed units",
+    "formSensitivity": "Form sensitivity",
+    "autoExport": "Auto export",
+    "low": "Low",
+    "normal": "Normal",
+    "high": "High",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "strong": "Strong"
+  }
+}

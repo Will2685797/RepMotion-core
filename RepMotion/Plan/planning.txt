@@ -1,0 +1,208 @@
+
+Goal:
+    mpu + esp32: attach on a bench (or any conpound) bar
+    responsible for:
+    - sensing the movement:
+        - acceleration (X, Y, Z)
+        - rotation (X, Y, Z)
+
+        this way we can:
+            - detech the reps
+            - calculate concentric speed
+            - find sticking point
+            - detect trajectory deviation
+            - mesure the shaking
+
+
+ESP32:
+    - init MPU
+    - calibrate gyro/accel bias at startup
+    - read sensor at 50–200 Hz
+    - print data to serial
+    - send data over BLE/Wi-Fi
+    - add basic rep segmentation on-device
+
+    Flow:
+    - stream raw data
+    - save CSV / JSON
+    - analyze in Python
+    - refine algorithm
+    - port stable logic back to ESP32
+
+
+APP:
+    - connect to user’s ESP32
+    - start / stop workout session
+    - receive raw or semi-processed sensor packets
+    - show live UI
+    - cache data locally if needed
+    - send session data to API
+    - fetch history from API
+
+    So the app talks to:
+        ESP32 via BLE
+        API via HTTPS
+
+
+API:
+    - user auth
+    - session creation
+    - workout storage
+    - rep summaries
+    - exercise history
+    - device registration
+    - analytics ingestion endpoints
+    - serving app data back
+
+    template format:
+        app/
+        ├── main.py
+        ├── api/
+        │   ├── routes_sessions.py
+        │   ├── routes_devices.py
+        │   └── routes_users.py
+        ├── services/
+        │   ├── session_service.py
+        │   └── ingestion_service.py
+        ├── analytics/
+        │   ├── calibration.py
+        │   ├── filters.py
+        │   ├── rep_detection.py
+        │   ├── velocity.py
+        │   ├── sticking_point.py
+        │   ├── tremor.py
+        │   └── pipeline.py
+        ├── models/
+        ├── schemas/
+        ├── db/
+        └── workers/
+
+
+DB:
+    - users
+    - devices
+    - sessions
+    - reps
+    - metrics
+    - raw packet references or summarized signals
+
+
+
+Module Architecture:
+    MPU sensor (I2C)
+        ↓
+    ESP32-C3
+        ↓
+    process / filter
+        ↓
+    send data
+    (BLE / WiFi)
+        ↓
+    phone / Raspberry Pi
+
+
+Calibration stage:
+    float gyro_offset_x = 0;
+    float gyro_offset_y = 0;
+    float gyro_offset_z = 0;
+
+    void calibrate() {
+        for(int i=0;i<500;i++){
+            read_mpu();
+            gyro_offset_x += gyro_x;
+            gyro_offset_y += gyro_y;
+            gyro_offset_z += gyro_z;
+            delay(5);
+        }
+
+        gyro_offset_x /= 500;
+        gyro_offset_y /= 500;
+        gyro_offset_z /= 500;
+    }
+
+
+
+
+
+
+
+Calibration:
+    During calibration recording:
+        MPU is attached to the bar.
+        User taps Start calibration.
+        System enters armed / recording state.
+        User unracks and gets into position.
+        User stays still for 1–2 seconds.
+        User performs 5–10 clean reps.
+        User reracks.
+        User taps Stop calibration.
+
+    After stop:
+        Preprocess / smooth the signal.
+        Compute fused features.
+        Detect dominant axis.
+        Detect all rep candidates.
+        Score rep candidates for rep-likeness.
+        Keep the main contiguous valid rep block.
+        Discard prefix/suffix garbage.
+        Segment final kept reps cleanly.
+        Normalize reps to fixed length.
+        Build calibration template from kept reps.
+
+    Reject if:
+        not minimum valid reps = 5
+        huge ROM variance
+        huge duration variance
+        no clear dominant axis
+
+
+Step 1 — smooth signals
+    Use light smoothing on:
+        principal angle
+        angular velocity
+        gyro magnitude
+
+Step 2 — identify dominant rep axis
+    Since MPU is on bar, the main rep motion should dominate one axis.
+    Compute per-axis energy:
+        roll energy
+        pitch energy
+        yaw energy
+
+    Choose the axis with highest structured oscillation.
+
+Step 3 — detect candidate reps
+    Find peaks/troughs on principal angle or zero-crossing cycles on angular velocity.
+    Each candidate rep gets features:
+        start/end
+        duration
+        ROM
+        peak velocity
+        symmetry
+        off-axis leakage
+
+Step 4 — reject junk cycles
+    Reject candidates that look like:
+        too short
+        too long
+        too small amplitude
+        too irregular
+        too much off-axis chaos
+
+    Example reject rules
+    Reject rep candidate if:
+        duration < 0.6s or > 8s
+        ROM < min_rom_deg
+        off-axis ratio too high
+        no clear concentric/eccentric structure
+        peak velocity is extreme impact-like spike without normal cycle shape
+
+Step 5 — keep the main contiguous cluster
+    Usually the real set is the largest contiguous block of valid reps.
+    So if you detect:
+        noise
+        one weird partial motion
+        then 8 clean reps
+        then rerack spike
+
+    Keep the middle cluster.

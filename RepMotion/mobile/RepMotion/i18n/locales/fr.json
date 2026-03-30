@@ -1,0 +1,281 @@
+{
+  "calibration": {
+    "calibrationDone": "Calibration réussie",
+    "calibrating": "Calibration en cours...",
+    "readyToCalibrate": "Prêt à calibrer",
+    "startCalibrationForRefMvent": "Lance la calibration pour enregistrer ton mouvement de référence."
+  },
+  "profile": {
+    "title": "Profil",
+    "edit": "Modifier",
+    "account": "Compte",
+    "email": "Email",
+    "username": "Nom d'utilisateur",
+    "settings": "PARAMÈTRES",
+    "language": "Langue",
+    "display": "Affichage",
+    "twoColumns": "2 colonnes",
+    "logout": "Se déconnecter",
+    "french": "FR",
+    "english": "EN"
+  },
+  "dangerZone": {
+    "title": "DANGER ZONE",
+    "deleteDescription": "La suppression du compte est permanente et irréversible.",
+    "deleteAccount": "Supprimer mon compte",
+    "deleteTitle": "Supprimer le compte",
+    "deleteMessage": "Cette action est irréversible. Voulez-vous vraiment supprimer votre compte ?",
+    "cancel": "Annuler",
+    "confirmDelete": "Supprimer",
+    "deleteError": "Erreur lors de la suppression du compte"
+  },
+  "editProfile": {
+    "subtitle": "Modifier ton profil",
+    "profileInfo": "Informations du profil",
+    "email": "Email",
+    "username": "Nom d'utilisateur",
+    "emailTooLong": "L'email est trop long (max {{max}} caractères).",
+    "emailInvalid": "Email invalide (ex: nom@domaine.com)",
+    "usernameTooShort": "Le nom d'utilisateur doit contenir au moins {{min}} caractères.",
+    "save": "Enregistrer",
+    "security": "Sécurité",
+    "newPassword": "Nouveau mot de passe (8+)",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
+    "passwordMismatch": "Les mots de passe doivent être identiques.",
+    "changePassword": "Changer le mot de passe",
+    "mustBeConnected": "Tu dois être connecté.",
+    "requiredFields": "Email et nom d'utilisateur requis.",
+    "usernameMinError": "Le nom d'utilisateur doit contenir au moins {{min}} caractères",
+    "profileUpdated": "Profil mis à jour",
+    "profileUpdateError": "Erreur modification profil",
+    "passwordCheckError": "Vérifie les mots de passe (8+ caractères et confirmation identique).",
+    "passwordChanged": "Mot de passe changé",
+    "passwordChangeError": "Erreur changement mot de passe"
+  },
+  "login": {
+    "email": "Email",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "invalidCredentials": "Email ou mot de passe invalide.",
+    "submit": "Se connecter",
+    "noAccount": "Pas de compte ?",
+    "createAccount": "Créer un compte"
+  },
+  "home": {
+    "chooseExercise": "Choisir exercice",
+    "setLabel": "SÉRIE {{number}}",
+    "phase": {
+      "concentric": "CONCENTRIQUE",
+      "eccentric": "EXCENTRIQUE"
+    },
+    "metrics": {
+      "current": "ACTUELLE",
+      "max": "MAX",
+      "average": "MOYENNE"
+    },
+    "chart": {
+      "title": "VITESSE · TEMPS RÉEL",
+      "unit": "m/s"
+    },
+    "alerts": {
+      "calibrationRequiredTitle": "Calibration nécessaire",
+      "calibrationRequiredMessage": "Tu dois calibrer {{exercise}} avant de démarrer la séance."
+    },
+    "calibration": {
+      "required": "Calibration requise",
+      "calibrated": "Calibré",
+      "validReps": "{{count}} reps valides",
+      "quality": {
+        "low": "Faible",
+        "good": "Bonne",
+        "excellent": "Excellente"
+      }
+    },
+    "formStatus": {
+      "stable": "Stable"
+    },
+    "formDescription": {
+      "mock": "Analyse simulée de la série."
+    },
+    "declineText": {
+      "mock": "Légère baisse de vitesse sur les dernières reps."
+    },
+    "stickingPointText": {
+      "mock": "Sticking point détecté au milieu du mouvement"
+    }
+  },
+  "exercises": {
+    "squat": "Squat",
+    "bench_press": "Développé couché",
+    "deadlift": "Soulevé de terre",
+    "incline_bench_press": "Développé incliné",
+    "overhead_press": "Développé militaire",
+    "decline_bench_press": "Développé couché décliné"
+  },
+  "setModal": {
+    "title": "Nouvelle série",
+    "exercise": "Exercice",
+    "weightKg": "Poids (kg)",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "selectExercise": "Sélectionner un exercice",
+    "selectExerciseFirst": "Choisis un exercice d’abord",
+    "configureWeight": "Configurer le poids",
+    "tapToEditWeight": "Touchez pour modifier le poids",
+    "openInteractiveBar": "Ouvrir la barre interactive",
+    "displayUnit": "Affichage : {{unit}}"
+  },
+  "endSessionButton": {
+    "label": "Terminer"
+  },
+  "sessionBanner": {
+    "ready": "Séance active · prête pour la première série",
+    "active": "Séance active · {{exerciseCount}} exercice · {{setsCount}} série",
+    "active_plural_exercise": "Séance active · {{exerciseCount}} exercices · {{setsCount}} série",
+    "active_plural_set": "Séance active · {{exerciseCount}} exercice · {{setsCount}} séries",
+    "active_plural_both": "Séance active · {{exerciseCount}} exercices · {{setsCount}} séries"
+  },
+  "startButton": {
+    "start": "Démarrer",
+    "stop": "Arrêter"
+  },
+  "analysis": {
+    "empty": {
+      "title": "Aucune analyse disponible",
+      "text": "Sélectionne une séance dans l’historique ou démarre une nouvelle séance."
+    },
+    "alerts": {
+      "declineDetected": "Dégradation détectée",
+      "decelerationZone": "Zone de décélération prononcée au passage bas"
+    }
+  },
+  "analysisSetPicker": {
+    "analysis": "ANALYSE",
+    "setFallback": "SÉRIE",
+    "reps": "reps",
+    "duration": "Durée"
+  },
+  "chartMode": {
+    "bars": "Barres",
+    "curve": "Courbe"
+  },
+  "formScore": {
+    "title": "SCORE FORME"
+  },
+  "repBarsChart": {
+    "title": "VITESSE PAR REP",
+    "subTitle": "Profil vitesse · amplitude",
+    "repShort": "Rep",
+    "bestRep": "Meilleure rep",
+    "decline": "Déclin",
+    "stickingPoint": "Sticking point"
+  },
+  "repCurveChart": {
+    "title": "VITESSE PAR REP",
+    "subTitle": "Profil vitesse · amplitude",
+    "spLabel": "SP",
+    "note": "SP = Sticking Point · zone de décélération maximale"
+  },
+  "seriesSummary": {
+    "title": "RÉSUMÉ SÉRIE",
+    "reps": "Répétitions",
+    "avgVelocity": "Vitesse moyenne",
+    "maxVelocity": "Vitesse max",
+    "bestRep": "Meilleure rep",
+    "rom": "Amplitude ROM",
+    "duration": "Durée série",
+    "repShort": "Rep"
+  },
+  "formScoreCard": {
+    "status": {
+      "stable": "Stable"
+    },
+    "description": {
+      "simulatedSetAnalysis": "Analyse simulée de la série."
+    }
+  },
+  "analysisAlerts": {
+    "performanceDrop": {
+      "title": "Baisse de performance détectée",
+      "description": "Légère baisse de vitesse sur les dernières répétitions."
+    },
+    "stickingPoint": {
+      "title": "Sticking point détecté au milieu du mouvement",
+      "description": "Zone de décélération prononcée dans la phase basse."
+    }
+  },
+  "weight": {
+    "title": "Barre interactive",
+    "exerciseLabel": "Exercice : {{exercise}}",
+    "selectLoad": "Sélection du chargement",
+    "noPlates": "Aucun disque",
+    "currentConfig": "Configuration actuelle",
+    "confirm": "Confirmer {{weight}} {{unit}}"
+  },
+  "weightActions": {
+    "undoLast": "← Retirer dernier",
+    "reset": "Reset"
+  },
+  "weightPlateGrid": {
+    "addPlate": "AJOUTER UN DISQUE"
+  },
+  "weightTopCard": {
+    "loading": "CHARGEMENT",
+    "title": "Barre interactive",
+    "bar": "Barre",
+    "platesX2": "Disques (x2)",
+    "perSide": "/ côté"
+  },
+  "history": {
+    "overTitle": "HISTORIQUE",
+    "session_one": "séance",
+    "session_other": "séances",
+    "filters": {
+      "all": "Tous"
+    }
+  },
+  "deleteSessionModal": {
+    "title": "Supprimer la séance",
+    "description": "Cette action est irréversible. La séance, ses exercices et ses séries seront supprimés définitivement.",
+    "cancel": "Annuler",
+    "delete": "Supprimer"
+  },
+  "historyFilters": {
+    "all": "Tous"
+  },
+  "historyCard": {
+    "exercise_one": "exercice",
+    "exercise_other": "exercices",
+    "multi": "MULTI",
+    "sets": "Séries",
+    "reps": "Reps",
+    "avgVelocity": "Vit. moy.",
+    "avgTUT": "TST moy."
+  },
+  "device": {
+    "title": "APPAREIL",
+    "module": "Module RepMotion",
+    "connected": "Connecté",
+    "disconnected": "Déconnecté",
+    "connectHint": "Connectez-vous au module via le réseau Wi-Fi",
+    "connectedHint": "Module connecté via Wi-Fi et prêt",
+    "transport": "Transport",
+    "network": "Réseau",
+    "ip": "Adresse IP",
+    "signal": "Signal",
+    "wifi": "Wi-Fi",
+    "connectButton": "Connecter via Wi-Fi",
+    "disconnectButton": "Déconnecter",
+    "settings": "RÉGLAGES",
+    "speedUnit": "Unités vitesse",
+    "formSensitivity": "Sensibilité alertes forme",
+    "autoExport": "Export automatique",
+    "low": "Faible",
+    "normal": "Normale",
+    "high": "Élevée",
+    "enabled": "Activé",
+    "disabled": "Désactivé",
+    "strong": "Fort"
+  }
+}

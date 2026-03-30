@@ -1,0 +1,53 @@
+Make the DB the source of truth
+    Flow:
+        Admin page (FastAPI) edits config → writes JSON into MySQL
+        Fetcher reads config from MySQL at startup + periodically (or on “reload” endpoint)
+
+
+Store config as JSON in MySQL (1 table)
+    Table:
+        FetcherServerCfg
+            id (auto)
+            active (bool)
+            config_json (JSON)
+            created_utc
+            created_by
+            comment
+
+FastAPI Admin page (like /docs, but yours)
+    You’ll do:
+        GET /admin/config → shows a textarea with JSON (or a simple form later)
+        POST /admin/config → validates JSON + stores new version + sets active
+
+    FastAPI supports HTML pages via Jinja2Templates (dead simple).
+
+    One big JSON textarea
+        “Validate” button
+        “Publish” button
+
+Validation
+    Before saving:
+        parse JSON
+        validate with Pydantic model (types, ranges, required keys)
+        reject garbage (missing feeds, negative lookback, etc.)
+
+How the fetcher reads it (minimal)
+    Fetcher side:
+        add a ConfigProvider that reads active config from DB
+        compare version id; if changed → reload
+
+    pseudo code:
+        last_cfg_id = None
+        while True:
+            cfg_id, cfg_json = db.get_active_config()
+            if cfg_id != last_cfg_id:
+                cfg = validate_cfg(cfg_json)       # same schema
+                engine.apply_config(cfg)           # rebuild RSSFetcher/RSSFilterer/SeenCache
+                last_cfg_id = cfg_id
+
+            engine.run_once()
+            sleep(poll_seconds)
+
+
+
+

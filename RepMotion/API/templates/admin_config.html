@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Fetcher Config</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 1400px;
+            margin: auto;
+            padding: 16px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 600px;
+            font-family: monospace;
+            border: 1px solid #ccc;
+            resize: none;
+            overflow: auto;
+            white-space: pre;
+        }
+
+        .readonly {
+            background: #f5f5f5;
+            color: #111;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Fetcher Config</h2>
+
+    <div class="container">
+
+        <!-- Current -->
+        <div style="flex:1;">
+            <h4>Current Active Config</h4>
+            <textarea class="readonly" readonly>{{ cfg_text }}</textarea>
+        </div>
+
+        <!-- Draft -->
+        <div style="flex:1;">
+            <h4>Draft (Editable)</h4>
+            <textarea id="draft_cfg">{{ cfg_text }}</textarea>
+        </div>
+
+    </div>
+
+    <br>
+
+    <form method="post" action="/admin/config">
+        <input type="hidden" id="cfg_hidden" name="cfg_json" />
+        <button type="submit" name="action" value="validate">Validate</button>
+        <button type="submit" name="action" value="publish">Publish</button>
+    </form>
+
+    <script>
+        const draft = document.getElementById("draft_cfg");
+        const hidden = document.getElementById("cfg_hidden");
+
+        hidden.value = draft.value;
+
+        draft.addEventListener("input", function () {
+            hidden.value = draft.value;
+        });
+    </script>
+
+</body>
+
+</html>
