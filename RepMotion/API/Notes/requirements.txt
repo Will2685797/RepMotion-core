@@ -1,2 +1,0 @@
-imports:
-pip install fastapi dotenv sqlalchemy pymysql uvicorn python-multipart jinja2 cryptography "pydantic[email]" passlib python-jose[cryptography]

@@ -16,28 +16,20 @@ import ForgotPassword from "./auth/ForgotPassword";
 // store
 import { useAuthStore } from "../store/authStore";
 
-//écran 
+// écran
 import CalibrationSetupScreen from "../ecrans/CalibrationSetupScreen";
 import RepWeightConfiguratorTest from "../ecrans/RepWeightConfiguratorTest";
-
-// debug/dev
-import MotionDebugScreen from "../ecrans/debug/MotionDebugScreen";
-import MotionCalibrationSessionScreen from "../ecrans/debug/MotionCalibrationSessionScreen";
-
 
 const Stack = createNativeStackNavigator();
 
 export default function Navigation() {
   const token = useAuthStore((s) => s.token);
-  // const isAuthed = !!token;
-  const isAuthed = true;
+  const isAuthed = Boolean(token);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!isAuthed ? (
         <>
-          {/* <Stack.Screen name="MotionDebugScreen" component={MotionDebugScreen} /> */}
-          <Stack.Screen name="MotionCalibrationSessionScreen" component={MotionCalibrationSessionScreen} />
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Register" component={Register} />
           <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
@@ -47,17 +39,17 @@ export default function Navigation() {
         <>
           <Stack.Screen name="menu" component={Menu} />
 
-           <Stack.Screen
+          <Stack.Screen
             name="CalibrationSetupScreen"
             component={CalibrationSetupScreen}
             options={{ headerShown: true, title: "" }}
           />
-            <Stack.Screen
+
+          <Stack.Screen
             name="RepWeightConfiguratorTest"
             component={RepWeightConfiguratorTest}
             options={{ headerShown: true, title: "" }}
           />
-
 
           <Stack.Screen
             name="EditProfile"
