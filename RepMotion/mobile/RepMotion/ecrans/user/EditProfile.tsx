@@ -175,7 +175,13 @@ const EditProfile = () => {
   };
 
   return (
-    <View style={[s.screen, s.authScreen]}>
+   <View
+  style={[
+    s.screen,
+    s.authScreen,
+    { backgroundColor: "#070A12" }
+  ]}
+>
       {/* Top brand */}
       <View style={s.authTop}>
         <Text style={s.authBrand}>RepMotion</Text>

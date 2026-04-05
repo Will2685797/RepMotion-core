@@ -15,7 +15,6 @@ import { useUser } from "../../contexts/UserContext";
 import { useAuthStore } from "../../store/authStore";
 import { saveLanguage } from "../../i18n/languageStorage";
 
-
 const Profile = () => {
   const authUser = useAuthStore((state) => state.user);
   const deleteAccount = useAuthStore((st) => st.deleteAccount);
@@ -97,7 +96,14 @@ const Profile = () => {
   };
   // UI
   return (
-    <View key={animKey} style={[s.screen, s.profileScreen]}>
+    <View
+      key={animKey}
+      style={[
+        s.screen,
+        s.profileScreen,
+        { backgroundColor: "#070A12" }, // même que Accueil
+      ]}
+    >
       {/* Title + Edit */}
       <View style={s.profileTopRow}>
         <Text style={s.profileTitle}>{t("profile.title")}</Text>
@@ -181,7 +187,7 @@ const Profile = () => {
                       }}
                       style={[
                         s.langOption,
-                        currentLanguage === "fr" && s.langOptionActive
+                        currentLanguage === "fr" && s.langOptionActive,
                       ]}
                     >
                       <Text
@@ -270,7 +276,6 @@ const Profile = () => {
           </Pressable>
 
           <View style={s.settingsItems}>
-
             {dangerOpen && (
               <View>
                 <View style={s.settingsDivider} />
@@ -314,7 +319,7 @@ const Profile = () => {
                           fontWeight: "800",
                           letterSpacing: 0.5,
                           fontSize: 13,
-                          color: "#ff6b6b"
+                          color: "#ff6b6b",
                         },
                       ]}
                     >
