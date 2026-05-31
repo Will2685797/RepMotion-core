@@ -1,8 +1,17 @@
 // imports
 import { create } from "zustand";
 import * as api from "../api/api";
-import type { User } from "../models/User";
 
+type LoginInput = {
+  email: string;
+  password: string;
+};
+
+type RegisterInput = {
+  email: string;
+  password: string;
+  username: string;
+};
 
 type AuthUser = {
   id: number;
@@ -14,11 +23,13 @@ type AuthState = {
   user: AuthUser | null;
   token: string | null;
 
-  login: (u: Pick<User, "email" | "password">) => Promise<void>;
-  register: (u: Pick<User, "email" | "password" | "username">) => Promise<void>;
-
+  login: (u: LoginInput) => Promise<void>;
+  register: (u: RegisterInput) => Promise<void>;
   updateProfile: (p: { email?: string; username?: string }) => Promise<void>;
-  changePassword: (p: { currentPassword: string; newPassword: string }) => Promise<void>;
+  changePassword: (p: {
+    currentPassword: string;
+    newPassword: string;
+  }) => Promise<void>;
   deleteAccount: () => Promise<void>;
 
   logout: () => void;
@@ -29,9 +40,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   token: null,
 
   login: async (u) => {
-    if (!u.email || !u.password) throw new Error("Email ou mot de passe manquant");
+    if (!u.email || !u.password)
+      throw new Error("Email ou mot de passe manquant");
 
-    const data = await api.login({ email: u.email.trim(), password: u.password });
+    const data = await api.login({
+      email: u.email.trim(),
+      password: u.password,
+    });
 
     const token = data.access_token ?? data.token ?? null;
     if (!token) throw new Error("Token manquant dans la réponse API");
@@ -93,7 +108,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   updateProfile: async (p) => {
-
     const { token, user } = get();
     if (!token) throw new Error("Non connecté");
     if (!user) throw new Error("Utilisateur manquant");
@@ -111,8 +125,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       user: {
         id: updated?.id ?? user.id,
-        email: updated?.email ?? (p.email ?? user.email),
-        username: updated?.username ?? (p.username ?? user.username),
+        email: updated?.email ?? p.email ?? user.email,
+        username: updated?.username ?? p.username ?? user.username,
       },
     });
   },
