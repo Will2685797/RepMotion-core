@@ -144,3 +144,10 @@ esp32c3/sketch_mar9a/sketch_mar9a.ino
 .venv/
 __pycache__/
 *.pyc
+
+# Local backend files
+RepMotion/api/.env
+RepMotion/api/.venv/
+RepMotion/api/repmotion.db
+RepMotion/api/__pycache__/
+RepMotion/api/app/**/__pycache__/
