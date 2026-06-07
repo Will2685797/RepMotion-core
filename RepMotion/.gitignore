@@ -146,8 +146,8 @@ __pycache__/
 *.pyc
 
 # Local backend files
-RepMotion/api/.env
-RepMotion/api/.venv/
-RepMotion/api/repmotion.db
-RepMotion/api/__pycache__/
-RepMotion/api/app/**/__pycache__/
+api/.env
+api/.venv/
+api/repmotion.db
+api/__pycache__/
+api/app/**/__pycache__/
