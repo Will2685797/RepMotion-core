@@ -67,6 +67,14 @@ Responsabilités :
 - PlatformIO
 - WSL Ubuntu 24.04
 
+## Connexion ESP32 à WSL
+
+Dans PowerShell Administrateur :
+
+```powershell
+usbipd list
+usbipd attach --wsl --busid <BUSID>
+
 ## Structure
 
 ```text
