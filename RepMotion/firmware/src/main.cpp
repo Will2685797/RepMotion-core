@@ -45,6 +45,7 @@ void loop() {
 
         if (readMpu6050Raw(data)) {
             printMpu6050Raw(data);
+            updateMotionDataCharacteristic(data);
         } else {
             Serial.println("Failed to read MPU6050 data.");
         }
