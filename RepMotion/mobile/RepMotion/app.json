@@ -46,7 +46,9 @@
           ],
           "bluetoothAlwaysPermission": "RepMotion utilise le Bluetooth pour recevoir les données du capteur MPU6050."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-localization"
     ]
   }
 }
