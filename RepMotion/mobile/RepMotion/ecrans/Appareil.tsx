@@ -13,6 +13,8 @@ import {
   stopBleScan,
   connectToRepMotionDevice,
   disconnectRepMotionDevice,
+  startMotionStream,
+  stopMotionStream,
 } from "../services/ble/bleService";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -69,12 +71,22 @@ export default function Appareil() {
   const [bleStatus, setBleStatus] = useState("Déconnecté");
   const [deviceName, setDeviceName] = useState("RM-01 Sensor");
 
+  const [imuData, setImuData] = useState({
+    ax: 0,
+    ay: 0,
+    az: 0,
+    gx: 0,
+    gy: 0,
+    gz: 0,
+  });
+
   const handleConnect = async () => {
     console.log("[BLE] Connect button pressed");
 
     if (isConnected) {
       try {
         await disconnectRepMotionDevice();
+        stopMotionStream();
       } catch (error) {
         console.log("[BLE] Disconnect error:", error);
       }
@@ -104,6 +116,16 @@ export default function Appareil() {
 
           setIsConnected(true);
           setBleStatus("Module connecté");
+
+          startMotionStream(
+            (data) => {
+              setImuData(data);
+            },
+            (error) => {
+              console.log("[BLE] Motion stream error from Appareil:", error);
+              setBleStatus("Erreur streaming IMU");
+            },
+          );
         } catch (error) {
           console.log("[BLE] Connection error:", error);
 
@@ -182,6 +204,30 @@ export default function Appareil() {
         </Pressable>
       </View>
 
+      <View style={styles.imuCard}>
+        <Text style={styles.settingsTitle}>DONNÉES IMU LIVE</Text>
+
+        <View style={styles.imuSection}>
+          <Text style={styles.imuSectionTitle}>Accélération</Text>
+
+          <View style={styles.imuGrid}>
+            <Text style={styles.imuValue}>AX: {imuData.ax.toFixed(2)}</Text>
+            <Text style={styles.imuValue}>AY: {imuData.ay.toFixed(2)}</Text>
+            <Text style={styles.imuValue}>AZ: {imuData.az.toFixed(2)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.imuSection}>
+          <Text style={styles.imuSectionTitle}>Gyroscope</Text>
+
+          <View style={styles.imuGrid}>
+            <Text style={styles.imuValue}>GX: {imuData.gx.toFixed(2)}</Text>
+            <Text style={styles.imuValue}>GY: {imuData.gy.toFixed(2)}</Text>
+            <Text style={styles.imuValue}>GZ: {imuData.gz.toFixed(2)}</Text>
+          </View>
+        </View>
+      </View>
+
       <View style={styles.settingsCard}>
         <Text style={styles.settingsTitle}>RÉGLAGES</Text>
 
@@ -192,7 +238,6 @@ export default function Appareil() {
             setSpeedUnit((prev) => (prev === "m/s" ? "cm/s" : "m/s"))
           }
         />
-
         <SettingRow
           label="Sensibilité alertes forme"
           value={formSensitivity}
@@ -370,5 +415,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     marginRight: 6,
+  },
+
+  imuCard: {
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 16,
+    backgroundColor: "#12172A",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+  },
+
+  imuSection: {
+    marginTop: 12,
+  },
+
+  imuSectionTitle: {
+    color: "rgba(233,238,248,0.55)",
+    fontSize: 13,
+    fontWeight: "900",
+    marginBottom: 8,
+  },
+
+  imuGrid: {
+    gap: 6,
+  },
+
+  imuValue: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
   },
 });
