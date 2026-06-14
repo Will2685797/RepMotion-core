@@ -8,7 +8,13 @@ import {
   PermissionsAndroid,
   Platform,
 } from "react-native";
-import { scanForRepMotion, stopBleScan } from "../services/ble/bleService";
+import {
+  scanForRepMotion,
+  stopBleScan,
+  connectToRepMotionDevice,
+  disconnectRepMotionDevice,
+} from "../services/ble/bleService";
+
 import { Ionicons } from "@expo/vector-icons";
 
 type SettingRowProps = {
@@ -67,6 +73,12 @@ export default function Appareil() {
     console.log("[BLE] Connect button pressed");
 
     if (isConnected) {
+      try {
+        await disconnectRepMotionDevice();
+      } catch (error) {
+        console.log("[BLE] Disconnect error:", error);
+      }
+
       stopBleScan();
       setIsConnected(false);
       setBleStatus("Déconnecté");
@@ -83,10 +95,21 @@ export default function Appareil() {
     setBleStatus("Recherche du module...");
 
     scanForRepMotion(
-      (device) => {
+      async (device) => {
         setDeviceName(device.name ?? device.localName ?? "RepMotion");
-        setIsConnected(true);
-        setBleStatus("Module détecté");
+        setBleStatus("Connexion au module...");
+
+        try {
+          await connectToRepMotionDevice(device);
+
+          setIsConnected(true);
+          setBleStatus("Module connecté");
+        } catch (error) {
+          console.log("[BLE] Connection error:", error);
+
+          setIsConnected(false);
+          setBleStatus("Erreur connexion BLE");
+        }
       },
       (error) => {
         console.log("[BLE] Error from Appareil screen:", error);
