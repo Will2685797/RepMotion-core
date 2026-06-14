@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  PermissionsAndroid,
+  Platform,
+} from "react-native";
 import { scanForRepMotion, stopBleScan } from "../services/ble/bleService";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -26,6 +34,25 @@ function SettingRow({ label, value, onPress }: SettingRowProps) {
   );
 }
 
+async function requestBlePermissions(): Promise<boolean> {
+  if (Platform.OS !== "android") return true;
+
+  const permissions =
+    Platform.Version >= 31
+      ? [
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]
+      : [PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
+
+  const result = await PermissionsAndroid.requestMultiple(permissions);
+
+  return Object.values(result).every(
+    (status) => status === PermissionsAndroid.RESULTS.GRANTED,
+  );
+}
+
 export default function Appareil() {
   const [isConnected, setIsConnected] = useState(false);
 
@@ -36,7 +63,9 @@ export default function Appareil() {
   const [bleStatus, setBleStatus] = useState("Déconnecté");
   const [deviceName, setDeviceName] = useState("RM-01 Sensor");
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
+    console.log("[BLE] Connect button pressed");
+
     if (isConnected) {
       stopBleScan();
       setIsConnected(false);
@@ -44,15 +73,23 @@ export default function Appareil() {
       return;
     }
 
+    const hasPermission = await requestBlePermissions();
+
+    if (!hasPermission) {
+      setBleStatus("Permissions Bluetooth refusées");
+      return;
+    }
+
     setBleStatus("Recherche du module...");
 
     scanForRepMotion(
       (device) => {
-        setDeviceName(device.name ?? "RepMotion");
+        setDeviceName(device.name ?? device.localName ?? "RepMotion");
         setIsConnected(true);
         setBleStatus("Module détecté");
       },
-      () => {
+      (error) => {
+        console.log("[BLE] Error from Appareil screen:", error);
         setBleStatus("Erreur scan BLE");
         setIsConnected(false);
       },
