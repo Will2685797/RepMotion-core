@@ -16,6 +16,27 @@ constexpr const char* MOTION_DATA_CHARACTERISTIC_UUID =
 
 BLECharacteristic* motionDataCharacteristic = nullptr;
 
+/*
+ * Callbacks du serveur BLE.
+ *
+ * Objectif :
+ * - détecter quand le téléphone se connecte
+ * - détecter quand le téléphone se déconnecte
+ * - relancer l'advertising après déconnexion
+ */
+class RepMotionServerCallbacks : public BLEServerCallbacks {
+    void onConnect(BLEServer* server) override {
+        Serial.println("BLE client connected.");
+    }
+
+    void onDisconnect(BLEServer* server) override {
+        Serial.println("BLE client disconnected.");
+        Serial.println("Restarting BLE advertising...");
+
+        BLEDevice::startAdvertising();
+    }
+};
+
 /*Sert à démarrer le Bluetooth.*/
 void initBleService() {
     Serial.println("Initializing BLE...");
@@ -23,6 +44,11 @@ void initBleService() {
     BLEDevice::init(BLE_DEVICE_NAME);
 
     BLEServer* server = BLEDevice::createServer();
+
+    // Important :
+    // sans ces callbacks, l'ESP32 peut arrêter d'annoncer le service
+    // après une déconnexion.
+    server->setCallbacks(new RepMotionServerCallbacks());
 
     BLEService* motionService = server->createService(MOTION_SERVICE_UUID);
 
@@ -48,6 +74,7 @@ void initBleService() {
     Serial.print("BLE advertising as: ");
     Serial.println(BLE_DEVICE_NAME);
 }
+
 /*Sert à envoyer les données MPU6050 dans la characteristic BLE.*/
 void updateMotionDataCharacteristic(const Mpu6050RawData& data) {
     if (motionDataCharacteristic == nullptr) {
