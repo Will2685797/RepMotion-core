@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { scanForRepMotion, stopBleScan } from "../services/ble/bleService";
 import { Ionicons } from "@expo/vector-icons";
-
 
 type SettingRowProps = {
   label: string;
@@ -33,8 +33,30 @@ export default function Appareil() {
   const [formSensitivity, setFormSensitivity] = useState("Normale");
   const [autoExport, setAutoExport] = useState("Désactivé");
 
+  const [bleStatus, setBleStatus] = useState("Déconnecté");
+  const [deviceName, setDeviceName] = useState("RM-01 Sensor");
+
   const handleConnect = () => {
-    setIsConnected((prev) => !prev);
+    if (isConnected) {
+      stopBleScan();
+      setIsConnected(false);
+      setBleStatus("Déconnecté");
+      return;
+    }
+
+    setBleStatus("Recherche du module...");
+
+    scanForRepMotion(
+      (device) => {
+        setDeviceName(device.name ?? "RepMotion");
+        setIsConnected(true);
+        setBleStatus("Module détecté");
+      },
+      () => {
+        setBleStatus("Erreur scan BLE");
+        setIsConnected(false);
+      },
+    );
   };
 
   return (
@@ -60,12 +82,14 @@ export default function Appareil() {
 
           <View style={styles.deviceInfo}>
             <View style={styles.deviceTitleRow}>
-              <Text style={styles.deviceName}>RM-01 Sensor</Text>
+              <Text style={styles.deviceName}>{deviceName}</Text>
 
               <View
                 style={[
                   styles.statusBadge,
-                  isConnected ? styles.badgeConnected : styles.badgeDisconnected,
+                  isConnected
+                    ? styles.badgeConnected
+                    : styles.badgeDisconnected,
                 ]}
               >
                 <Text
@@ -81,11 +105,7 @@ export default function Appareil() {
               </View>
             </View>
 
-            <Text style={styles.deviceHint}>
-              {isConnected
-                ? "Module détecté et prêt à transmettre"
-                : "Approchez le module de la barre"}
-            </Text>
+            <Text style={styles.deviceHint}>{bleStatus}</Text>
           </View>
         </View>
 
@@ -121,8 +141,8 @@ export default function Appareil() {
               prev === "Faible"
                 ? "Normale"
                 : prev === "Normale"
-                ? "Élevée"
-                : "Faible"
+                  ? "Élevée"
+                  : "Faible",
             )
           }
         />
@@ -132,7 +152,7 @@ export default function Appareil() {
           value={autoExport}
           onPress={() =>
             setAutoExport((prev) =>
-              prev === "Désactivé" ? "Activé" : "Désactivé"
+              prev === "Désactivé" ? "Activé" : "Désactivé",
             )
           }
         />
