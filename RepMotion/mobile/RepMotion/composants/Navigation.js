@@ -37,7 +37,7 @@ export default function Navigation() {
         </>
       ) : (
         <>
-          <Stack.Screen name="menu" component={Menu} />
+          <Stack.Screen name="Main" component={Menu} />
 
           <Stack.Screen
             name="CalibrationSetupScreen"
