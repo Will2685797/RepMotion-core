@@ -1,4 +1,5 @@
-import { BleManager, Device } from "react-native-ble-plx";
+import { BleManager, Device, Subscription } from "react-native-ble-plx";
+import { Buffer } from "buffer";
 
 // =====================================================
 // CONFIGURATION
@@ -24,6 +25,20 @@ const REPMOTION_DEVICE_NAME = "RepMotion";
 // On crée UNE seule instance et on la réutilise partout.
 const bleManager = new BleManager();
 let connectedRepMotionDevice: Device | null = null;
+
+let motionStreamSubscription: Subscription | null = null;
+
+const MOTION_SERVICE_UUID = "7b7f0001-7c3a-4f6a-9f8e-1f2b3c4d5e6f";
+const MOTION_DATA_CHARACTERISTIC_UUID = "7b7f0002-7c3a-4f6a-9f8e-1f2b3c4d5e6f";
+
+export type ImuData = {
+  ax: number;
+  ay: number;
+  az: number;
+  gx: number;
+  gy: number;
+  gz: number;
+};
 
 // =====================================================
 // SCAN BLE
@@ -184,10 +199,106 @@ export async function connectToRepMotionDevice(
 // =====================================================
 // ARRÊT DU SCAN
 // =====================================================
+function parseMotionPayload(payload: string): ImuData | null {
+  const values: Partial<ImuData> = {};
 
+  const parts = payload.split(",");
+
+  for (const part of parts) {
+    const [key, rawValue] = part.split("=");
+
+    if (!key || rawValue === undefined) {
+      return null;
+    }
+
+    const value = Number(rawValue);
+
+    if (Number.isNaN(value)) {
+      return null;
+    }
+
+    if (
+      key === "ax" ||
+      key === "ay" ||
+      key === "az" ||
+      key === "gx" ||
+      key === "gy" ||
+      key === "gz"
+    ) {
+      values[key] = value;
+    }
+  }
+
+  return {
+    ax: values.ax ?? 0,
+    ay: values.ay ?? 0,
+    az: values.az ?? 0,
+    gx: values.gx ?? 0,
+    gy: values.gy ?? 0,
+    gz: values.gz ?? 0,
+  };
+}
+
+export function startMotionStream(
+  onData: (data: ImuData) => void,
+  onError?: (error: unknown) => void,
+): void {
+  if (!connectedRepMotionDevice) {
+    const error = new Error("No connected RepMotion device.");
+    console.log("[BLE] Motion stream error:", error.message);
+    onError?.(error);
+    return;
+  }
+
+  console.log("[BLE] Starting motion stream...");
+
+  motionStreamSubscription?.remove();
+
+  motionStreamSubscription =
+    connectedRepMotionDevice.monitorCharacteristicForService(
+      MOTION_SERVICE_UUID,
+      MOTION_DATA_CHARACTERISTIC_UUID,
+      (error, characteristic) => {
+        if (error) {
+          console.log("[BLE] Motion stream error:", error);
+          onError?.(error);
+          return;
+        }
+
+        if (!characteristic?.value) {
+          return;
+        }
+
+        const payload = Buffer.from(characteristic.value, "base64").toString(
+          "utf-8",
+        );
+
+        console.log("[BLE] Motion payload:", payload);
+
+        const parsedData = parseMotionPayload(payload);
+
+        if (!parsedData) {
+          console.log("[BLE] Invalid motion payload:", payload);
+          return;
+        }
+
+        console.log("[BLE] Parsed IMU data:", parsedData);
+        onData(parsedData);
+      },
+    );
+}
+
+export function stopMotionStream(): void {
+  console.log("[BLE] Stopping motion stream...");
+
+  motionStreamSubscription?.remove();
+  motionStreamSubscription = null;
+}
 
 export async function disconnectRepMotionDevice(): Promise<void> {
   console.log("[BLE] Disconnecting RepMotion device...");
+
+  stopMotionStream();
 
   if (!connectedRepMotionDevice) {
     console.log("[BLE] No connected RepMotion device to disconnect");
