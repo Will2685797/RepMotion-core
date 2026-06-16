@@ -38,7 +38,41 @@ export type ImuData = {
   gx: number;
   gy: number;
   gz: number;
+  reps?: number;
 };
+
+type RepPosition = "UNKNOWN" | "BOTTOM" | "TOP";
+
+let repCount = 0;
+let repPosition: RepPosition = "UNKNOWN";
+let lastRepTimestamp = 0;
+
+// On teste AY en premier.
+// Ensuite on changera seulement cette ligne pour "ax" ou "az".
+const TEST_AXIS: keyof Pick<ImuData, "ax" | "ay" | "az"> = "ay";
+
+const LOW_THRESHOLD = 800;
+const HIGH_THRESHOLD = 2200;
+const MIN_REP_INTERVAL_MS = 700;
+
+function updateRepDetector(data: ImuData): number {
+  const value = data[TEST_AXIS];
+  const now = Date.now();
+
+  if (value < LOW_THRESHOLD) {
+    repPosition = "BOTTOM";
+  }
+
+  const canCountNewRep = now - lastRepTimestamp > MIN_REP_INTERVAL_MS;
+
+  if (value > HIGH_THRESHOLD && repPosition === "BOTTOM" && canCountNewRep) {
+    repCount += 1;
+    repPosition = "TOP";
+    lastRepTimestamp = now;
+  }
+
+  return repCount;
+}
 
 // =====================================================
 // SCAN BLE
@@ -282,8 +316,23 @@ export function startMotionStream(
           return;
         }
 
-        console.log("[BLE] Parsed IMU data:", parsedData);
-        onData(parsedData);
+        const reps = updateRepDetector(parsedData);
+
+        const dataWithReps: ImuData = {
+          ...parsedData,
+          reps,
+        };
+
+        console.log("[REP DEBUG]", {
+          axis: TEST_AXIS,
+          value: parsedData[TEST_AXIS],
+          position: repPosition,
+          reps,
+          ax: parsedData.ax,
+          ay: parsedData.ay,
+          az: parsedData.az,
+        });
+        onData(dataWithReps);
       },
     );
 }

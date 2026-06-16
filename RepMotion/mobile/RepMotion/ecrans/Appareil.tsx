@@ -18,6 +18,7 @@ import {
 } from "../services/ble/bleService";
 
 import { Ionicons } from "@expo/vector-icons";
+import { useImuStore } from "../store/imuStore";
 
 type SettingRowProps = {
   label: string;
@@ -80,6 +81,8 @@ export default function Appareil() {
     gz: 0,
   });
 
+  const setGlobalImuData = useImuStore((state) => state.setImuData);
+
   const handleConnect = async () => {
     console.log("[BLE] Connect button pressed");
 
@@ -120,6 +123,7 @@ export default function Appareil() {
           startMotionStream(
             (data) => {
               setImuData(data);
+              setGlobalImuData(data);
             },
             (error) => {
               console.log("[BLE] Motion stream error from Appareil:", error);
@@ -263,6 +267,7 @@ export default function Appareil() {
         />
       </View>
     </ScrollView>
+    
   );
 }
 
