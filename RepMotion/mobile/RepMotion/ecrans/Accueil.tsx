@@ -30,6 +30,9 @@ import { useWeightConfiguratorStore } from "../store/weightConfiguratorStore";
 
 import { getDb } from "../db/db";
 import { useAnalysisStore } from "../store/analysisStore";
+
+import { useImuStore } from "../store/imuStore";
+
 import {
   createSession,
   getActiveSession,
@@ -51,6 +54,10 @@ export default function Accueil() {
   const navigation = useNavigation<any>();
 
   const [reps, setReps] = useState(0);
+
+  const liveImuData = useImuStore((state) => state.imuData);
+  const liveReps = liveImuData?.reps ?? reps;
+
   const [phase, setPhase] = useState<"concentric" | "eccentric">("concentric");
 
   const isRunning = useAnalysisStore((s) => s.isRunning);
@@ -234,7 +241,7 @@ export default function Accueil() {
         setLabel: t("home.setLabel", { number: currentSetNumber }),
         exercise,
         weightKg: loadKg,
-        reps: reps || 8,
+        reps: liveReps || 8,
         avgVelocity: avg,
         maxVelocity: max,
         bestRep: 1,
@@ -246,10 +253,10 @@ export default function Accueil() {
         formDescription: "Analyse simulée de la série.",
         declineText: "Légère baisse de vitesse sur les dernières reps.",
         stickingPointText: "Sticking point détecté au milieu du mouvement",
-        stickingPointRep: Math.max(1, Math.min(reps || 8, 6)),
+        stickingPointRep: Math.max(1, Math.min(liveReps || 8, 6)),
         stickingPointPercent: 0.36,
         velocities: series
-          .slice(0, reps || 8)
+          .slice(0, liveReps || 8)
           .map((point) => Number(point.v.toFixed(2))),
       };
 
@@ -406,7 +413,7 @@ export default function Accueil() {
         </View>
 
         <View style={styles.analysisZone}>
-          <RepCounterRing reps={reps} />
+          <RepCounterRing reps={liveReps} />
 
           <View style={styles.phaseRow}>
             <View style={styles.dot} />
@@ -455,6 +462,51 @@ export default function Accueil() {
             setShowSetModal(false);
           }}
         />
+        {/* -------------------------debug----------------------------- */}
+        <View
+          style={{
+            marginTop: 24,
+            padding: 16,
+            borderRadius: 16,
+            backgroundColor: "#111827",
+            borderWidth: 1,
+            borderColor: "#334155",
+          }}
+        >
+          <Text
+            style={{
+              color: "#ffffff",
+              fontSize: 18,
+              fontWeight: "700",
+              marginBottom: 12,
+            }}
+          >
+            DEBUG IMU
+          </Text>
+
+          <Text style={{ color: "#ffffff" }}>AX : {liveImuData?.ax ?? 0}</Text>
+          <Text style={{ color: "#ffffff" }}>AY : {liveImuData?.ay ?? 0}</Text>
+          <Text style={{ color: "#ffffff" }}>AZ : {liveImuData?.az ?? 0}</Text>
+
+          <Text style={{ color: "#ffffff", marginTop: 8 }}>
+            GX : {liveImuData?.gx ?? 0}
+          </Text>
+          <Text style={{ color: "#ffffff" }}>GY : {liveImuData?.gy ?? 0}</Text>
+          <Text style={{ color: "#ffffff" }}>GZ : {liveImuData?.gz ?? 0}</Text>
+
+          <Text
+            style={{
+              color: "#22c55e",
+              fontSize: 22,
+              fontWeight: "800",
+              marginTop: 12,
+            }}
+          >
+            REPS : {liveImuData?.reps ?? 0}
+          </Text>
+        </View>
+
+        {/* -------------------------debug----------------------------- */}
       </ScrollView>
 
       <View style={styles.fixedActionBar}>
