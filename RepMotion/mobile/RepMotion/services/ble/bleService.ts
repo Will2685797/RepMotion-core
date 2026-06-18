@@ -51,8 +51,6 @@ let lastRepTimestamp = 0;
 // Ensuite on changera seulement cette ligne pour "ax" ou "az".
 const TEST_AXIS: keyof Pick<ImuData, "ax" | "ay" | "az"> = "ay";
 
-const REQUIRED_MOTION_KEYS = ["ax", "ay", "az", "gx", "gy", "gz"] as const;
-
 let receivedSamples = 0;
 let validSamples = 0;
 let invalidSamples = 0;
@@ -239,68 +237,49 @@ export async function connectToRepMotionDevice(
 // =====================================================
 // PARSING PAYLOAD IMU
 // =====================================================
-function getMissingMotionFields(values: Partial<ImuData>): string[] {
-  return REQUIRED_MOTION_KEYS.filter((key) => values[key] === undefined);
-}
-
 function parseMotionPayload(payload: string): ImuData | null {
-  const values: Partial<ImuData> = {};
-
   const parts = payload.split(",");
 
-  for (const part of parts) {
-    const [key, rawValue] = part.split("=");
-
-    if (!key || rawValue === undefined) {
-      console.log("[BLE] Invalid motion payload part:", {
-        payload,
-        part,
-        reason: "missing key or value",
-      });
-      return null;
-    }
-    const value = Number(rawValue);
-
-    if (Number.isNaN(value)) {
-      console.log("[BLE] Invalid motion payload value:", {
-        payload,
-        key,
-        rawValue,
-        reason: "value is NaN",
-      });
-      return null;
-    }
-
-    if (
-      key === "ax" ||
-      key === "ay" ||
-      key === "az" ||
-      key === "gx" ||
-      key === "gy" ||
-      key === "gz"
-    ) {
-      values[key] = value;
-    }
-  }
-
-  const missingFields = getMissingMotionFields(values);
-
-  if (missingFields.length > 0) {
+  if (parts.length !== 3) {
     console.log("[BLE] Invalid motion payload missing fields:", {
       payload,
-      missingFields,
-      presentFields: Object.keys(values),
+      expectedFields: ["ax", "ay", "az"],
+      receivedParts: parts.length,
+      reason: "expected compact accel payload: ax,ay,az",
     });
     return null;
+  }
+
+  const [rawAx, rawAy, rawAz] = parts;
+  const rawValues = [rawAx, rawAy, rawAz];
+  const axes = ["ax", "ay", "az"] as const;
+  const values: Partial<Pick<ImuData, "ax" | "ay" | "az">> = {};
+
+  for (let index = 0; index < rawValues.length; index += 1) {
+    const rawValue = rawValues[index].trim();
+    const axis = axes[index];
+    const value = Number(rawValue);
+
+    if (rawValue.length === 0 || !Number.isFinite(value)) {
+      console.log("[BLE] Invalid motion payload value:", {
+        payload,
+        axis,
+        rawValue,
+        reason: "value is not a finite number",
+      });
+      return null;
+    }
+
+    values[axis] = value;
   }
 
   return {
     ax: values.ax ?? 0,
     ay: values.ay ?? 0,
     az: values.az ?? 0,
-    gx: values.gx ?? 0,
-    gy: values.gy ?? 0,
-    gz: values.gz ?? 0,
+    gx: 0,
+    gy: 0,
+    gz: 0,
   };
 }
 
