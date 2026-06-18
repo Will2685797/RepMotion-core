@@ -51,6 +51,12 @@ let lastRepTimestamp = 0;
 // Ensuite on changera seulement cette ligne pour "ax" ou "az".
 const TEST_AXIS: keyof Pick<ImuData, "ax" | "ay" | "az"> = "ay";
 
+const REQUIRED_MOTION_KEYS = ["ax", "ay", "az", "gx", "gy", "gz"] as const;
+
+let receivedSamples = 0;
+let validSamples = 0;
+let invalidSamples = 0;
+
 const LOW_THRESHOLD = 800;
 const HIGH_THRESHOLD = 2200;
 const MIN_REP_INTERVAL_MS = 700;
@@ -231,8 +237,12 @@ export async function connectToRepMotionDevice(
 }
 
 // =====================================================
-// ARRÊT DU SCAN
+// PARSING PAYLOAD IMU
 // =====================================================
+function getMissingMotionFields(values: Partial<ImuData>): string[] {
+  return REQUIRED_MOTION_KEYS.filter((key) => values[key] === undefined);
+}
+
 function parseMotionPayload(payload: string): ImuData | null {
   const values: Partial<ImuData> = {};
 
@@ -242,12 +252,22 @@ function parseMotionPayload(payload: string): ImuData | null {
     const [key, rawValue] = part.split("=");
 
     if (!key || rawValue === undefined) {
+      console.log("[BLE] Invalid motion payload part:", {
+        payload,
+        part,
+        reason: "missing key or value",
+      });
       return null;
     }
-
     const value = Number(rawValue);
 
     if (Number.isNaN(value)) {
+      console.log("[BLE] Invalid motion payload value:", {
+        payload,
+        key,
+        rawValue,
+        reason: "value is NaN",
+      });
       return null;
     }
 
@@ -261,6 +281,17 @@ function parseMotionPayload(payload: string): ImuData | null {
     ) {
       values[key] = value;
     }
+  }
+
+  const missingFields = getMissingMotionFields(values);
+
+  if (missingFields.length > 0) {
+    console.log("[BLE] Invalid motion payload missing fields:", {
+      payload,
+      missingFields,
+      presentFields: Object.keys(values),
+    });
+    return null;
   }
 
   return {
@@ -307,14 +338,35 @@ export function startMotionStream(
           "utf-8",
         );
 
-        console.log("[BLE] Motion payload:", payload);
+        receivedSamples += 1;
+
+        console.log("[BLE] Motion payload:", {
+          payload,
+          length: payload.length,
+        });
 
         const parsedData = parseMotionPayload(payload);
 
         if (!parsedData) {
-          console.log("[BLE] Invalid motion payload:", payload);
+          invalidSamples += 1;
+
+          console.log("[BLE] Invalid motion payload:", {
+            payload,
+            length: payload.length,
+          });
+
+          if (receivedSamples % 20 === 0) {
+            console.log("[BLE] Motion stream stats:", {
+              receivedSamples,
+              validSamples,
+              invalidSamples,
+            });
+          }
+
           return;
         }
+
+        validSamples += 1;
 
         const reps = updateRepDetector(parsedData);
 
@@ -332,6 +384,15 @@ export function startMotionStream(
           ay: parsedData.ay,
           az: parsedData.az,
         });
+
+        if (receivedSamples % 20 === 0) {
+          console.log("[BLE] Motion stream stats:", {
+            receivedSamples,
+            validSamples,
+            invalidSamples,
+            repCount,
+          });
+        }
         onData(dataWithReps);
       },
     );
