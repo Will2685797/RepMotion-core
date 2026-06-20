@@ -58,7 +58,7 @@ void initBleService() {
     );
 
     motionDataCharacteristic->addDescriptor(new BLE2902());
-    motionDataCharacteristic->setValue("ax=0,ay=0,az=0,gx=0,gy=0,gz=0");
+    motionDataCharacteristic->setValue("0,0,0");
 
     motionService->start();
 
@@ -81,18 +81,15 @@ void updateMotionDataCharacteristic(const Mpu6050RawData& data) {
         return;
     }
 
-    char payload[96];
+    char payload[32];
 
     snprintf(
         payload,
         sizeof(payload),
-        "ax=%d,ay=%d,az=%d,gx=%d,gy=%d,gz=%d",
+        "%d,%d,%d",
         data.accelX,
         data.accelY,
-        data.accelZ,
-        data.gyroX,
-        data.gyroY,
-        data.gyroZ
+        data.accelZ
     );
 
     motionDataCharacteristic->setValue(payload);

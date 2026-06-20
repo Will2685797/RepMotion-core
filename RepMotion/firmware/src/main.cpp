@@ -8,7 +8,7 @@
 
 constexpr int I2C_SDA_PIN = 8;
 constexpr int I2C_SCL_PIN = 9;
-constexpr unsigned long READ_INTERVAL_MS = 500;
+constexpr unsigned long READ_INTERVAL_MS = 50;
 
 unsigned long lastReadMs = 0;
 bool mpuReady = false;
