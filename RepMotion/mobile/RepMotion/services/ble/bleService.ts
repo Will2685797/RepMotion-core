@@ -1,4 +1,4 @@
-import { BleManager, Device, Subscription } from "react-native-ble-plx";
+﻿import { BleManager, Device, Subscription } from "react-native-ble-plx";
 import { Buffer } from "buffer";
 
 // =====================================================
@@ -41,38 +41,135 @@ export type ImuData = {
   reps?: number;
 };
 
-type RepPosition = "UNKNOWN" | "BOTTOM" | "TOP";
+type AxisName = "ax" | "ay" | "az";
+type AxisRange = { min: number; max: number };
+type RepDetectorState = "WAITING_BOTTOM" | "WAITING_TOP";
 
 let repCount = 0;
-let repPosition: RepPosition = "UNKNOWN";
-let lastRepTimestamp = 0;
-
-// On teste AY en premier.
-// Ensuite on changera seulement cette ligne pour "ax" ou "az".
-const TEST_AXIS: keyof Pick<ImuData, "ax" | "ay" | "az"> = "ay";
+let repState: RepDetectorState = "WAITING_BOTTOM";
+let bottomSampleCount = 0;
+let topSampleCount = 0;
+let repLockedUntil = 0;
 
 let receivedSamples = 0;
 let validSamples = 0;
 let invalidSamples = 0;
 
-const LOW_THRESHOLD = 800;
-const HIGH_THRESHOLD = 2200;
-const MIN_REP_INTERVAL_MS = 700;
+const AXES: AxisName[] = ["ax", "ay", "az"];
+const AXIS_DIAG_INTERVAL = 50;
 
-function updateRepDetector(data: ImuData): number {
-  const value = data[TEST_AXIS];
-  const now = Date.now();
+const axisDiagnostics: Record<AxisName, AxisRange> = {
+  ax: { min: Number.POSITIVE_INFINITY, max: Number.NEGATIVE_INFINITY },
+  ay: { min: Number.POSITIVE_INFINITY, max: Number.NEGATIVE_INFINITY },
+  az: { min: Number.POSITIVE_INFINITY, max: Number.NEGATIVE_INFINITY },
+};
 
-  if (value < LOW_THRESHOLD) {
-    repPosition = "BOTTOM";
+const REP_AXIS: AxisName = "az";
+const REP_BOTTOM_THRESHOLD = 17000;
+const REP_TOP_THRESHOLD = 19000;
+const REP_REQUIRED_SAMPLES = 3;
+const REP_LOCK_MS = 1200;
+
+function getAxisStats(axis: AxisName) {
+  const stats = axisDiagnostics[axis];
+
+  return {
+    min: stats.min,
+    max: stats.max,
+    amplitude: stats.max - stats.min,
+  };
+}
+
+function updateAxisDiagnostics(data: ImuData): void {
+  for (const axis of AXES) {
+    const value = data[axis];
+    const stats = axisDiagnostics[axis];
+
+    stats.min = Math.min(stats.min, value);
+    stats.max = Math.max(stats.max, value);
   }
 
-  const canCountNewRep = now - lastRepTimestamp > MIN_REP_INTERVAL_MS;
+  if (validSamples % AXIS_DIAG_INTERVAL !== 0) {
+    return;
+  }
 
-  if (value > HIGH_THRESHOLD && repPosition === "BOTTOM" && canCountNewRep) {
-    repCount += 1;
-    repPosition = "TOP";
-    lastRepTimestamp = now;
+  const axisStats = {
+    ax: getAxisStats("ax"),
+    ay: getAxisStats("ay"),
+    az: getAxisStats("az"),
+  };
+
+  const dominantAxis = AXES.reduce((currentDominant, axis) =>
+    axisStats[axis].amplitude > axisStats[currentDominant].amplitude
+      ? axis
+      : currentDominant,
+  );
+
+  console.log("[IMU AXIS DIAG]", {
+    samples: validSamples,
+    ...axisStats,
+    dominantAxis,
+  });
+}
+
+function logRepV2Diagnostics(value: number): void {
+  if (validSamples % AXIS_DIAG_INTERVAL !== 0) {
+    return;
+  }
+
+  console.log("[REP V2 DIAG]", {
+    state: repState,
+    reps: repCount,
+    az: value,
+    bottomThreshold: REP_BOTTOM_THRESHOLD,
+    topThreshold: REP_TOP_THRESHOLD,
+  });
+}
+
+function updateRepDetector(data: ImuData): number {
+  const value = data[REP_AXIS];
+  const now = Date.now();
+
+  logRepV2Diagnostics(value);
+
+  if (now < repLockedUntil) {
+    return repCount;
+  }
+
+  if (repState === "WAITING_BOTTOM") {
+    topSampleCount = 0;
+
+    if (value <= REP_BOTTOM_THRESHOLD) {
+      bottomSampleCount += 1;
+    } else {
+      bottomSampleCount = 0;
+    }
+
+    if (bottomSampleCount >= REP_REQUIRED_SAMPLES) {
+      bottomSampleCount = 0;
+      repState = "WAITING_TOP";
+    }
+
+    return repCount;
+  }
+
+  if (repState === "WAITING_TOP") {
+    bottomSampleCount = 0;
+
+    if (value >= REP_TOP_THRESHOLD) {
+      topSampleCount += 1;
+    } else {
+      topSampleCount = 0;
+    }
+
+    if (topSampleCount >= REP_REQUIRED_SAMPLES) {
+      repCount += 1;
+      topSampleCount = 0;
+      repState = "WAITING_BOTTOM";
+      repLockedUntil = now + REP_LOCK_MS;
+    }
+
+    return repCount;
   }
 
   return repCount;
@@ -319,11 +416,6 @@ export function startMotionStream(
 
         receivedSamples += 1;
 
-        console.log("[BLE] Motion payload:", {
-          payload,
-          length: payload.length,
-        });
-
         const parsedData = parseMotionPayload(payload);
 
         if (!parsedData) {
@@ -347,22 +439,13 @@ export function startMotionStream(
 
         validSamples += 1;
 
+        updateAxisDiagnostics(parsedData);
         const reps = updateRepDetector(parsedData);
 
         const dataWithReps: ImuData = {
           ...parsedData,
           reps,
         };
-
-        console.log("[REP DEBUG]", {
-          axis: TEST_AXIS,
-          value: parsedData[TEST_AXIS],
-          position: repPosition,
-          reps,
-          ax: parsedData.ax,
-          ay: parsedData.ay,
-          az: parsedData.az,
-        });
 
         if (receivedSamples % 20 === 0) {
           console.log("[BLE] Motion stream stats:", {
