@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useAnalysisStore } from "../store/analysisStore";
 import {
   View,
   Text,
@@ -16,41 +17,35 @@ export default function CalibrationSetupScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
-  const {
-    exercise,
-    loadKg,
-    isCalibrated,
-    onCalibrationSuccess,
-  } = route.params || {};
+  const startCalibration = useAnalysisStore((state) => state.startCalibration);
+  const finishCalibration = useAnalysisStore(
+    (state) => state.finishCalibration,
+  );
+  const saveCalibration = useAnalysisStore((state) => state.saveCalibration);
+  const calibrationSamples = useAnalysisStore(
+    (state) => state.calibrationSamples,
+  );
+  const calibrationResult = useAnalysisStore(
+    (state) => state.calibrationResult,
+  );
+
+  const { exercise, loadKg, isCalibrated, onCalibrationSuccess } =
+    route.params || {};
 
   const [phase, setPhase] = useState<Phase>("ready");
-  const [repCount, setRepCount] = useState(0);
-
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const isRecording = phase === "recording";
   const isSuccess = phase === "success";
-
-  useEffect(() => {
-    if (!isRecording) return;
-
-    setRepCount(0);
-
-    const interval = setInterval(() => {
-      setRepCount((prev) => {
-        const next = prev + 1;
-
-        if (next >= 10) {
-          setPhase("success");
-          return next;
-        }
-
-        return next;
-      });
-    }, 800);
-
-    return () => clearInterval(interval);
-  }, [isRecording]);
+  const currentAzValues = calibrationSamples.map((sample) => sample.az);
+  const currentMinAz =
+    currentAzValues.length > 0 ? Math.min(...currentAzValues) : 0;
+  const currentMaxAz =
+    currentAzValues.length > 0 ? Math.max(...currentAzValues) : 0;
+  const currentRangeAz = currentMaxAz - currentMinAz;
+  const hasEnoughSamples = calibrationSamples.length >= 100;
+  const hasEnoughAmplitude = currentRangeAz >= 5000;
+  const isCalibrationDataSufficient = hasEnoughSamples && hasEnoughAmplitude;
 
   useEffect(() => {
     if (!isRecording) {
@@ -100,14 +95,28 @@ export default function CalibrationSetupScreen() {
 
   const handleStart = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setRepCount(0);
+
+    startCalibration();
     setPhase("recording");
+
+    console.log("[CALIBRATION UI] Started");
   };
 
   const handleStop = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    if (repCount >= 5) {
+    const sampleCount = calibrationSamples.length;
+    const result = finishCalibration();
+    const exerciseId =
+      typeof exercise === "string" ? exercise : exercise?.id;
+
+    console.log("[CALIBRATION UI] Finished", result);
+
+    if (result?.isValid) {
+      if (exerciseId) {
+        saveCalibration(exerciseId, result);
+      }
+
       setPhase("success");
       return;
     }
@@ -140,10 +149,7 @@ export default function CalibrationSetupScreen() {
           ]}
         >
           <View
-            style={[
-              styles.circleOuter,
-              isSuccess && styles.circleOuterSuccess,
-            ]}
+            style={[styles.circleOuter, isSuccess && styles.circleOuterSuccess]}
           >
             <View
               style={[
@@ -166,20 +172,24 @@ export default function CalibrationSetupScreen() {
           {isSuccess ? (
             <>
               <Text style={styles.repOkText}>Calibration terminée ✔</Text>
-              <Text style={styles.readyText}>
-                Retour à l’accueil...
-              </Text>
+              <Text style={styles.readyText}>Retour à l’accueil...</Text>
             </>
           ) : isRecording ? (
             <>
-              <Text style={styles.repCountText}>Reps détectées : {repCount}</Text>
+              <Text style={styles.repCountText}>
+                Samples capturés : {calibrationSamples.length}
+              </Text>
 
-              {repCount < 5 ? (
-                <Text style={styles.repHintText}>
-                  Minimum 5 répétitions requises
-                </Text>
+              <Text style={styles.repHintText}>
+                Amplitude détectée : {currentRangeAz.toFixed(0)}
+              </Text>
+
+              {isCalibrationDataSufficient ? (
+                <Text style={styles.repOkText}>Amplitude suffisante ✔</Text>
               ) : (
-                <Text style={styles.repOkText}>Calibration suffisante ✔</Text>
+                <Text style={styles.repHintText}>
+                  Fais 5 à 10 répétitions propres
+                </Text>
               )}
             </>
           ) : (
@@ -192,19 +202,21 @@ export default function CalibrationSetupScreen() {
         <View style={styles.infoBlock}>
           {isSuccess ? (
             <>
-              <Text style={styles.infoLineActive}>
-                {repCount} répétitions retenues
-              </Text>
               <Text style={styles.infoLineMuted}>
-                Modèle de calibration créé
+                Bottom: {calibrationResult?.bottomThreshold.toFixed(0)} · Top:{" "}
+                {calibrationResult?.topThreshold.toFixed(0)}
               </Text>
             </>
           ) : !isRecording ? (
             <>
-              <Text style={styles.infoLine}>1. Fixe le capteur sur la barre</Text>
+              <Text style={styles.infoLine}>
+                1. Fixe le capteur sur la barre
+              </Text>
               <Text style={styles.infoLine}>2. Place-toi correctement</Text>
               <Text style={styles.infoLine}>3. Reste stable 1–2 secondes</Text>
-              <Text style={styles.infoLine}>4. Fais 5 à 10 répétitions propres</Text>
+              <Text style={styles.infoLine}>
+                4. Fais 5 à 10 répétitions propres
+              </Text>
               <Text style={styles.infoLine}>5. Reracke puis arrête</Text>
             </>
           ) : (
@@ -230,9 +242,7 @@ export default function CalibrationSetupScreen() {
           </Pressable>
         ) : isRecording ? (
           <Pressable style={styles.primaryButton} onPress={handleStop}>
-            <Text style={styles.primaryButtonText}>
-              Arrêter la calibration
-            </Text>
+            <Text style={styles.primaryButtonText}>Arrêter la calibration</Text>
           </Pressable>
         ) : (
           <View style={styles.primaryButtonDisabled}>

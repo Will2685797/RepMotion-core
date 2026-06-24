@@ -62,6 +62,7 @@ export default function Accueil() {
 
   const isRunning = useAnalysisStore((s) => s.isRunning);
   const setIsRunning = useAnalysisStore((s) => s.setIsRunning);
+  const setActiveExerciseId = useAnalysisStore((s) => s.setActiveExerciseId);
 
   const storeExercise = useWeightConfiguratorStore((s) => s.selectedExercise);
   const storeWeightKg = useWeightConfiguratorStore((s) => s.selectedWeightKg);
@@ -73,6 +74,10 @@ export default function Accueil() {
   const [activeSession, setActiveSession] = useState<any | null>(null);
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
   const { t, i18n } = useTranslation();
+  const selectedExerciseId = exercise;
+  const isExerciseCalibrated = useAnalysisStore((s) =>
+    selectedExerciseId ? s.hasCalibration(selectedExerciseId) : false,
+  );
 
   // MOCK TEMPORAIRE
   const [calibrations, setCalibrations] = useState<CalibrationMap>({
@@ -88,7 +93,7 @@ export default function Accueil() {
   const isExerciseDisabled = isRunning;
 
   const calibrationInfo = exercise ? calibrations[exercise] : undefined;
-  const isCalibrated = !!calibrationInfo?.isCalibrated;
+  const isCalibrated = isExerciseCalibrated;
 
   const showEndButton = !!activeSession && !isRunning;
   const showCalibrationRow = !!exercise && !isRunning;
@@ -224,6 +229,7 @@ export default function Accueil() {
         }
 
         setActiveSession(session);
+        setActiveExerciseId(exercise);
         setIsRunning(true);
         setReps(0);
         setPhase("concentric");
@@ -234,6 +240,7 @@ export default function Accueil() {
 
       if (!session) {
         setIsRunning(false);
+        setActiveExerciseId(null);
         return;
       }
 
@@ -266,6 +273,7 @@ export default function Accueil() {
       setActiveSession(updatedSession);
       setCurrentSetNumber((updatedSession?.sets?.length ?? 0) + 1);
       setIsRunning(false);
+      setActiveExerciseId(null);
     } catch (error) {
       console.error("Erreur handleStartStop :", error);
     }
@@ -360,29 +368,6 @@ export default function Accueil() {
 
           {showCalibrationRow && (
             <View style={styles.calibrationRow}>
-              <Text
-                style={[
-                  styles.calibrationText,
-                  isCalibrated
-                    ? styles.calibrationTextCalibrated
-                    : styles.calibrationTextRequired,
-                ]}
-              >
-                {isCalibrated
-                  ? `${t("home.calibration.calibrated")}${
-                      calibrationInfo?.quality
-                        ? ` · ${t(`home.calibration.quality.${calibrationInfo.quality}`)}`
-                        : ""
-                    }${
-                      calibrationInfo?.validRepCount
-                        ? ` · ${t("home.calibration.validReps", {
-                            count: calibrationInfo.validRepCount,
-                          })}`
-                        : ""
-                    }`
-                  : t("home.calibration.required")}
-              </Text>
-
               <Animated.View
                 style={[
                   styles.calibrationGlowWrap,
@@ -513,7 +498,7 @@ export default function Accueil() {
         <StartButton
           isRunning={isRunning}
           onPress={handleStartStop}
-          disabled={!exercise || !isCalibrated}
+          disabled={!exercise || !loadKg || !isExerciseCalibrated}
         />
       </View>
     </View>
@@ -570,7 +555,7 @@ const styles = StyleSheet.create({
     minHeight: 22,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     paddingLeft: 6,
     marginBottom: 4,
   },
