@@ -1,4 +1,5 @@
 ﻿import { BleManager, Device, Subscription } from "react-native-ble-plx";
+import { useAnalysisStore } from "../../store/analysisStore";
 import { Buffer } from "buffer";
 
 // =====================================================
@@ -438,6 +439,12 @@ export function startMotionStream(
         }
 
         validSamples += 1;
+
+        const analysisStore = useAnalysisStore.getState();
+
+        if (analysisStore.isCalibrating) {
+          analysisStore.addCalibrationSample(parsedData);
+        }
 
         updateAxisDiagnostics(parsedData);
         const reps = updateRepDetector(parsedData);

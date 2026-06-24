@@ -73,6 +73,10 @@ export default function Accueil() {
   const [activeSession, setActiveSession] = useState<any | null>(null);
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
   const { t, i18n } = useTranslation();
+  const selectedExerciseId = exercise;
+  const isExerciseCalibrated = useAnalysisStore((s) =>
+    selectedExerciseId ? s.hasCalibration(selectedExerciseId) : false,
+  );
 
   // MOCK TEMPORAIRE
   const [calibrations, setCalibrations] = useState<CalibrationMap>({
@@ -88,7 +92,7 @@ export default function Accueil() {
   const isExerciseDisabled = isRunning;
 
   const calibrationInfo = exercise ? calibrations[exercise] : undefined;
-  const isCalibrated = !!calibrationInfo?.isCalibrated;
+  const isCalibrated = isExerciseCalibrated;
 
   const showEndButton = !!activeSession && !isRunning;
   const showCalibrationRow = !!exercise && !isRunning;
@@ -513,7 +517,7 @@ export default function Accueil() {
         <StartButton
           isRunning={isRunning}
           onPress={handleStartStop}
-          disabled={!exercise || !isCalibrated}
+          disabled={!exercise || !loadKg || !isExerciseCalibrated}
         />
       </View>
     </View>
