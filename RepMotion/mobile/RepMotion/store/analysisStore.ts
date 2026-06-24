@@ -10,6 +10,9 @@ type AnalysisState = {
   isRunning: boolean;
   setIsRunning: (value: boolean) => void;
 
+  activeExerciseId: string | null;
+  setActiveExerciseId: (exerciseId: string | null) => void;
+
   isCalibrating: boolean;
   calibrationSamples: MotionSample[];
   calibrationResult: CalibrationResult | null;
@@ -19,10 +22,7 @@ type AnalysisState = {
   addCalibrationSample: (sample: MotionSample) => void;
   finishCalibration: () => CalibrationResult | null;
   resetCalibration: () => void;
-  saveCalibration: (
-    exerciseId: string,
-    calibration: CalibrationResult,
-  ) => void;
+  saveCalibration: (exerciseId: string, calibration: CalibrationResult) => void;
   getCalibration: (exerciseId: string) => CalibrationResult | null;
   hasCalibration: (exerciseId: string) => boolean;
 };
@@ -30,6 +30,9 @@ type AnalysisState = {
 export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   isRunning: false,
   setIsRunning: (value) => set({ isRunning: value }),
+
+  activeExerciseId: null,
+  setActiveExerciseId: (exerciseId) => set({ activeExerciseId: exerciseId }),
 
   isCalibrating: false,
   calibrationSamples: [],

@@ -62,6 +62,7 @@ export default function Accueil() {
 
   const isRunning = useAnalysisStore((s) => s.isRunning);
   const setIsRunning = useAnalysisStore((s) => s.setIsRunning);
+  const setActiveExerciseId = useAnalysisStore((s) => s.setActiveExerciseId);
 
   const storeExercise = useWeightConfiguratorStore((s) => s.selectedExercise);
   const storeWeightKg = useWeightConfiguratorStore((s) => s.selectedWeightKg);
@@ -228,6 +229,7 @@ export default function Accueil() {
         }
 
         setActiveSession(session);
+        setActiveExerciseId(exercise);
         setIsRunning(true);
         setReps(0);
         setPhase("concentric");
@@ -238,6 +240,7 @@ export default function Accueil() {
 
       if (!session) {
         setIsRunning(false);
+        setActiveExerciseId(null);
         return;
       }
 
@@ -270,6 +273,7 @@ export default function Accueil() {
       setActiveSession(updatedSession);
       setCurrentSetNumber((updatedSession?.sets?.length ?? 0) + 1);
       setIsRunning(false);
+      setActiveExerciseId(null);
     } catch (error) {
       console.error("Erreur handleStartStop :", error);
     }
@@ -364,29 +368,6 @@ export default function Accueil() {
 
           {showCalibrationRow && (
             <View style={styles.calibrationRow}>
-              <Text
-                style={[
-                  styles.calibrationText,
-                  isCalibrated
-                    ? styles.calibrationTextCalibrated
-                    : styles.calibrationTextRequired,
-                ]}
-              >
-                {isCalibrated
-                  ? `${t("home.calibration.calibrated")}${
-                      calibrationInfo?.quality
-                        ? ` · ${t(`home.calibration.quality.${calibrationInfo.quality}`)}`
-                        : ""
-                    }${
-                      calibrationInfo?.validRepCount
-                        ? ` · ${t("home.calibration.validReps", {
-                            count: calibrationInfo.validRepCount,
-                          })}`
-                        : ""
-                    }`
-                  : t("home.calibration.required")}
-              </Text>
-
               <Animated.View
                 style={[
                   styles.calibrationGlowWrap,
@@ -574,7 +555,7 @@ const styles = StyleSheet.create({
     minHeight: 22,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     paddingLeft: 6,
     marginBottom: 4,
   },

@@ -33,12 +33,19 @@ export default function CalibrationSetupScreen() {
     route.params || {};
 
   const [phase, setPhase] = useState<Phase>("ready");
-  const [repCount, setRepCount] = useState(0);
-
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const isRecording = phase === "recording";
   const isSuccess = phase === "success";
+  const currentAzValues = calibrationSamples.map((sample) => sample.az);
+  const currentMinAz =
+    currentAzValues.length > 0 ? Math.min(...currentAzValues) : 0;
+  const currentMaxAz =
+    currentAzValues.length > 0 ? Math.max(...currentAzValues) : 0;
+  const currentRangeAz = currentMaxAz - currentMinAz;
+  const hasEnoughSamples = calibrationSamples.length >= 100;
+  const hasEnoughAmplitude = currentRangeAz >= 5000;
+  const isCalibrationDataSufficient = hasEnoughSamples && hasEnoughAmplitude;
 
   useEffect(() => {
     if (!isRecording) {
@@ -89,7 +96,6 @@ export default function CalibrationSetupScreen() {
   const handleStart = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    setRepCount(0);
     startCalibration();
     setPhase("recording");
 
@@ -111,7 +117,6 @@ export default function CalibrationSetupScreen() {
         saveCalibration(exerciseId, result);
       }
 
-      setRepCount(Math.round(sampleCount / 20));
       setPhase("success");
       return;
     }
@@ -175,12 +180,16 @@ export default function CalibrationSetupScreen() {
                 Samples capturés : {calibrationSamples.length}
               </Text>
 
-              {calibrationSamples.length < 100 ? (
+              <Text style={styles.repHintText}>
+                Amplitude détectée : {currentRangeAz.toFixed(0)}
+              </Text>
+
+              {isCalibrationDataSufficient ? (
+                <Text style={styles.repOkText}>Amplitude suffisante ✔</Text>
+              ) : (
                 <Text style={styles.repHintText}>
                   Fais 5 à 10 répétitions propres
                 </Text>
-              ) : (
-                <Text style={styles.repOkText}>Calibration suffisante ✔</Text>
               )}
             </>
           ) : (
@@ -193,9 +202,6 @@ export default function CalibrationSetupScreen() {
         <View style={styles.infoBlock}>
           {isSuccess ? (
             <>
-              <Text style={styles.infoLineActive}>
-                {repCount} répétitions retenues
-              </Text>
               <Text style={styles.infoLineMuted}>
                 Bottom: {calibrationResult?.bottomThreshold.toFixed(0)} · Top:{" "}
                 {calibrationResult?.topThreshold.toFixed(0)}

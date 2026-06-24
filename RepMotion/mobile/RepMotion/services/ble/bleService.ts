@@ -46,6 +46,11 @@ type AxisName = "ax" | "ay" | "az";
 type AxisRange = { min: number; max: number };
 type RepDetectorState = "WAITING_BOTTOM" | "WAITING_TOP";
 
+type RepThresholds = {
+  bottomThreshold: number;
+  topThreshold: number;
+};
+
 let repCount = 0;
 let repState: RepDetectorState = "WAITING_BOTTOM";
 let bottomSampleCount = 0;
@@ -70,6 +75,27 @@ const REP_BOTTOM_THRESHOLD = 17000;
 const REP_TOP_THRESHOLD = 19000;
 const REP_REQUIRED_SAMPLES = 3;
 const REP_LOCK_MS = 1200;
+
+function getRepThresholds(): RepThresholds | null {
+  const analysisStore = useAnalysisStore.getState();
+
+  if (!analysisStore.isRunning || !analysisStore.activeExerciseId) {
+    return null;
+  }
+
+  const calibration = analysisStore.getCalibration(
+    analysisStore.activeExerciseId,
+  );
+
+  if (!calibration?.isValid) {
+    return null;
+  }
+
+  return {
+    bottomThreshold: calibration.bottomThreshold,
+    topThreshold: calibration.topThreshold,
+  };
+}
 
 function getAxisStats(axis: AxisName) {
   const stats = axisDiagnostics[axis];
@@ -113,7 +139,10 @@ function updateAxisDiagnostics(data: ImuData): void {
   });
 }
 
-function logRepV2Diagnostics(value: number): void {
+function logRepV2Diagnostics(
+  value: number,
+  thresholds: RepThresholds | null,
+): void {
   if (validSamples % AXIS_DIAG_INTERVAL !== 0) {
     return;
   }
@@ -122,16 +151,24 @@ function logRepV2Diagnostics(value: number): void {
     state: repState,
     reps: repCount,
     az: value,
-    bottomThreshold: REP_BOTTOM_THRESHOLD,
-    topThreshold: REP_TOP_THRESHOLD,
+    bottomThreshold: thresholds?.bottomThreshold ?? REP_BOTTOM_THRESHOLD,
+    topThreshold: thresholds?.topThreshold ?? REP_TOP_THRESHOLD,
+    isUsingCalibration: Boolean(thresholds),
   });
 }
 
 function updateRepDetector(data: ImuData): number {
   const value = data[REP_AXIS];
   const now = Date.now();
+  const thresholds = getRepThresholds();
 
-  logRepV2Diagnostics(value);
+  logRepV2Diagnostics(value, thresholds);
+
+  if (!thresholds) {
+    return repCount;
+  }
+
+  const { bottomThreshold, topThreshold } = thresholds;
 
   if (now < repLockedUntil) {
     return repCount;
@@ -140,7 +177,7 @@ function updateRepDetector(data: ImuData): number {
   if (repState === "WAITING_BOTTOM") {
     topSampleCount = 0;
 
-    if (value <= REP_BOTTOM_THRESHOLD) {
+    if (value <= bottomThreshold) {
       bottomSampleCount += 1;
     } else {
       bottomSampleCount = 0;
@@ -157,7 +194,7 @@ function updateRepDetector(data: ImuData): number {
   if (repState === "WAITING_TOP") {
     bottomSampleCount = 0;
 
-    if (value >= REP_TOP_THRESHOLD) {
+    if (value >= topThreshold) {
       topSampleCount += 1;
     } else {
       topSampleCount = 0;
