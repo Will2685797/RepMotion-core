@@ -22,7 +22,8 @@ const TOP_ZONE_RATIO = 0.7;
 const BOTTOM_THRESHOLD_RATIO = 0.3;
 const TOP_THRESHOLD_RATIO = 0.6;
 
-const MIN_VALID_RANGE = 5000;
+const MIN_ABSOLUTE_SAFETY_RANGE = 1500;
+const MIN_ROBUST_RANGE_RATIO = 0.25;
 const REQUIRED_CALIBRATION_REPS = 5;
 const PEAK_WINDOW_SIZE = 3;
 const CALIBRATION_AXES: CalibrationAxis[] = ["ax", "ay", "az"];
@@ -222,6 +223,12 @@ export function calculateCalibration(
   const p75 = percentile(values, 0.75);
   const p90 = percentile(values, 0.9);
 
+  const robustRange = p90 - p10;
+  const dynamicMinRange = Math.max(
+    MIN_ABSOLUTE_SAFETY_RANGE,
+    robustRange * MIN_ROBUST_RANGE_RATIO,
+  );
+
   const saturationCount = values.filter(
     (value) => Math.abs(value) >= 32000,
   ).length;
@@ -245,7 +252,7 @@ export function calculateCalibration(
 
   const hasEnoughBottoms = bottoms.length >= REQUIRED_CALIBRATION_REPS;
   const hasEnoughTops = tops.length >= REQUIRED_CALIBRATION_REPS;
-  const hasValidRange = range >= MIN_VALID_RANGE;
+  const hasValidRange = range >= dynamicMinRange;
 
   console.log("[CALIBRATION DEBUG]", {
     axis: selectedAxis,
@@ -267,6 +274,9 @@ export function calculateCalibration(
     globalMin,
     globalMax,
     globalRange,
+
+    robustRange,
+    dynamicMinRange,
 
     saturationCount,
     saturationRatio: saturationCount / values.length,
