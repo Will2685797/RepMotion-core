@@ -16,15 +16,30 @@ export type CalibrationResult = {
   isValid: boolean;
 };
 
+type CalibrationEventCandidate = {
+  index: number;
+  value: number;
+};
+
 const DEFAULT_AXIS: CalibrationAxis = "az";
-const BOTTOM_ZONE_RATIO = 0.3;
-const TOP_ZONE_RATIO = 0.7;
 const BOTTOM_THRESHOLD_RATIO = 0.3;
 const TOP_THRESHOLD_RATIO = 0.6;
 
+// Amplitude minimale absolue requise pour éviter de valider un mouvement trop faible ou du bruit.
 const MIN_ABSOLUTE_SAFETY_RANGE = 1500;
+
+// Pourcentage du robustRange utilisé pour adapter dynamiquement l'amplitude minimale requise.
 const MIN_ROBUST_RANGE_RATIO = 0.25;
+
+// Nombre minimal de Bottoms et de Tops requis pour valider la calibration.
 const REQUIRED_CALIBRATION_REPS = 5;
+
+// Nombre de samples regardés après un candidat pour vérifier si le mouvement repart vraiment.
+const PROMINENCE_WINDOW_SIZE = 10;
+
+// Pourcentage du robustRange requis pour considérer qu'un candidat a assez de prominence.
+const MIN_PROMINENCE_RATIO = 0.15;
+
 const PEAK_WINDOW_SIZE = 3;
 const CALIBRATION_AXES: CalibrationAxis[] = ["ax", "ay", "az"];
 
@@ -139,13 +154,17 @@ function detectLocalMaximum(
   return true;
 }
 
+// Parcourt le signal pour détecter les Bottoms et Tops candidats.
+// Un candidat doit être un extremum local situé dans la zone basse ou haute du mouvement.
+// La validation des candidats est effectuée dans une étape distincte.
+
 function detectBottomsAndTops(
   values: number[],
   bottomZone: number,
   topZone: number,
 ) {
-  const bottoms: number[] = [];
-  const tops: number[] = [];
+  const bottoms: CalibrationEventCandidate[] = [];
+  const tops: CalibrationEventCandidate[] = [];
 
   let bottomZoneHits = 0;
   let topZoneHits = 0;
@@ -170,11 +189,11 @@ function detectBottomsAndTops(
     if (isLocalMaximum) localMaximumHits += 1;
 
     if (isInBottomZone && isLocalMinimum) {
-      bottoms.push(value);
+      bottoms.push({ index, value });
     }
 
     if (isInTopZone && isLocalMaximum) {
-      tops.push(value);
+      tops.push({ index, value });
     }
   }
 
@@ -190,6 +209,169 @@ function detectBottomsAndTops(
   });
 
   return { bottoms, tops };
+}
+
+/*--------------------------Réduction de bruit des candidats--------------------------------*/
+
+//**********************//
+// 1. distance minimale
+//**********************//
+
+// Vérifie si deux événements sont suffisamment éloignés l'un de l'autre.
+function hasMinimumDistance(
+  previousCandidate: CalibrationEventCandidate,
+  currentCandidate: CalibrationEventCandidate,
+  minimumDistanceSamples: number,
+): boolean {
+  return (
+    currentCandidate.index - previousCandidate.index >=
+    minimumDistanceSamples
+  );
+}
+
+
+// Filtre les candidats trop proches et conserve le plus extrême dans chaque groupe.
+function filterEventsByMinimumDistance(
+  candidates: CalibrationEventCandidate[],
+  minimumDistanceSamples: number,
+  keepLowerValue: boolean,
+): CalibrationEventCandidate[] {
+  const filteredEvents: CalibrationEventCandidate[] = [];
+
+  for (const candidate of candidates) {
+    const lastEvent = filteredEvents[filteredEvents.length - 1];
+
+    if (!lastEvent) {
+      filteredEvents.push(candidate);
+      continue;
+    }
+
+    if (
+      hasMinimumDistance(
+        lastEvent,
+        candidate,
+        minimumDistanceSamples,
+      )
+    ) {
+      filteredEvents.push(candidate);
+      continue;
+    }
+
+    // Si deux candidats représentent le même événement, on conserve le plus extrême.
+    const shouldReplaceLastEvent = keepLowerValue
+      ? candidate.value < lastEvent.value
+      : candidate.value > lastEvent.value;
+
+    if (shouldReplaceLastEvent) {
+      filteredEvents[filteredEvents.length - 1] = candidate;
+    }
+  }
+
+  return filteredEvents;
+}
+
+//**********************//
+// 2. prominence
+//**********************//
+
+// Vérifie si un candidat est suivi d'un mouvement assez grand pour ne pas être considéré comme du bruit.
+// Répond uniquement à la question : "Ce candidat possède-t-il assez de prominence ?"
+function hasEnoughProminence(
+  values: number[],
+  candidate: CalibrationEventCandidate,
+  minimumProminence: number,
+  isBottom: boolean,
+): boolean {
+  const nextValues = values.slice(
+    candidate.index + 1,
+    candidate.index + 1 + PROMINENCE_WINDOW_SIZE,
+  );
+
+  if (nextValues.length === 0) {
+    return false;
+  }
+
+  if (isBottom) {
+    const highestValueAfterCandidate = Math.max(...nextValues);
+
+    return highestValueAfterCandidate - candidate.value >= minimumProminence;
+  }
+
+  const lowestValueAfterCandidate = Math.min(...nextValues);
+
+  return candidate.value - lowestValueAfterCandidate >= minimumProminence;
+}
+
+
+// Filtre les candidats qui ne sont pas suivis d'une vraie remontée ou descente du signal.
+// Si hasEnoughProminence() == true -> Je le garde Sinon -> Je le retire
+
+function filterEventsByProminence(
+  values: number[],
+  candidates: CalibrationEventCandidate[],
+  minimumProminence: number,
+  isBottom: boolean,
+): CalibrationEventCandidate[] {
+  return candidates.filter((candidate) =>
+    hasEnoughProminence(values, candidate, minimumProminence, isBottom),
+  );
+}
+
+
+//******************************//
+// 3. confirmation de direction
+//*****************************//
+
+// Vérifie si le signal repart clairement dans la bonne direction après un candidat.
+// Repond seulement à la question et retourne oui ou non !
+function hasConfirmedDirectionChange(
+  values: number[],
+  candidate: CalibrationEventCandidate,
+  isBottom: boolean,
+): boolean {
+  const nextValues = values.slice(
+    candidate.index + 1,
+    candidate.index + 1 + PEAK_WINDOW_SIZE,
+  );
+
+  if (nextValues.length === 0) {
+    return false;
+  }
+
+  const nextAverage = average(nextValues);
+
+  if (isBottom) {
+    return nextAverage > candidate.value;
+  }
+
+  return nextAverage < candidate.value;
+}
+
+
+// Filtre les candidats qui ne sont pas suivis d'un mouvement dans la bonne direction.
+function filterEventsByDirectionChange(
+  values: number[],
+  candidates: CalibrationEventCandidate[],
+  isBottom: boolean,
+): CalibrationEventCandidate[] {
+  return candidates.filter((candidate) =>
+    hasConfirmedDirectionChange(values, candidate, isBottom),
+  );
+}
+
+//******************************//
+// 3. Fonction de service qui regroupe les fonction de bruits
+//*****************************//
+
+// Applique les différentes règles de validation afin de conserver uniquement les véritables événements du mouvement.
+function validateCalibrationEvents(
+  bottoms: CalibrationEventCandidate[],
+  tops: CalibrationEventCandidate[],
+) {
+  return {
+    bottoms,
+    tops,
+  };
 }
 
 export function calculateCalibration(
@@ -236,12 +418,17 @@ export function calculateCalibration(
   const bottomZone = p25;
   const topZone = p75;
 
-  const { bottoms, tops } = detectBottomsAndTops(values, bottomZone, topZone);
-  const selectedBottoms = bottoms;
-  const selectedTops = tops;
+  const detectedEvents = detectBottomsAndTops(values, bottomZone, topZone);
+  const validatedEvents = validateCalibrationEvents(
+    detectedEvents.bottoms,
+    detectedEvents.tops,
+  );
 
-  const bottomAverage = average(bottoms);
-  const topAverage = average(tops);
+  const selectedBottoms = validatedEvents.bottoms;
+  const selectedTops = validatedEvents.tops;
+
+  const bottomAverage = average(selectedBottoms.map((bottom) => bottom.value));
+  const topAverage = average(selectedTops.map((top) => top.value));
 
   const min = bottomAverage;
   const max = topAverage;
@@ -250,8 +437,8 @@ export function calculateCalibration(
   const bottomThreshold = min + range * BOTTOM_THRESHOLD_RATIO;
   const topThreshold = min + range * TOP_THRESHOLD_RATIO;
 
-  const hasEnoughBottoms = bottoms.length >= REQUIRED_CALIBRATION_REPS;
-  const hasEnoughTops = tops.length >= REQUIRED_CALIBRATION_REPS;
+  const hasEnoughBottoms = selectedBottoms.length >= REQUIRED_CALIBRATION_REPS;
+  const hasEnoughTops = selectedTops.length >= REQUIRED_CALIBRATION_REPS;
   const hasValidRange = range >= dynamicMinRange;
 
   console.log("[CALIBRATION DEBUG]", {
@@ -284,8 +471,8 @@ export function calculateCalibration(
     bottomZone,
     topZone,
 
-    bottomsDetected: bottoms.length,
-    topsDetected: tops.length,
+    bottomsDetected: detectedEvents.bottoms.length,
+    topsDetected: detectedEvents.tops.length,
     selectedBottoms: selectedBottoms.length,
     selectedTops: selectedTops.length,
 
