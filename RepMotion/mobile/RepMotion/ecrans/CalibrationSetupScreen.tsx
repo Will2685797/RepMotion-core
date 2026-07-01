@@ -22,6 +22,11 @@ export default function CalibrationSetupScreen() {
     (state) => state.finishCalibration,
   );
   const saveCalibration = useAnalysisStore((state) => state.saveCalibration);
+
+  const setActiveExerciseId = useAnalysisStore(
+    (state) => state.setActiveExerciseId,
+  );
+
   const calibrationSamples = useAnalysisStore(
     (state) => state.calibrationSamples,
   );
@@ -96,6 +101,14 @@ export default function CalibrationSetupScreen() {
   const handleStart = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
+    const exerciseId = typeof exercise === "string" ? exercise : exercise?.id;
+
+    if (!exerciseId) {
+      console.warn("[CALIBRATION UI] No exercise id. Calibration not started.");
+      return;
+    }
+
+    setActiveExerciseId(exerciseId);
     startCalibration();
     setPhase("recording");
 
@@ -107,8 +120,7 @@ export default function CalibrationSetupScreen() {
 
     const sampleCount = calibrationSamples.length;
     const result = finishCalibration();
-    const exerciseId =
-      typeof exercise === "string" ? exercise : exercise?.id;
+    const exerciseId = typeof exercise === "string" ? exercise : exercise?.id;
 
     console.log("[CALIBRATION UI] Finished", result);
 
