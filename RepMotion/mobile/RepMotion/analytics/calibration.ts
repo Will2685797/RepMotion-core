@@ -21,6 +21,17 @@ type CalibrationEventCandidate = {
   value: number;
 };
 
+export type CalibrationDataset = {
+  id: string;
+  exercise: string;
+  expectedReps: number;
+  performedReps?: number;
+  createdAt: string;
+  sampleCount: number;
+  samplingRateHz: number;
+  samples: MotionSample[];
+  notes?: string;
+};
 const DEFAULT_AXIS: CalibrationAxis = "az";
 const BOTTOM_THRESHOLD_RATIO = 0.3;
 const TOP_THRESHOLD_RATIO = 0.6;
@@ -38,7 +49,10 @@ const REQUIRED_CALIBRATION_REPS = 5;
 const PROMINENCE_WINDOW_SIZE = 10;
 
 // Pourcentage du robustRange requis pour considérer qu'un candidat a assez de prominence.
-const MIN_PROMINENCE_RATIO = 0.15;
+const MIN_PROMINENCE_RATIO = 0.25;
+
+// Nombre minimal de samples séparant deux événements pour éviter les doublons.
+const MINIMUM_DISTANCE_SAMPLES = 5;
 
 const PEAK_WINDOW_SIZE = 3;
 const CALIBRATION_AXES: CalibrationAxis[] = ["ax", "ay", "az"];
@@ -224,11 +238,9 @@ function hasMinimumDistance(
   minimumDistanceSamples: number,
 ): boolean {
   return (
-    currentCandidate.index - previousCandidate.index >=
-    minimumDistanceSamples
+    currentCandidate.index - previousCandidate.index >= minimumDistanceSamples
   );
 }
-
 
 // Filtre les candidats trop proches et conserve le plus extrême dans chaque groupe.
 function filterEventsByMinimumDistance(
@@ -246,13 +258,7 @@ function filterEventsByMinimumDistance(
       continue;
     }
 
-    if (
-      hasMinimumDistance(
-        lastEvent,
-        candidate,
-        minimumDistanceSamples,
-      )
-    ) {
+    if (hasMinimumDistance(lastEvent, candidate, minimumDistanceSamples)) {
       filteredEvents.push(candidate);
       continue;
     }
@@ -302,21 +308,48 @@ function hasEnoughProminence(
   return candidate.value - lowestValueAfterCandidate >= minimumProminence;
 }
 
-
 // Filtre les candidats qui ne sont pas suivis d'une vraie remontée ou descente du signal.
 // Si hasEnoughProminence() == true -> Je le garde Sinon -> Je le retire
 
+// Filtre les événements qui ne sont pas suivis d'un mouvement assez fort dans la direction attendue.
 function filterEventsByProminence(
   values: number[],
   candidates: CalibrationEventCandidate[],
   minimumProminence: number,
   isBottom: boolean,
 ): CalibrationEventCandidate[] {
-  return candidates.filter((candidate) =>
-    hasEnoughProminence(values, candidate, minimumProminence, isBottom),
-  );
-}
+  const keptCandidates = candidates.filter((candidate) => {
+    const windowEnd = Math.min(
+      candidate.index + PROMINENCE_WINDOW_SIZE,
+      values.length,
+    );
 
+    const futureValues = values.slice(candidate.index, windowEnd);
+
+    const bestFutureValue = isBottom
+      ? Math.max(...futureValues)
+      : Math.min(...futureValues);
+
+    const prominence = isBottom
+      ? bestFutureValue - candidate.value
+      : candidate.value - bestFutureValue;
+
+    console.log("[PROMINENCE DEBUG]", {
+      type: isBottom ? "bottom" : "top",
+      index: candidate.index,
+      value: candidate.value,
+      bestFutureValue,
+      prominence,
+      minimumProminence,
+      ratio: prominence / minimumProminence,
+      keep: prominence >= minimumProminence,
+    });
+
+    return prominence >= minimumProminence;
+  });
+
+  return keptCandidates;
+}
 
 //******************************//
 // 3. confirmation de direction
@@ -347,7 +380,6 @@ function hasConfirmedDirectionChange(
   return nextAverage < candidate.value;
 }
 
-
 // Filtre les candidats qui ne sont pas suivis d'un mouvement dans la bonne direction.
 function filterEventsByDirectionChange(
   values: number[],
@@ -365,9 +397,50 @@ function filterEventsByDirectionChange(
 
 // Applique les différentes règles de validation afin de conserver uniquement les véritables événements du mouvement.
 function validateCalibrationEvents(
+  values: number[],
+  robustRange: number, // À partir de combien la remontée est-elle suffisante pour la prominence?
   bottoms: CalibrationEventCandidate[],
   tops: CalibrationEventCandidate[],
 ) {
+  const minimumProminence = robustRange * MIN_PROMINENCE_RATIO;
+
+  console.log("[CALIBRATION FILTERS] Initial", {
+    bottoms: bottoms.length,
+    tops: tops.length,
+  });
+
+  bottoms = filterEventsByMinimumDistance(
+    bottoms,
+    MINIMUM_DISTANCE_SAMPLES,
+    true,
+  );
+
+  tops = filterEventsByMinimumDistance(tops, MINIMUM_DISTANCE_SAMPLES, false);
+
+  console.log("[CALIBRATION FILTERS] After Distance", {
+    bottoms: bottoms.length,
+    tops: tops.length,
+  });
+
+  bottoms = filterEventsByProminence(values, bottoms, minimumProminence, true);
+
+  tops = filterEventsByProminence(values, tops, minimumProminence, false);
+
+  console.log("[CALIBRATION FILTERS] After Prominence", {
+    bottoms: bottoms.length,
+    tops: tops.length,
+    minimumProminence,
+  });
+
+  bottoms = filterEventsByDirectionChange(values, bottoms, true);
+
+  tops = filterEventsByDirectionChange(values, tops, false);
+
+  console.log("[CALIBRATION FILTERS] After Direction", {
+    bottoms: bottoms.length,
+    tops: tops.length,
+  });
+
   return {
     bottoms,
     tops,
@@ -420,6 +493,8 @@ export function calculateCalibration(
 
   const detectedEvents = detectBottomsAndTops(values, bottomZone, topZone);
   const validatedEvents = validateCalibrationEvents(
+    values,
+    robustRange,
     detectedEvents.bottoms,
     detectedEvents.tops,
   );
@@ -504,5 +579,28 @@ export function calculateCalibration(
     bottomThreshold,
     topThreshold,
     isValid: hasEnoughBottoms && hasEnoughTops && hasValidRange,
+  };
+}
+
+
+// Crée un dataset JSON réutilisable à partir des samples capturés pendant la calibration.
+export function createCalibrationDataset(
+  samples: MotionSample[],
+  exercise: string,
+  expectedReps: number,
+  samplingRateHz: number,
+  performedReps?: number,
+  notes?: string,
+): CalibrationDataset {
+  return {
+    id: `${exercise}-${expectedReps}reps-${Date.now()}`,
+    exercise,
+    expectedReps,
+    performedReps,
+    createdAt: new Date().toISOString(),
+    sampleCount: samples.length,
+    samplingRateHz,
+    samples,
+    notes,
   };
 }

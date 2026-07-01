@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import {
   calculateCalibration,
+  createCalibrationDataset,
   CalibrationResult,
   MotionSample,
 } from "../analytics/calibration";
@@ -63,6 +64,17 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
     }
 
     const result = calculateCalibration(samples);
+
+    const dataset = createCalibrationDataset(
+      samples,
+      get().activeExerciseId ?? "overhead_press",
+      5,
+      20,
+      5,
+      "manual overhead press calibration capture",
+    );
+
+    console.log("[CALIBRATION DATASET]", JSON.stringify(dataset));
 
     set({
       isCalibrating: false,
