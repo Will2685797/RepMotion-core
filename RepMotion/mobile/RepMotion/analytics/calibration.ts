@@ -14,6 +14,19 @@ export type CalibrationResult = {
   bottomThreshold: number;
   topThreshold: number;
   isValid: boolean;
+
+  debug?: {
+    globalRange: number;
+    robustRange: number;
+    bottomsDetected: number;
+    topsDetected: number;
+    selectedBottoms: number;
+    selectedTops: number;
+    bottomAverage: number;
+    topAverage: number;
+    saturationCount: number;
+    saturationRatio: number;
+  };
 };
 
 type CalibrationEventCandidate = {
@@ -211,16 +224,16 @@ function detectBottomsAndTops(
     }
   }
 
-  console.log("[CALIBRATION PEAK DEBUG]", {
-    bottomZone,
-    topZone,
-    bottomZoneHits,
-    topZoneHits,
-    localMinimumHits,
-    localMaximumHits,
-    bottomsDetected: bottoms.length,
-    topsDetected: tops.length,
-  });
+  //   console.log("[CALIBRATION PEAK DEBUG]", {
+  //     bottomZone,
+  //     topZone,
+  //     bottomZoneHits,
+  //     topZoneHits,
+  //     localMinimumHits,
+  //     localMaximumHits,
+  //     bottomsDetected: bottoms.length,
+  //     topsDetected: tops.length,
+  //   });
 
   return { bottoms, tops };
 }
@@ -334,16 +347,16 @@ function filterEventsByProminence(
       ? bestFutureValue - candidate.value
       : candidate.value - bestFutureValue;
 
-    console.log("[PROMINENCE DEBUG]", {
-      type: isBottom ? "bottom" : "top",
-      index: candidate.index,
-      value: candidate.value,
-      bestFutureValue,
-      prominence,
-      minimumProminence,
-      ratio: prominence / minimumProminence,
-      keep: prominence >= minimumProminence,
-    });
+    // console.log("[PROMINENCE DEBUG]", {
+    //   type: isBottom ? "bottom" : "top",
+    //   index: candidate.index,
+    //   value: candidate.value,
+    //   bestFutureValue,
+    //   prominence,
+    //   minimumProminence,
+    //   ratio: prominence / minimumProminence,
+    //   keep: prominence >= minimumProminence,
+    // });
 
     return prominence >= minimumProminence;
   });
@@ -404,10 +417,10 @@ function validateCalibrationEvents(
 ) {
   const minimumProminence = robustRange * MIN_PROMINENCE_RATIO;
 
-  console.log("[CALIBRATION FILTERS] Initial", {
-    bottoms: bottoms.length,
-    tops: tops.length,
-  });
+  //   console.log("[CALIBRATION FILTERS] Initial", {
+  //     bottoms: bottoms.length,
+  //     tops: tops.length,
+  //   });
 
   bottoms = filterEventsByMinimumDistance(
     bottoms,
@@ -417,29 +430,29 @@ function validateCalibrationEvents(
 
   tops = filterEventsByMinimumDistance(tops, MINIMUM_DISTANCE_SAMPLES, false);
 
-  console.log("[CALIBRATION FILTERS] After Distance", {
-    bottoms: bottoms.length,
-    tops: tops.length,
-  });
+  //   console.log("[CALIBRATION FILTERS] After Distance", {
+  //     bottoms: bottoms.length,
+  //     tops: tops.length,
+  //   });
 
   bottoms = filterEventsByProminence(values, bottoms, minimumProminence, true);
 
   tops = filterEventsByProminence(values, tops, minimumProminence, false);
 
-  console.log("[CALIBRATION FILTERS] After Prominence", {
-    bottoms: bottoms.length,
-    tops: tops.length,
-    minimumProminence,
-  });
+  //   console.log("[CALIBRATION FILTERS] After Prominence", {
+  //     bottoms: bottoms.length,
+  //     tops: tops.length,
+  //     minimumProminence,
+  //   });
 
   bottoms = filterEventsByDirectionChange(values, bottoms, true);
 
   tops = filterEventsByDirectionChange(values, tops, false);
 
-  console.log("[CALIBRATION FILTERS] After Direction", {
-    bottoms: bottoms.length,
-    tops: tops.length,
-  });
+  //   console.log("[CALIBRATION FILTERS] After Direction", {
+  //     bottoms: bottoms.length,
+  //     tops: tops.length,
+  //   });
 
   return {
     bottoms,
@@ -516,60 +529,60 @@ export function calculateCalibration(
   const hasEnoughTops = selectedTops.length >= REQUIRED_CALIBRATION_REPS;
   const hasValidRange = range >= dynamicMinRange;
 
-  console.log("[CALIBRATION DEBUG]", {
-    axis: selectedAxis,
-    selectedAxis,
-    dominantAxisForCalibration,
-    sampleCount: values.length,
+//   console.log("[CALIBRATION DEBUG]", {
+//     axis: selectedAxis,
+//     selectedAxis,
+//     dominantAxisForCalibration,
+//     sampleCount: values.length,
 
-    axisRanges: {
-      ax: axisDiagnostics.ax.range,
-      ay: axisDiagnostics.ay.range,
-      az: axisDiagnostics.az.range,
-    },
-    axisSaturation: {
-      ax: axisDiagnostics.ax.saturationCount,
-      ay: axisDiagnostics.ay.saturationCount,
-      az: axisDiagnostics.az.saturationCount,
-    },
+//     axisRanges: {
+//       ax: axisDiagnostics.ax.range,
+//       ay: axisDiagnostics.ay.range,
+//       az: axisDiagnostics.az.range,
+//     },
+//     axisSaturation: {
+//       ax: axisDiagnostics.ax.saturationCount,
+//       ay: axisDiagnostics.ay.saturationCount,
+//       az: axisDiagnostics.az.saturationCount,
+//     },
 
-    globalMin,
-    globalMax,
-    globalRange,
+//     globalMin,
+//     globalMax,
+//     globalRange,
 
-    robustRange,
-    dynamicMinRange,
+//     robustRange,
+//     dynamicMinRange,
 
-    saturationCount,
-    saturationRatio: saturationCount / values.length,
+//     saturationCount,
+//     saturationRatio: saturationCount / values.length,
 
-    bottomZone,
-    topZone,
+//     bottomZone,
+//     topZone,
 
-    bottomsDetected: detectedEvents.bottoms.length,
-    topsDetected: detectedEvents.tops.length,
-    selectedBottoms: selectedBottoms.length,
-    selectedTops: selectedTops.length,
+//     bottomsDetected: detectedEvents.bottoms.length,
+//     topsDetected: detectedEvents.tops.length,
+//     selectedBottoms: selectedBottoms.length,
+//     selectedTops: selectedTops.length,
 
-    bottomAverage,
-    topAverage,
-    range,
+//     bottomAverage,
+//     topAverage,
+//     range,
 
-    bottomThreshold,
-    topThreshold,
+//     bottomThreshold,
+//     topThreshold,
 
-    hasEnoughBottoms,
-    hasEnoughTops,
-    hasValidRange,
+//     hasEnoughBottoms,
+//     hasEnoughTops,
+//     hasValidRange,
 
-    distribution: {
-      p10,
-      p25,
-      p50,
-      p75,
-      p90,
-    },
-  });
+//     distribution: {
+//       p10,
+//       p25,
+//       p50,
+//       p75,
+//       p90,
+//     },
+//   });
 
   return {
     axis: selectedAxis,
@@ -579,9 +592,21 @@ export function calculateCalibration(
     bottomThreshold,
     topThreshold,
     isValid: hasEnoughBottoms && hasEnoughTops && hasValidRange,
+
+    debug: {
+      globalRange,
+      robustRange,
+      bottomsDetected: detectedEvents.bottoms.length,
+      topsDetected: detectedEvents.tops.length,
+      selectedBottoms: selectedBottoms.length,
+      selectedTops: selectedTops.length,
+      bottomAverage,
+      topAverage,
+      saturationCount,
+      saturationRatio: saturationCount / values.length,
+    },
   };
 }
-
 
 // Crée un dataset JSON réutilisable à partir des samples capturés pendant la calibration.
 export function createCalibrationDataset(
