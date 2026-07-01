@@ -4,6 +4,9 @@ import {
   calculateCalibration,
   CalibrationDataset,
 } from "../../mobile/RepMotion/analytics/calibration";
+import { analyzeBottomTopBottomCycles } from "./cycleAnalyzer";
+
+const DEBUG_CHAIN_FILE = "overhead_press_5reps_004.json";
 
 // Lit tous les fichiers JSON de calibration, exercice par exercice.
 function getCalibrationDatasetFiles(rootDir: string): string[] {
@@ -37,28 +40,43 @@ function runDataset(filePath: string) {
   const dataset = loadDataset(filePath);
   const result = calculateCalibration(dataset.samples);
 
+  const cycleAnalysis = analyzeBottomTopBottomCycles(
+    result.debug?.selectedBottomIndexes ?? [],
+    result.debug?.selectedTopIndexes ?? [],
+    dataset.performedReps ?? dataset.expectedReps ?? 0,
+  );
+
   return {
-  file: path.basename(filePath),
-  exercise: dataset.exercise,
-  expectedReps: dataset.expectedReps,
-  performedReps: dataset.performedReps,
-  sampleCount: dataset.sampleCount,
+    file: path.basename(filePath),
+    exercise: dataset.exercise,
+    expectedReps: dataset.expectedReps,
+    performedReps: dataset.performedReps,
+    sampleCount: dataset.sampleCount,
 
-  axis: result.axis,
-  isValid: result.isValid,
-  range: Math.round(result.range),
-  bottomThreshold: Math.round(result.bottomThreshold),
-  topThreshold: Math.round(result.topThreshold),
+    axis: result.axis,
+    isValid: result.isValid,
+    range: Math.round(result.range),
+    bottomThreshold: Math.round(result.bottomThreshold),
+    topThreshold: Math.round(result.topThreshold),
 
-  globalRange: result.debug?.globalRange ?? null,
-  robustRange: result.debug?.robustRange ?? null,
-  bottomsDetected: result.debug?.bottomsDetected ?? null,
-  topsDetected: result.debug?.topsDetected ?? null,
-  selectedBottoms: result.debug?.selectedBottoms ?? null,
-  selectedTops: result.debug?.selectedTops ?? null,
-  saturationCount: result.debug?.saturationCount ?? null,
-  saturationRatio: result.debug?.saturationRatio ?? null,
-};
+    globalRange: result.debug?.globalRange ?? null,
+    robustRange: result.debug?.robustRange ?? null,
+    bottomsDetected: result.debug?.bottomsDetected ?? null,
+    topsDetected: result.debug?.topsDetected ?? null,
+    selectedBottoms: result.debug?.selectedBottoms ?? null,
+    selectedTops: result.debug?.selectedTops ?? null,
+    saturationCount: result.debug?.saturationCount ?? null,
+    saturationRatio: result.debug?.saturationRatio ?? null,
+
+    simulatedReps: cycleAnalysis.simulatedReps,
+    expectedRepsFromSegmentation: cycleAnalysis.expectedReps,
+    segmentationStatus: cycleAnalysis.status,
+    chainLength: cycleAnalysis.chainLength,
+    usedBottoms: cycleAnalysis.usedBottoms,
+    usedTops: cycleAnalysis.usedTops,
+    ignoredEvents: cycleAnalysis.ignoredEvents,
+    chain: cycleAnalysis.chain,
+  };
 }
 
 // Point d’entrée du runner.
@@ -75,6 +93,16 @@ function main() {
   const validCount = results.filter((result) => result.isValid).length;
 
   console.table(results);
+
+  const debugResult = results.find(
+    (result) => result.file === DEBUG_CHAIN_FILE,
+  );
+
+  if (debugResult) {
+    console.log("");
+    console.log(`Event chain for ${DEBUG_CHAIN_FILE}:`);
+    console.log(debugResult.chain);
+  }
 
   console.log("");
   console.log(`Calibration datasets tested: ${results.length}`);

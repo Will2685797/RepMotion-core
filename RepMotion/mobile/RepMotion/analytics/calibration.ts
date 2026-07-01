@@ -26,6 +26,8 @@ export type CalibrationResult = {
     topAverage: number;
     saturationCount: number;
     saturationRatio: number;
+    selectedBottomIndexes: number[];
+    selectedTopIndexes: number[];
   };
 };
 
@@ -62,10 +64,10 @@ const REQUIRED_CALIBRATION_REPS = 5;
 const PROMINENCE_WINDOW_SIZE = 10;
 
 // Pourcentage du robustRange requis pour considérer qu'un candidat a assez de prominence.
-const MIN_PROMINENCE_RATIO = 0.25;
+const MIN_PROMINENCE_RATIO = 0.35;
 
 // Nombre minimal de samples séparant deux événements pour éviter les doublons.
-const MINIMUM_DISTANCE_SAMPLES = 5;
+const MINIMUM_DISTANCE_SAMPLES = 10;
 
 const PEAK_WINDOW_SIZE = 3;
 const CALIBRATION_AXES: CalibrationAxis[] = ["ax", "ay", "az"];
@@ -529,60 +531,60 @@ export function calculateCalibration(
   const hasEnoughTops = selectedTops.length >= REQUIRED_CALIBRATION_REPS;
   const hasValidRange = range >= dynamicMinRange;
 
-//   console.log("[CALIBRATION DEBUG]", {
-//     axis: selectedAxis,
-//     selectedAxis,
-//     dominantAxisForCalibration,
-//     sampleCount: values.length,
+  //   console.log("[CALIBRATION DEBUG]", {
+  //     axis: selectedAxis,
+  //     selectedAxis,
+  //     dominantAxisForCalibration,
+  //     sampleCount: values.length,
 
-//     axisRanges: {
-//       ax: axisDiagnostics.ax.range,
-//       ay: axisDiagnostics.ay.range,
-//       az: axisDiagnostics.az.range,
-//     },
-//     axisSaturation: {
-//       ax: axisDiagnostics.ax.saturationCount,
-//       ay: axisDiagnostics.ay.saturationCount,
-//       az: axisDiagnostics.az.saturationCount,
-//     },
+  //     axisRanges: {
+  //       ax: axisDiagnostics.ax.range,
+  //       ay: axisDiagnostics.ay.range,
+  //       az: axisDiagnostics.az.range,
+  //     },
+  //     axisSaturation: {
+  //       ax: axisDiagnostics.ax.saturationCount,
+  //       ay: axisDiagnostics.ay.saturationCount,
+  //       az: axisDiagnostics.az.saturationCount,
+  //     },
 
-//     globalMin,
-//     globalMax,
-//     globalRange,
+  //     globalMin,
+  //     globalMax,
+  //     globalRange,
 
-//     robustRange,
-//     dynamicMinRange,
+  //     robustRange,
+  //     dynamicMinRange,
 
-//     saturationCount,
-//     saturationRatio: saturationCount / values.length,
+  //     saturationCount,
+  //     saturationRatio: saturationCount / values.length,
 
-//     bottomZone,
-//     topZone,
+  //     bottomZone,
+  //     topZone,
 
-//     bottomsDetected: detectedEvents.bottoms.length,
-//     topsDetected: detectedEvents.tops.length,
-//     selectedBottoms: selectedBottoms.length,
-//     selectedTops: selectedTops.length,
+  //     bottomsDetected: detectedEvents.bottoms.length,
+  //     topsDetected: detectedEvents.tops.length,
+  //     selectedBottoms: selectedBottoms.length,
+  //     selectedTops: selectedTops.length,
 
-//     bottomAverage,
-//     topAverage,
-//     range,
+  //     bottomAverage,
+  //     topAverage,
+  //     range,
 
-//     bottomThreshold,
-//     topThreshold,
+  //     bottomThreshold,
+  //     topThreshold,
 
-//     hasEnoughBottoms,
-//     hasEnoughTops,
-//     hasValidRange,
+  //     hasEnoughBottoms,
+  //     hasEnoughTops,
+  //     hasValidRange,
 
-//     distribution: {
-//       p10,
-//       p25,
-//       p50,
-//       p75,
-//       p90,
-//     },
-//   });
+  //     distribution: {
+  //       p10,
+  //       p25,
+  //       p50,
+  //       p75,
+  //       p90,
+  //     },
+  //   });
 
   return {
     axis: selectedAxis,
@@ -604,6 +606,8 @@ export function calculateCalibration(
       topAverage,
       saturationCount,
       saturationRatio: saturationCount / values.length,
+      selectedBottomIndexes: selectedBottoms.map((event) => event.index),
+      selectedTopIndexes: selectedTops.map((event) => event.index),
     },
   };
 }
