@@ -111,7 +111,8 @@
     "deadlift": "Deadlift",
     "incline_bench_press": "Incline Bench Press",
     "overhead_press": "Overhead Press",
-    "decline_bench_press": "Decline Bench Press"
+    "decline_bench_press": "Decline Bench Press",
+    "rowing": "Rowing"
   },
   "setModal": {
     "title": "New set",

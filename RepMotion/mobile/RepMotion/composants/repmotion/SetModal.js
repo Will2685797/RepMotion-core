@@ -13,6 +13,7 @@ const EXERCISES = [
   "incline_bench_press",
   "overhead_press",
   "decline_bench_press",
+  "rowing",
 ];
 
 export default function SetModal({ visible, onClose, onSave }) {
