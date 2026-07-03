@@ -254,3 +254,62 @@ RepMotion doit devenir un système qui apprend naturellement à partir des séan
 La calibration n'est pas une fonctionnalité.
 
 La calibration est une étape temporaire vers un système capable de comprendre automatiquement le mouvement de l'utilisateur.
+
+
+
+---
+
+# V2.3 — Validation biomécanique
+
+## Objectif
+
+Valider objectivement que les événements détectés par la calibration permettent de reconstruire correctement les répétitions.
+
+La Calibration ne détecte plus directement des répétitions.
+
+Elle détecte uniquement les meilleurs événements Bottom et Top.
+
+Ces événements sont ensuite utilisés par le futur Rep Detector.
+
+Pipeline recherché :
+
+Signal IMU
+
+↓
+
+Calibration
+
+↓
+
+Bottom / Top
+
+↓
+
+Rep Detector
+
+↓
+
+Rep Count
+
+↓
+
+Temps sous tension
+
+↓
+
+ROM
+
+↓
+
+Velocity
+
+↓
+
+Sticking Point
+
+Cette séparation des responsabilités permet d'améliorer indépendamment :
+
+- la détection des événements (Calibration)
+- la reconstruction des répétitions (Rep Detector)
+
+Les deux composants pourront évoluer séparément.

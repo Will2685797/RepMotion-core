@@ -22,6 +22,19 @@ export type SegmentationAnalysisResult = {
   usedTops: number;
   ignoredEvents: number;
   chain: string;
+  reconstructedReps: ReconstructedRep[];
+};
+
+export type ReconstructedRep = {
+  repNumber: number;
+
+  bottomStart: number;
+  top: number;
+  bottomEnd: number;
+
+  concentricDuration: number;
+  eccentricDuration: number;
+  totalDuration: number;
 };
 
 // Définit les paramètres par défaut pour garder le runner actuel fonctionnel.
@@ -95,7 +108,25 @@ export function analyzeBottomTopBottomCycles(
   const usedBottoms = chain.filter((event) => event.type === "BOTTOM").length;
   const usedTops = chain.filter((event) => event.type === "TOP").length;
 
-  const simulatedReps = Math.max(0, Math.floor((chain.length - 1) / 2));
+  const reconstructedReps: ReconstructedRep[] = [];
+
+  for (let i = 0; i + 2 < chain.length; i += 2) {
+    const bottomStart = chain[i];
+    const top = chain[i + 1];
+    const bottomEnd = chain[i + 2];
+
+    reconstructedReps.push({
+      repNumber: reconstructedReps.length + 1,
+      bottomStart: bottomStart.index,
+      top: top.index,
+      bottomEnd: bottomEnd.index,
+      concentricDuration: top.index - bottomStart.index,
+      eccentricDuration: bottomEnd.index - top.index,
+      totalDuration: bottomEnd.index - bottomStart.index,
+    });
+  }
+
+  const simulatedReps = reconstructedReps.length;
 
   const status =
     simulatedReps === expectedReps
@@ -115,5 +146,6 @@ export function analyzeBottomTopBottomCycles(
     chain: chain
       .map((event) => `${event.type === "BOTTOM" ? "B" : "T"}(${event.index})`)
       .join(" -> "),
+    reconstructedReps,
   };
 }
