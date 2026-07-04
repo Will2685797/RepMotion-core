@@ -7,6 +7,17 @@ export type SegmentationEvent = {
 
 export type SegmentationStatus = "OK" | "MISSING" | "TOO_MANY";
 
+export type CycleAnalyzerDebugAction = "ACCEPTED" | "REJECTED" | "REPLACED";
+
+export type CycleAnalyzerDebugEvent = {
+  type: SegmentationEventType;
+  index: number;
+  action: CycleAnalyzerDebugAction;
+  reason: string;
+  chainBefore: string;
+  chainAfter: string;
+};
+
 export type CycleAnalyzerParameters = {
   minRepDuration: number;
   minConcentricDuration: number;
@@ -23,6 +34,7 @@ export type SegmentationAnalysisResult = {
   ignoredEvents: number;
   chain: string;
   reconstructedReps: ReconstructedRep[];
+  debugEvents: CycleAnalyzerDebugEvent[];
 };
 
 export type ReconstructedRep = {
@@ -57,16 +69,60 @@ export function analyzeBottomTopBottomCycles(
   ].sort((a, b) => a.index - b.index);
 
   const chain: SegmentationEvent[] = [];
+  const debugEvents: CycleAnalyzerDebugEvent[] = [];
+
+  const formatChain = (events: SegmentationEvent[]): string =>
+    events
+      .map((event) => `${event.type === "BOTTOM" ? "B" : "T"}(${event.index})`)
+      .join(" -> ");
+
+  const logDebugEvent = (
+    event: SegmentationEvent,
+    action: CycleAnalyzerDebugAction,
+    reason: string,
+    chainBefore: SegmentationEvent[],
+    chainAfter: SegmentationEvent[],
+  ) => {
+    debugEvents.push({
+      type: event.type,
+      index: event.index,
+      action,
+      reason,
+      chainBefore: formatChain(chainBefore),
+      chainAfter: formatChain(chainAfter),
+    });
+  };
 
   for (const event of events) {
     const lastEvent = chain[chain.length - 1];
 
     if (!lastEvent && event.type !== "BOTTOM") {
+      logDebugEvent(
+        event,
+        "REJECTED",
+        "REJECTED_STARTS_WITH_TOP",
+        [...chain],
+        [...chain],
+      );
+
       continue;
     }
 
     if (lastEvent && lastEvent.type === event.type) {
+      const chainBefore = [...chain];
+
       chain[chain.length - 1] = event;
+
+      logDebugEvent(
+        event,
+        "REPLACED",
+        event.type === "BOTTOM"
+          ? "REPLACED_CONSECUTIVE_BOTTOM"
+          : "REPLACED_CONSECUTIVE_TOP",
+        chainBefore,
+        [...chain],
+      );
+
       continue;
     }
 
@@ -78,6 +134,14 @@ export function analyzeBottomTopBottomCycles(
         event.type === "TOP" &&
         transitionDuration < parameters.minConcentricDuration
       ) {
+        logDebugEvent(
+          event,
+          "REJECTED",
+          `REJECTED_CONCENTRIC_TOO_SHORT duration=${transitionDuration} min=${parameters.minConcentricDuration}`,
+          [...chain],
+          [...chain],
+        );
+
         continue;
       }
 
@@ -86,6 +150,14 @@ export function analyzeBottomTopBottomCycles(
         event.type === "BOTTOM" &&
         transitionDuration < parameters.minEccentricDuration
       ) {
+        logDebugEvent(
+          event,
+          "REJECTED",
+          `REJECTED_ECCENTRIC_TOO_SHORT duration=${transitionDuration} min=${parameters.minEccentricDuration}`,
+          [...chain],
+          [...chain],
+        );
+
         continue;
       }
     }
@@ -97,12 +169,32 @@ export function analyzeBottomTopBottomCycles(
         const repDurationSamples = event.index - previousBottom.index;
 
         if (repDurationSamples < parameters.minRepDuration) {
+          logDebugEvent(
+            event,
+            "REJECTED",
+            `REJECTED_REP_TOO_SHORT duration=${repDurationSamples} min=${parameters.minRepDuration}`,
+            [...chain],
+            [...chain],
+          );
+
           continue;
         }
       }
     }
 
+    const chainBefore = [...chain];
+
     chain.push(event);
+
+    logDebugEvent(
+      event,
+      "ACCEPTED",
+      chainBefore.length === 0
+        ? "ACCEPTED_CHAIN_START"
+        : "ACCEPTED_VALID_TRANSITION",
+      chainBefore,
+      [...chain],
+    );
   }
 
   const usedBottoms = chain.filter((event) => event.type === "BOTTOM").length;
@@ -147,5 +239,6 @@ export function analyzeBottomTopBottomCycles(
       .map((event) => `${event.type === "BOTTOM" ? "B" : "T"}(${event.index})`)
       .join(" -> "),
     reconstructedReps,
+    debugEvents,
   };
 }

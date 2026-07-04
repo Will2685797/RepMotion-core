@@ -3,11 +3,12 @@ import path from "path";
 import {
   calculateCalibration,
   CalibrationDataset,
-} from "../../mobile/RepMotion/analytics/calibration";
+} from "../../../mobile/RepMotion/analytics/calibration";
 import {
   analyzeBottomTopBottomCycles,
+  CycleAnalyzerDebugEvent,
   ReconstructedRep,
-} from "../calibration-runner/cycleAnalyzer";
+} from "../../calibration-runner/cycleAnalyzer";
 import { generateParameterGrid } from "./parameterGrid";
 
 type BenchmarkDatasetRow = {
@@ -18,6 +19,7 @@ type BenchmarkDatasetRow = {
   ignoredEvents: number;
   chain: string;
   reconstructedReps: ReconstructedRep[];
+  debugEvents: CycleAnalyzerDebugEvent[];
 };
 
 type DatasetSummaryRow = {
@@ -55,7 +57,7 @@ function loadDataset(filePath: string): CalibrationDataset {
 }
 
 function main() {
-  const datasetsRoot = path.resolve(__dirname, "../../datasets/calibration");
+  const datasetsRoot = path.resolve(__dirname, "../../../datasets/calibration");
   const files = getCalibrationDatasetFiles(datasetsRoot);
   const datasets = files.map((filePath) => ({
     filePath,
@@ -76,7 +78,13 @@ function main() {
       const datasetResults: BenchmarkDatasetRow[] = [];
 
       for (const { filePath, dataset } of datasets) {
-        const calibration = calculateCalibration(dataset.samples);
+        const calibration = calculateCalibration(dataset.samples, undefined, {
+          minimumDistanceSamples: 70,
+          minimumProminenceRatio: 0.08,
+          peakWindowSize: 2,
+          prominenceWindowSize: 8,
+        });
+
         const analysis = analyzeBottomTopBottomCycles(
           calibration.debug?.selectedBottomIndexes ?? [],
           calibration.debug?.selectedTopIndexes ?? [],
@@ -100,6 +108,7 @@ function main() {
           ignoredEvents: analysis.ignoredEvents,
           chain: analysis.chain,
           reconstructedReps: analysis.reconstructedReps,
+          debugEvents: analysis.debugEvents,
         });
       }
 
@@ -235,6 +244,11 @@ function main() {
       });
 
     console.table(bestAttempt.reconstructedReps);
+
+    console.log("Rejected / Replaced events:");
+    console.table(
+      bestAttempt.debugEvents.filter((event) => event.action !== "ACCEPTED"),
+    );
   }
 }
 
