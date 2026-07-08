@@ -123,6 +123,10 @@ const MINIMUM_DISTANCE_SAMPLES = 10;
 const PEAK_WINDOW_SIZE = 3;
 const CALIBRATION_AXES: CalibrationAxis[] = ["ax", "ay", "az"];
 
+type RawDetectionStrategy = "local_extrema" | "direction_change";
+
+const RAW_DETECTION_STRATEGY: RawDetectionStrategy = "direction_change";
+
 type AxisDiagnostics = {
   min: number;
   max: number;
@@ -204,6 +208,290 @@ function detectDominantAxis(samples: MotionSample[]): CalibrationAxis {
   );
 }
 
+/*--------------------------------V2----------------------------------------*/
+
+//  * Applique un lissage simple par moyenne mobile.
+//  *
+//  * Utilisé par la V2.5 pour réduire les micro-oscillations du signal avant
+//  * la détection des changements de direction.
+//  *
+//  * Le but est de tester si un signal moins bruité produit des candidats RAW
+//  * moins ambigus que la V2 basée directement sur les extrema locaux.
+//  */
+function smoothSignal(values: number[], windowSize: number): number[] {
+  if (windowSize <= 1 || values.length === 0) {
+    return values;
+  }
+
+  const halfWindow = Math.floor(windowSize / 2);
+
+  return values.map((_, index) => {
+    const start = Math.max(0, index - halfWindow);
+    const end = Math.min(values.length - 1, index + halfWindow);
+
+    let sum = 0;
+    let count = 0;
+
+    for (let i = start; i <= end; i += 1) {
+      sum += values[i];
+      count += 1;
+    }
+
+    return sum / count;
+  });
+}
+
+/**
+ * Calcule une dérivée discrète simple du signal.
+ *
+ * En V2.5, cette dérivée sert de proxy de direction :
+ * - valeur positive : le signal monte
+ * - valeur négative : le signal descend
+ *
+ * Les changements de signe de cette dérivée seront utilisés pour détecter
+ * les pivots potentiels du mouvement.
+ */
+function computeVelocityProxy(values: number[]): number[] {
+  if (values.length === 0) {
+    return [];
+  }
+
+  const velocity: number[] = [0];
+
+  for (let index = 1; index < values.length; index += 1) {
+    velocity.push(values[index] - values[index - 1]);
+  }
+
+  return velocity;
+}
+
+type DirectionChangeCandidate = {
+  type: "BOTTOM" | "TOP";
+  index: number;
+};
+
+/**
+ * Détecte les changements de direction du signal.
+ *
+ * Cette fonction travaille uniquement sur la dérivée du signal lissé et
+ * retourne les pivots théoriques avant toute validation ou ajustement
+ * vers les véritables extrema locaux.
+ */
+function findDirectionChangeCandidates(
+  velocity: number[],
+): DirectionChangeCandidate[] {
+  const candidates: DirectionChangeCandidate[] = [];
+
+  for (let index = 1; index < velocity.length; index += 1) {
+    const previousVelocity = velocity[index - 1];
+    const currentVelocity = velocity[index];
+
+    if (previousVelocity < 0 && currentVelocity >= 0) {
+      candidates.push({
+        type: "BOTTOM",
+        index,
+      });
+    }
+
+    if (previousVelocity > 0 && currentVelocity <= 0) {
+      candidates.push({
+        type: "TOP",
+        index,
+      });
+    }
+  }
+
+  return candidates;
+}
+
+/**
+ * Ajuste un candidat de changement de direction vers le véritable extremum local.
+ *
+ * Le changement de signe de la dérivée donne une zone probable de pivot,
+ * mais le minimum/maximum réel peut être légèrement décalé de quelques samples.
+ */
+function snapToLocalExtremum(
+  values: number[],
+  candidate: DirectionChangeCandidate,
+  searchWindowSize: number,
+): CalibrationEventCandidate {
+  if (values.length === 0) {
+    return {
+      index: candidate.index,
+      value: 0,
+    };
+  }
+
+  const safeIndex = Math.max(0, Math.min(values.length - 1, candidate.index));
+  const safeSearchWindowSize = Math.max(0, searchWindowSize);
+
+  const start = Math.max(0, safeIndex - safeSearchWindowSize);
+  const end = Math.min(values.length - 1, safeIndex + safeSearchWindowSize);
+
+  let bestIndex = safeIndex;
+  let bestValue = values[safeIndex];
+
+  for (let index = start; index <= end; index += 1) {
+    const value = values[index];
+
+    if (candidate.type === "BOTTOM" && value < bestValue) {
+      bestIndex = index;
+      bestValue = value;
+    }
+
+    if (candidate.type === "TOP" && value > bestValue) {
+      bestIndex = index;
+      bestValue = value;
+    }
+  }
+
+  return {
+    index: bestIndex,
+    value: bestValue,
+  };
+}
+
+/**
+ * Convertit les changements de direction en candidats RAW compatibles
+ * avec le reste du pipeline de calibration.
+ *
+ * Cette étape applique seulement :
+ * - le snap vers le véritable extremum local ;
+ * - la séparation Bottom / Top ;
+ * - la contrainte de zone basse / haute ;
+ * - la création des rawDebugEvents.
+ *
+ * Elle ne remplace pas validateCalibrationEvents().
+ */
+function buildRawCandidatesFromDirectionChanges(
+  values: number[],
+  directionCandidates: DirectionChangeCandidate[],
+  bottomZone: number,
+  topZone: number,
+  snapWindowSize: number,
+): DetectedCalibrationEvents {
+  const bottoms: CalibrationEventCandidate[] = [];
+  const tops: CalibrationEventCandidate[] = [];
+  const rawDebugEvents: RawCalibrationCandidateDebug[] = [];
+
+  let previousSameTypeBottom: CalibrationEventCandidate | undefined;
+  let previousSameTypeTop: CalibrationEventCandidate | undefined;
+  let previousGlobal: CalibrationEventCandidate | undefined;
+
+  for (const directionCandidate of directionCandidates) {
+    const snappedCandidate = snapToLocalExtremum(
+      values,
+      directionCandidate,
+      snapWindowSize,
+    );
+
+    const isBottom = directionCandidate.type === "BOTTOM";
+    const isTop = directionCandidate.type === "TOP";
+
+    const isInBottomZone = snappedCandidate.value <= bottomZone;
+    const isInTopZone = snappedCandidate.value >= topZone;
+
+    if (isBottom && isInBottomZone) {
+      bottoms.push(snappedCandidate);
+
+      rawDebugEvents.push({
+        type: "BOTTOM",
+        index: snappedCandidate.index,
+        value: snappedCandidate.value,
+        previousValue: values[Math.max(0, snappedCandidate.index - 1)],
+        nextValue:
+          values[Math.min(values.length - 1, snappedCandidate.index + 1)],
+        localAmplitude:
+          Math.abs(
+            values[Math.max(0, snappedCandidate.index - 1)] -
+              snappedCandidate.value,
+          ) +
+          Math.abs(
+            values[Math.min(values.length - 1, snappedCandidate.index + 1)] -
+              snappedCandidate.value,
+          ),
+        distanceToPreviousSameType: previousSameTypeBottom
+          ? snappedCandidate.index - previousSameTypeBottom.index
+          : undefined,
+        distanceToPreviousGlobal: previousGlobal
+          ? snappedCandidate.index - previousGlobal.index
+          : undefined,
+      });
+
+      previousSameTypeBottom = snappedCandidate;
+      previousGlobal = snappedCandidate;
+    }
+
+    if (isTop && isInTopZone) {
+      tops.push(snappedCandidate);
+
+      rawDebugEvents.push({
+        type: "TOP",
+        index: snappedCandidate.index,
+        value: snappedCandidate.value,
+        previousValue: values[Math.max(0, snappedCandidate.index - 1)],
+        nextValue:
+          values[Math.min(values.length - 1, snappedCandidate.index + 1)],
+        localAmplitude:
+          Math.abs(
+            values[Math.max(0, snappedCandidate.index - 1)] -
+              snappedCandidate.value,
+          ) +
+          Math.abs(
+            values[Math.min(values.length - 1, snappedCandidate.index + 1)] -
+              snappedCandidate.value,
+          ),
+        distanceToPreviousSameType: previousSameTypeTop
+          ? snappedCandidate.index - previousSameTypeTop.index
+          : undefined,
+        distanceToPreviousGlobal: previousGlobal
+          ? snappedCandidate.index - previousGlobal.index
+          : undefined,
+      });
+
+      previousSameTypeTop = snappedCandidate;
+      previousGlobal = snappedCandidate;
+    }
+  }
+
+  return {
+    bottoms,
+    tops,
+    rawDebugEvents,
+  };
+}
+
+/**
+ * Génère les candidats RAW de calibration à l'aide d'une stratégie basée
+ * sur le changement de direction d'un signal lissé.
+ *
+ * Cette fonction remplace uniquement la génération des candidats RAW.
+ * Le reste du pipeline (validation, Cycle Analyzer, benchmark, etc.)
+ * demeure inchangé.
+ */
+function detectBottomsAndTopsV25(
+  values: number[],
+  bottomZone: number,
+  topZone: number,
+  peakWindowSize: number,
+): DetectedCalibrationEvents {
+  const smoothedValues = smoothSignal(values, peakWindowSize);
+  const velocity = computeVelocityProxy(smoothedValues);
+  const directionCandidates = findDirectionChangeCandidates(velocity);
+
+  const detectedEvents = buildRawCandidatesFromDirectionChanges(
+    values,
+    directionCandidates,
+    bottomZone,
+    topZone,
+    peakWindowSize,
+  );
+
+  return detectedEvents;
+}
+
+/*------------------------------------------------------------------------*/
+
 function detectLocalMinimum(
   values: number[],
   index: number,
@@ -244,7 +532,6 @@ function detectBottomsAndTops(
   topZone: number,
   peakWindowSize: number,
 ): DetectedCalibrationEvents {
-
   const bottoms: CalibrationEventCandidate[] = [];
   const tops: CalibrationEventCandidate[] = [];
   const rawDebugEvents: RawCalibrationCandidateDebug[] = [];
@@ -275,55 +562,63 @@ function detectBottomsAndTops(
     if (isLocalMinimum) localMinimumHits += 1;
     if (isLocalMaximum) localMaximumHits += 1;
 
-   if (isInBottomZone && isLocalMinimum) {
-  const candidate = { index, value };
-  bottoms.push(candidate);
+    if (isInBottomZone && isLocalMinimum) {
+      const candidate = { index, value };
+      bottoms.push(candidate);
 
-  rawDebugEvents.push({
-    type: "BOTTOM",
-    index,
-    value,
-    distanceToPreviousSameType: previousSameTypeBottom
-      ? index - previousSameTypeBottom.index
-      : undefined,
-    distanceToPreviousGlobal: previousGlobal
-      ? index - previousGlobal.index
-      : undefined,
-    previousValue: values[index - 1],
-    nextValue: values[index + 1],
-    localAmplitude:
-      Math.max(...values.slice(index - peakWindowSize, index + peakWindowSize + 1)) -
-      Math.min(...values.slice(index - peakWindowSize, index + peakWindowSize + 1)),
-  });
+      rawDebugEvents.push({
+        type: "BOTTOM",
+        index,
+        value,
+        distanceToPreviousSameType: previousSameTypeBottom
+          ? index - previousSameTypeBottom.index
+          : undefined,
+        distanceToPreviousGlobal: previousGlobal
+          ? index - previousGlobal.index
+          : undefined,
+        previousValue: values[index - 1],
+        nextValue: values[index + 1],
+        localAmplitude:
+          Math.max(
+            ...values.slice(index - peakWindowSize, index + peakWindowSize + 1),
+          ) -
+          Math.min(
+            ...values.slice(index - peakWindowSize, index + peakWindowSize + 1),
+          ),
+      });
 
-  previousSameTypeBottom = candidate;
-  previousGlobal = candidate;
-}
+      previousSameTypeBottom = candidate;
+      previousGlobal = candidate;
+    }
 
     if (isInTopZone && isLocalMaximum) {
-  const candidate = { index, value };
-  tops.push(candidate);
+      const candidate = { index, value };
+      tops.push(candidate);
 
-  rawDebugEvents.push({
-    type: "TOP",
-    index,
-    value,
-    distanceToPreviousSameType: previousSameTypeTop
-      ? index - previousSameTypeTop.index
-      : undefined,
-    distanceToPreviousGlobal: previousGlobal
-      ? index - previousGlobal.index
-      : undefined,
-    previousValue: values[index - 1],
-    nextValue: values[index + 1],
-    localAmplitude:
-      Math.max(...values.slice(index - peakWindowSize, index + peakWindowSize + 1)) -
-      Math.min(...values.slice(index - peakWindowSize, index + peakWindowSize + 1)),
-  });
+      rawDebugEvents.push({
+        type: "TOP",
+        index,
+        value,
+        distanceToPreviousSameType: previousSameTypeTop
+          ? index - previousSameTypeTop.index
+          : undefined,
+        distanceToPreviousGlobal: previousGlobal
+          ? index - previousGlobal.index
+          : undefined,
+        previousValue: values[index - 1],
+        nextValue: values[index + 1],
+        localAmplitude:
+          Math.max(
+            ...values.slice(index - peakWindowSize, index + peakWindowSize + 1),
+          ) -
+          Math.min(
+            ...values.slice(index - peakWindowSize, index + peakWindowSize + 1),
+          ),
+      });
 
-  previousSameTypeTop = candidate;
-  previousGlobal = candidate;
-}
+      previousSameTypeTop = candidate;
+      previousGlobal = candidate;
+    }
   }
 
   //   console.log("[CALIBRATION PEAK DEBUG]", {
@@ -340,7 +635,48 @@ function detectBottomsAndTops(
   return { bottoms, tops, rawDebugEvents };
 }
 
-/*--------------------------Réduction de bruit des candidats--------------------------------*/
+/**
+ * Résume l'espacement entre les candidats RAW détectés.
+ *
+ * Utilisé comme diagnostic expérimental pour établir une baseline de la V2
+ * avant l'implémentation de la stratégie V2.5.
+ *
+ * L'objectif est de quantifier la densité des candidats générés afin de
+ * vérifier si de nombreuses détections sont concentrées sur quelques samples,
+ * ce qui pourrait indiquer des micro-oscillations du signal.
+ */
+
+function summarizeRawCandidateSpacing(
+  rawDebugEvents: RawCalibrationCandidateDebug[],
+): {
+  totalCandidates: number;
+  closeGlobalCandidates: number;
+  minimumGlobalDistance: number | undefined;
+  averageGlobalDistance: number | undefined;
+} {
+  const globalDistances = rawDebugEvents
+    .map((event) => event.distanceToPreviousGlobal)
+    .filter((distance): distance is number => distance !== undefined);
+
+  if (globalDistances.length === 0) {
+    return {
+      totalCandidates: rawDebugEvents.length,
+      closeGlobalCandidates: 0,
+      minimumGlobalDistance: undefined,
+      averageGlobalDistance: undefined,
+    };
+  }
+
+  return {
+    totalCandidates: rawDebugEvents.length,
+    closeGlobalCandidates: globalDistances.filter((distance) => distance < 10)
+      .length,
+    minimumGlobalDistance: Math.min(...globalDistances),
+    averageGlobalDistance: average(globalDistances),
+  };
+}
+
+/*--------------------------(FILTRE)Réduction de bruit des candidats(FILTRE)--------------------------------*/
 
 //**********************//
 // 1. distance minimale
@@ -725,12 +1061,36 @@ export function calculateCalibration(
   const bottomZone = p25;
   const topZone = p75;
 
-  const detectedEvents = detectBottomsAndTops(
-    values,
-    bottomZone,
-    topZone,
-    resolvedParameters.peakWindowSize,
+  // Sélection de la stratégie de génération des candidats RAW.
+  // La branche "direction_change" utilisera detectBottomsAndTopsV25()
+  // une fois son implémentation terminée afin de comparer V2 et V2.5
+  // sans modifier le reste du pipeline.
+
+  let detectedEvents: DetectedCalibrationEvents;
+
+  if (RAW_DETECTION_STRATEGY === "direction_change") {
+    detectedEvents = detectBottomsAndTopsV25(
+      values,
+      bottomZone,
+      topZone,
+      resolvedParameters.peakWindowSize,
+    );
+  } else {
+    detectedEvents = detectBottomsAndTops(
+      values,
+      bottomZone,
+      topZone,
+      resolvedParameters.peakWindowSize,
+    );
+  }
+
+  const rawSpacingSummary = summarizeRawCandidateSpacing(
+    detectedEvents.rawDebugEvents,
   );
+
+  // console.log("[CALIBRATION RAW SPACING BASELINE]", rawSpacingSummary);
+
+  /*-----------------------------------------------------------*/
   const validatedEvents = validateCalibrationEvents(
     values,
     robustRange,
