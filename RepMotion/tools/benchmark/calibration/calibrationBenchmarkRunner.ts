@@ -145,6 +145,7 @@ function main() {
       minimumDistanceSamples: result.parameters.minimumDistanceSamples,
       minimumProminenceRatio: result.parameters.minimumProminenceRatio,
       peakWindowSize: result.parameters.peakWindowSize,
+      smoothingWindowSize: result.parameters.smoothingWindowSize,
       prominenceWindowSize: result.parameters.prominenceWindowSize,
     })),
   );
@@ -161,6 +162,7 @@ function main() {
       minimumDistanceSamples: result.parameters.minimumDistanceSamples,
       minimumProminenceRatio: result.parameters.minimumProminenceRatio,
       peakWindowSize: result.parameters.peakWindowSize,
+      smoothingWindowSize: result.parameters.smoothingWindowSize,
       prominenceWindowSize: result.parameters.prominenceWindowSize,
     })),
   );

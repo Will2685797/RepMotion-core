@@ -81,3 +81,20 @@ L'amélioration provient principalement du smoothing et non de la logique `direc
 Cette séance doit répondre à la question suivante :
 
 > Une génération RAW basée sur le changement de direction d'un signal lissé réduit-elle l'ambiguïté des candidats sans casser le pipeline existant ? Si oui, cette amélioration provient-elle principalement du smoothing ou de la nouvelle logique de détection ?
+
+
+## Suite prévue — Calibration V2.5
+
+La première implémentation V2.5 fonctionne, mais ne réduit pas les candidats RAW.
+
+Résultat observé :
+- V2 : environ 70–90 candidats RAW.
+- V2.5 : environ 90–120 candidats RAW.
+- Score final inchangé : best score = 9.
+
+Conclusion :
+Le simple changement de direction n'est pas suffisant.
+La dérivée semble amplifier les micro-oscillations lorsque le signal n'est pas assez lissé.
+
+Prochaine étape :
+Découpler `smoothingWindowSize` de `peakWindowSize` afin de tester l'effet du lissage indépendamment du snap local.

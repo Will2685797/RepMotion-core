@@ -96,6 +96,7 @@ export type CalibrationParameters = {
   minimumProminenceRatio?: number;
   minimumDistanceSamples?: number;
   peakWindowSize?: number;
+  smoothingWindowSize?: number;
 };
 
 const DEFAULT_AXIS: CalibrationAxis = "az";
@@ -474,8 +475,9 @@ function detectBottomsAndTopsV25(
   bottomZone: number,
   topZone: number,
   peakWindowSize: number,
+  smoothingWindowSize: number,
 ): DetectedCalibrationEvents {
-  const smoothedValues = smoothSignal(values, peakWindowSize);
+  const smoothedValues = smoothSignal(values, smoothingWindowSize);
   const velocity = computeVelocityProxy(smoothedValues);
   const directionCandidates = findDirectionChangeCandidates(velocity);
 
@@ -1031,6 +1033,7 @@ export function calculateCalibration(
     minimumDistanceSamples:
       parameters?.minimumDistanceSamples ?? MINIMUM_DISTANCE_SAMPLES,
     peakWindowSize: parameters?.peakWindowSize ?? PEAK_WINDOW_SIZE,
+    smoothingWindowSize: parameters?.smoothingWindowSize ?? PEAK_WINDOW_SIZE,
   };
 
   const axisDiagnostics = getAllAxisDiagnostics(samples);
@@ -1074,6 +1077,7 @@ export function calculateCalibration(
       bottomZone,
       topZone,
       resolvedParameters.peakWindowSize,
+      resolvedParameters.smoothingWindowSize,
     );
   } else {
     detectedEvents = detectBottomsAndTops(
