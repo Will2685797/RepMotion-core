@@ -21,6 +21,8 @@ export type CalibrationBenchmarkResult = {
   totalBottomDifference: number;
   totalTopDifference: number;
 
+  avgDetectedBottoms: number;
+  avgDetectedTops: number;
   avgSelectedBottoms: number;
   avgSelectedTops: number;
 

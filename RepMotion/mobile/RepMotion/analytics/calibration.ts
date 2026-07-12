@@ -56,15 +56,27 @@ export type CalibrationDebugRejectedReason =
   | "LOW_PROMINENCE"
   | "WEAK_DIRECTION_CHANGE";
 
+export type CalibrationDebugFilter =
+  | "MIN_DISTANCE"
+  | "PROMINENCE"
+  | "DIRECTION_CHANGE";
+
 export type CalibrationDebugEvent = {
   type: "BOTTOM" | "TOP";
   index: number;
   value: number;
+  filter: CalibrationDebugFilter;
   kept: boolean;
   rejectedReason?: CalibrationDebugRejectedReason;
   distanceToPreviousSameType?: number;
   prominence?: number;
   directionChange?: number;
+  conflictWithIndex?: number;
+  conflictWithValue?: number;
+  conflictDistance?: number;
+  keptIndex?: number;
+  keptValue?: number;
+  selectionRule?: string;
 };
 
 type DetectedCalibrationEvents = {
@@ -97,6 +109,7 @@ export type CalibrationParameters = {
   minimumDistanceSamples?: number;
   peakWindowSize?: number;
   smoothingWindowSize?: number;
+  rawDetectionStrategy?: RawDetectionStrategy;
 };
 
 const DEFAULT_AXIS: CalibrationAxis = "az";
@@ -124,7 +137,7 @@ const MINIMUM_DISTANCE_SAMPLES = 10;
 const PEAK_WINDOW_SIZE = 3;
 const CALIBRATION_AXES: CalibrationAxis[] = ["ax", "ay", "az"];
 
-type RawDetectionStrategy = "local_extrema" | "direction_change";
+export type RawDetectionStrategy = "local_extrema" | "direction_change";
 
 const RAW_DETECTION_STRATEGY: RawDetectionStrategy = "direction_change";
 
@@ -709,6 +722,14 @@ function filterEventsByMinimumDistance(
     const lastEvent = filteredEvents[filteredEvents.length - 1];
 
     if (!lastEvent) {
+      debugEvents.push({
+        type,
+        index: candidate.index,
+        value: candidate.value,
+        filter: "MIN_DISTANCE",
+        kept: true,
+      });
+
       filteredEvents.push(candidate);
       continue;
     }
@@ -716,6 +737,15 @@ function filterEventsByMinimumDistance(
     const distanceToPreviousSameType = candidate.index - lastEvent.index;
 
     if (hasMinimumDistance(lastEvent, candidate, minimumDistanceSamples)) {
+      debugEvents.push({
+        type,
+        index: candidate.index,
+        value: candidate.value,
+        filter: "MIN_DISTANCE",
+        kept: true,
+        distanceToPreviousSameType,
+      });
+
       filteredEvents.push(candidate);
       continue;
     }
@@ -729,9 +759,35 @@ function filterEventsByMinimumDistance(
         type,
         index: lastEvent.index,
         value: lastEvent.value,
+        filter: "MIN_DISTANCE",
         kept: false,
         rejectedReason: "MIN_DISTANCE",
         distanceToPreviousSameType,
+        conflictWithIndex: candidate.index,
+        conflictWithValue: candidate.value,
+        conflictDistance: distanceToPreviousSameType,
+        keptIndex: candidate.index,
+        keptValue: candidate.value,
+        selectionRule: keepLowerValue
+          ? "BOTTOM keeps the lower value when same-type candidates are too close"
+          : "TOP keeps the higher value when same-type candidates are too close",
+      });
+
+      debugEvents.push({
+        type,
+        index: candidate.index,
+        value: candidate.value,
+        filter: "MIN_DISTANCE",
+        kept: true,
+        distanceToPreviousSameType,
+        conflictWithIndex: lastEvent.index,
+        conflictWithValue: lastEvent.value,
+        conflictDistance: distanceToPreviousSameType,
+        keptIndex: candidate.index,
+        keptValue: candidate.value,
+        selectionRule: keepLowerValue
+          ? "BOTTOM keeps the lower value when same-type candidates are too close"
+          : "TOP keeps the higher value when same-type candidates are too close",
       });
 
       filteredEvents[filteredEvents.length - 1] = candidate;
@@ -742,9 +798,18 @@ function filterEventsByMinimumDistance(
       type,
       index: candidate.index,
       value: candidate.value,
+      filter: "MIN_DISTANCE",
       kept: false,
       rejectedReason: "MIN_DISTANCE",
       distanceToPreviousSameType,
+      conflictWithIndex: lastEvent.index,
+      conflictWithValue: lastEvent.value,
+      conflictDistance: distanceToPreviousSameType,
+      keptIndex: lastEvent.index,
+      keptValue: lastEvent.value,
+      selectionRule: keepLowerValue
+        ? "BOTTOM keeps the lower value when same-type candidates are too close"
+        : "TOP keeps the higher value when same-type candidates are too close",
     });
   }
 
@@ -820,8 +885,18 @@ function filterEventsByProminence(
         type,
         index: candidate.index,
         value: candidate.value,
+        filter: "PROMINENCE",
         kept: false,
         rejectedReason: "LOW_PROMINENCE",
+        prominence,
+      });
+    } else {
+      debugEvents.push({
+        type,
+        index: candidate.index,
+        value: candidate.value,
+        filter: "PROMINENCE",
+        kept: true,
         prominence,
       });
     }
@@ -880,6 +955,7 @@ function filterEventsByDirectionChange(
         type,
         index: candidate.index,
         value: candidate.value,
+        filter: "DIRECTION_CHANGE",
         kept: false,
         rejectedReason: "WEAK_DIRECTION_CHANGE",
         directionChange: 0,
@@ -901,8 +977,18 @@ function filterEventsByDirectionChange(
         type,
         index: candidate.index,
         value: candidate.value,
+        filter: "DIRECTION_CHANGE",
         kept: false,
         rejectedReason: "WEAK_DIRECTION_CHANGE",
+        directionChange,
+      });
+    } else {
+      debugEvents.push({
+        type,
+        index: candidate.index,
+        value: candidate.value,
+        filter: "DIRECTION_CHANGE",
+        kept: true,
         directionChange,
       });
     }
@@ -1034,6 +1120,8 @@ export function calculateCalibration(
       parameters?.minimumDistanceSamples ?? MINIMUM_DISTANCE_SAMPLES,
     peakWindowSize: parameters?.peakWindowSize ?? PEAK_WINDOW_SIZE,
     smoothingWindowSize: parameters?.smoothingWindowSize ?? PEAK_WINDOW_SIZE,
+    rawDetectionStrategy:
+      parameters?.rawDetectionStrategy ?? RAW_DETECTION_STRATEGY,
   };
 
   const axisDiagnostics = getAllAxisDiagnostics(samples);
@@ -1070,8 +1158,9 @@ export function calculateCalibration(
   // sans modifier le reste du pipeline.
 
   let detectedEvents: DetectedCalibrationEvents;
+  const rawDetectionStrategy = resolvedParameters.rawDetectionStrategy;
 
-  if (RAW_DETECTION_STRATEGY === "direction_change") {
+  if (rawDetectionStrategy === "direction_change") {
     detectedEvents = detectBottomsAndTopsV25(
       values,
       bottomZone,
