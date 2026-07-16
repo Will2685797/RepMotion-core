@@ -58,3 +58,68 @@ vrai pivot à cause de la règle "plus extrême gagne".
 Aucune vérité-terrain annotée (timestamps exacts des vrais bottoms/tops)
 n'existe dans les datasets actuels. Le diagnostic sera donc visuel/inférentiel
 sur le signal brut, pas une preuve formelle.
+
+## Correction en cours de route
+Premier patch de Codex modifiait par erreur la constante globale
+RAW_DETECTION_STRATEGY ("direction_change" → "local_extrema"), ce qui
+aurait fait repasser toute l'app mobile de V2.5 à V2, pas seulement le
+diagnostic ciblé. Corrigé : rawDetectionStrategy est maintenant un
+paramètre optionnel de CalibrationParameters (fallback vers la constante
+globale inchangée). Le runner de diagnostic passe "local_extrema"
+localement, sans toucher au comportement par défaut de l'app.
+
+## Résultat du diagnostic — rowing_5reps_005.json
+
+Résumé :
+| Étape | Candidats |
+|---|---|
+| RAW | 55 |
+| Après MIN_DISTANCE | 13 |
+| Après PROMINENCE | 13 |
+| Après DIRECTION_CHANGE | 13 |
+
+PROMINENCE et DIRECTION_CHANGE n'éliminent aucun candidat supplémentaire
+sur ce dataset : tout le filtrage est fait par MIN_DISTANCE.
+
+Décisions de MIN_DISTANCE inspectées candidat par candidat : dans tous
+les conflits observés, le filtre garde bien l'extremum le plus marqué
+de sa fenêtre (le plus bas pour un bottom, le plus haut pour un top).
+Aucune décision incohérente ou arbitraire identifiée.
+
+Malgré ça, le résultat final reste faux : 7 bottoms / 6 tops sélectionnés
+au lieu des 6/5 attendus.
+
+## Découverte clé : rupture d'alternance
+En ordonnant chronologiquement les 13 survivants, la séquence de types
+n'alterne pas parfaitement (B,T,B,T...). Quatre ruptures identifiées :
+deux types identiques consécutifs sans passage par l'autre type entre eux,
+à 4 endroits dans le signal. Chaque rupture correspond probablement à un
+"vrai" extremum local (donc jamais rejeté par MIN_DISTANCE, car espacé de
+plus de minimumDistanceSamples) qui n'est pourtant pas un vrai nouveau
+pivot de répétition — probablement un double rebond ou une vibration
+(dépôt de la barre, hésitation en haut du mouvement).
+
+## Nouvelle hypothèse (changement de paradigme)
+Le problème n'est plus "MIN_DISTANCE choisit-il le bon candidat dans une
+fenêtre ?" (réponse : oui, il le fait bien). Le problème devient :
+"qu'est-ce qui définit un vrai pivot biomécanique, au-delà d'être un bon
+extremum local ?"
+
+Hypothèse formulée : un pivot valide n'est peut-être pas seulement un
+extremum, mais l'extrémité d'un mouvement complet — c'est-à-dire précédé
+et suivi d'un déplacement suffisamment ample dans le sens opposé, pas
+juste d'un petit aller-retour local (rebond).
+
+## Prochaine étape (non commencée)
+Avant d'implémenter un nouveau critère, valider l'hypothèse sur les
+données déjà obtenues aujourd'hui : pour les 4 ruptures d'alternance
+identifiées, calculer l'amplitude du mouvement entre les deux candidats
+consécutifs de même type, et la comparer à l'amplitude d'un vrai cycle
+complet (ex: entre 133 et 154). Si l'amplitude intermédiaire est nettement
+plus faible, ça confirme l'hypothèse sans avoir à coder de nouveau filtre.
+
+## Commit
+Instrumentation diagnostique des filtres poussée ce soir. Message court,
+détails conservés dans ce journal. Note : le debug logging détaillé des
+filtres est maintenant actif même hors diagnostic ciblé — à conditionner
+(ex: enableDetailedFilterDebug) avant tout merge vers main.
