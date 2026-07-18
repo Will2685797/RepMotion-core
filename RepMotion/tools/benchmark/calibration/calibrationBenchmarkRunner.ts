@@ -6,6 +6,7 @@ import {
   type CalibrationDataset,
   type RawCalibrationCandidateDebug,
 } from "../../../mobile/RepMotion/analytics/calibration";
+import { analyzeBottomTopBottomCycles } from "../../calibration-runner/cycleAnalyzer";
 import { calibrationParameterGrid } from "./calibrationParameterGrid";
 import type {
   CalibrationBenchmarkDatasetResult,
@@ -23,11 +24,46 @@ const DIAGNOSTIC_PARAMETERS = {
   prominenceWindowSize: 8,
   rawDetectionStrategy: "local_extrema" as const,
 };
+const CYCLE_ANALYZER_PARAMETERS = {
+  minRepDuration: 45,
+  minConcentricDuration: 8,
+  minEccentricDuration: 8,
+};
 
 type FilterStatus = "KEPT" | "REJECTED" | "NOT_REACHED";
+type SelectedEvent = {
+  type: "BOTTOM" | "TOP";
+  index: number;
+};
 
 function getCandidateKey(type: "BOTTOM" | "TOP", index: number): string {
   return `${type}:${index}`;
+}
+
+function countAlternationBreaks(
+  selectedBottomIndexes: number[],
+  selectedTopIndexes: number[],
+): number {
+  const selectedEvents: SelectedEvent[] = [
+    ...selectedBottomIndexes.map((index) => ({
+      type: "BOTTOM" as const,
+      index,
+    })),
+    ...selectedTopIndexes.map((index) => ({
+      type: "TOP" as const,
+      index,
+    })),
+  ].sort((left, right) => left.index - right.index);
+
+  let alternationBreakCount = 0;
+
+  for (let index = 0; index + 1 < selectedEvents.length; index += 1) {
+    if (selectedEvents[index].type === selectedEvents[index + 1].type) {
+      alternationBreakCount += 1;
+    }
+  }
+
+  return alternationBreakCount;
 }
 
 function getStageStatus(
@@ -227,10 +263,6 @@ function loadDatasets(): BenchmarkDataset[] {
 
 const datasets = loadDatasets();
 
-function scoreDataset(result: CalibrationBenchmarkDatasetResult): number {
-  return result.totalDifference;
-}
-
 function benchmarkCalibrationParameters(
   parameters: any,
 ): CalibrationBenchmarkResult {
@@ -257,6 +289,21 @@ function benchmarkCalibrationParameters(
     const bottomDifference = Math.abs(selectedBottoms - expectedBottoms);
     const topDifference = Math.abs(selectedTops - expectedTops);
     const totalDifference = bottomDifference + topDifference;
+    const selectedCountScore = totalDifference;
+    const selectedBottomIndexes =
+      calibrationResult.debug?.selectedBottomIndexes ?? [];
+    const selectedTopIndexes = calibrationResult.debug?.selectedTopIndexes ?? [];
+    const alternationBreakCount = countAlternationBreaks(
+      selectedBottomIndexes,
+      selectedTopIndexes,
+    );
+    const cycleAnalysis = analyzeBottomTopBottomCycles(
+      selectedBottomIndexes,
+      selectedTopIndexes,
+      expectedReps,
+      CYCLE_ANALYZER_PARAMETERS,
+    );
+    const repDifference = Math.abs(cycleAnalysis.simulatedReps - expectedReps);
 
     datasetResults.push({
       datasetName: dataset.name,
@@ -270,6 +317,15 @@ function benchmarkCalibrationParameters(
       bottomDifference,
       topDifference,
       totalDifference,
+      selectedCountScore,
+
+      alternationBreakCount,
+      simulatedReps: cycleAnalysis.simulatedReps,
+      repDifference,
+      cycleAnalyzerStatus: cycleAnalysis.status,
+      usedBottoms: cycleAnalysis.usedBottoms,
+      usedTops: cycleAnalysis.usedTops,
+      ignoredEventsCount: cycleAnalysis.ignoredEvents,
     });
   }
 
@@ -283,8 +339,30 @@ function benchmarkCalibrationParameters(
     0,
   );
 
-  const totalScore = datasetResults.reduce(
-    (sum, r) => sum + scoreDataset(r),
+  const totalSelectedCountScore = datasetResults.reduce(
+    (sum, r) => sum + r.selectedCountScore,
+    0,
+  );
+
+  const totalRepDifference = datasetResults.reduce(
+    (sum, r) => sum + r.repDifference,
+    0,
+  );
+
+  const datasetsExactRepCount = datasetResults.filter(
+    (result) => result.repDifference === 0,
+  ).length;
+
+  const datasetsMissing = datasetResults.filter(
+    (result) => result.cycleAnalyzerStatus === "MISSING",
+  ).length;
+
+  const datasetsTooMany = datasetResults.filter(
+    (result) => result.cycleAnalyzerStatus === "TOO_MANY",
+  ).length;
+
+  const totalAlternationBreaks = datasetResults.reduce(
+    (sum, r) => sum + r.alternationBreakCount,
     0,
   );
 
@@ -304,35 +382,68 @@ function benchmarkCalibrationParameters(
     datasetResults.reduce((sum, r) => sum + r.selectedTops, 0) /
     datasetResults.length;
 
+  const avgSimulatedReps =
+    datasetResults.reduce((sum, r) => sum + r.simulatedReps, 0) /
+    datasetResults.length;
+
   return {
     parameters,
-    totalScore,
+    totalScore: totalSelectedCountScore,
+    totalSelectedCountScore,
+    totalRepDifference,
+    datasetsExactRepCount,
+    datasetsMissing,
+    datasetsTooMany,
+    totalAlternationBreaks,
     totalBottomDifference,
     totalTopDifference,
     avgDetectedBottoms,
     avgDetectedTops,
     avgSelectedBottoms,
     avgSelectedTops,
+    avgSimulatedReps,
     datasets: datasetResults,
   };
 }
 
 function main() {
-  const results = calibrationParameterGrid
-    .map(benchmarkCalibrationParameters)
-    .sort((a, b) => a.totalScore - b.totalScore);
+  const results = calibrationParameterGrid.map(benchmarkCalibrationParameters);
+  const endToEndResults = [...results].sort((a, b) => {
+    if (a.totalRepDifference !== b.totalRepDifference) {
+      return a.totalRepDifference - b.totalRepDifference;
+    }
 
-  console.log("\n=== Calibration Benchmark Results ===\n");
+    if (a.datasetsExactRepCount !== b.datasetsExactRepCount) {
+      return b.datasetsExactRepCount - a.datasetsExactRepCount;
+    }
+
+    if (a.totalAlternationBreaks !== b.totalAlternationBreaks) {
+      return a.totalAlternationBreaks - b.totalAlternationBreaks;
+    }
+
+    return a.totalSelectedCountScore - b.totalSelectedCountScore;
+  });
+  const selectedCountResults = [...results].sort(
+    (a, b) => a.totalSelectedCountScore - b.totalSelectedCountScore,
+  );
+
+  console.log("\n=== Calibration Benchmark Results: End-To-End Top 20 ===\n");
 
   console.table(
-    results.slice(0, 20).map((result) => ({
-      selectedCountScore: result.totalScore,
+    endToEndResults.slice(0, 20).map((result) => ({
+      totalRepDifference: result.totalRepDifference,
+      datasetsExactRepCount: result.datasetsExactRepCount,
+      datasetsMissing: result.datasetsMissing,
+      datasetsTooMany: result.datasetsTooMany,
+      totalAlternationBreaks: result.totalAlternationBreaks,
+      totalSelectedCountScore: result.totalSelectedCountScore,
       bottomDiff: result.totalBottomDifference,
       topDiff: result.totalTopDifference,
       avgRawBottoms: result.avgDetectedBottoms.toFixed(2),
       avgRawTops: result.avgDetectedTops.toFixed(2),
       avgSelectedBottoms: result.avgSelectedBottoms.toFixed(2),
       avgSelectedTops: result.avgSelectedTops.toFixed(2),
+      avgSimulatedReps: result.avgSimulatedReps.toFixed(2),
       minimumDistanceSamples: result.parameters.minimumDistanceSamples,
       minimumProminenceRatio: result.parameters.minimumProminenceRatio,
       peakWindowSize: result.parameters.peakWindowSize,
@@ -344,14 +455,20 @@ function main() {
   console.log("\n=== Worst 10 Configurations ===\n");
 
   console.table(
-    results.slice(-10).map((result) => ({
-      selectedCountScore: result.totalScore,
+    endToEndResults.slice(-10).map((result) => ({
+      totalRepDifference: result.totalRepDifference,
+      datasetsExactRepCount: result.datasetsExactRepCount,
+      datasetsMissing: result.datasetsMissing,
+      datasetsTooMany: result.datasetsTooMany,
+      totalAlternationBreaks: result.totalAlternationBreaks,
+      totalSelectedCountScore: result.totalSelectedCountScore,
       bottomDiff: result.totalBottomDifference,
       topDiff: result.totalTopDifference,
       avgRawBottoms: result.avgDetectedBottoms.toFixed(2),
       avgRawTops: result.avgDetectedTops.toFixed(2),
       avgSelectedBottoms: result.avgSelectedBottoms.toFixed(2),
       avgSelectedTops: result.avgSelectedTops.toFixed(2),
+      avgSimulatedReps: result.avgSimulatedReps.toFixed(2),
       minimumDistanceSamples: result.parameters.minimumDistanceSamples,
       minimumProminenceRatio: result.parameters.minimumProminenceRatio,
       peakWindowSize: result.parameters.peakWindowSize,
@@ -363,30 +480,93 @@ function main() {
   console.log("\n=== Benchmark Summary ===\n");
 
   // totalScore measures Selected count error only; it is not a Cycle Analyzer rep count.
-  console.log("Best score :", results[0].totalScore);
-  console.log("Worst score:", results[results.length - 1].totalScore);
+  console.log("Best totalRepDifference :", endToEndResults[0].totalRepDifference);
   console.log(
-    "Score delta:",
-    results[results.length - 1].totalScore - results[0].totalScore,
+    "Worst totalRepDifference:",
+    endToEndResults[endToEndResults.length - 1].totalRepDifference,
+  );
+  console.log(
+    "Rep difference delta:",
+    endToEndResults[endToEndResults.length - 1].totalRepDifference -
+      endToEndResults[0].totalRepDifference,
   );
 
-  const best = results[0];
+  const bestEndToEnd = endToEndResults[0];
+  const bestSelectedCount = selectedCountResults[0];
 
-  console.log("\n=== Best Configuration Details ===\n");
-  console.log(best.parameters);
+  console.log("\n=== Best End-To-End Configuration Details ===\n");
+  console.log(bestEndToEnd.parameters);
 
   console.table(
-    best.datasets.map((dataset) => ({
+    bestEndToEnd.datasets.map((dataset) => ({
       dataset: dataset.datasetName,
       expected: dataset.expectedReps,
       bottomsDetected: dataset.bottomsDetected,
       topsDetected: dataset.topsDetected,
       selectedBottoms: dataset.selectedBottoms,
       selectedTops: dataset.selectedTops,
+      selectedCountScore: dataset.selectedCountScore,
+      alternationBreakCount: dataset.alternationBreakCount,
+      simulatedReps: dataset.simulatedReps,
+      repDifference: dataset.repDifference,
+      cycleAnalyzerStatus: dataset.cycleAnalyzerStatus,
+      usedBottoms: dataset.usedBottoms,
+      usedTops: dataset.usedTops,
+      ignoredEventsCount: dataset.ignoredEventsCount,
       bottomDiff: dataset.bottomDifference,
       topDiff: dataset.topDifference,
       totalDiff: dataset.totalDifference,
     })),
+  );
+
+  console.log("\n=== Selected Count vs End-To-End Best Comparison ===\n");
+  console.table([
+    {
+      ranking: "bestSelectedCount",
+      totalRepDifference: bestSelectedCount.totalRepDifference,
+      datasetsExactRepCount: bestSelectedCount.datasetsExactRepCount,
+      totalAlternationBreaks: bestSelectedCount.totalAlternationBreaks,
+      totalSelectedCountScore: bestSelectedCount.totalSelectedCountScore,
+      parameters: JSON.stringify(bestSelectedCount.parameters),
+    },
+    {
+      ranking: "bestEndToEnd",
+      totalRepDifference: bestEndToEnd.totalRepDifference,
+      datasetsExactRepCount: bestEndToEnd.datasetsExactRepCount,
+      totalAlternationBreaks: bestEndToEnd.totalAlternationBreaks,
+      totalSelectedCountScore: bestEndToEnd.totalSelectedCountScore,
+      parameters: JSON.stringify(bestEndToEnd.parameters),
+    },
+  ]);
+
+  console.log(
+    "\nRanking changed:",
+    JSON.stringify(bestSelectedCount.parameters) !==
+      JSON.stringify(bestEndToEnd.parameters),
+  );
+
+  console.log("\n=== Required Dataset Details For Best End-To-End Configuration ===\n");
+  console.table(
+    bestEndToEnd.datasets
+      .filter((dataset) =>
+        ["rowing_5reps_005.json", "rowing_5reps_002.json"].includes(
+          dataset.datasetName,
+        ),
+      )
+      .map((dataset) => ({
+        dataset: dataset.datasetName,
+        expectedReps: dataset.expectedReps,
+        selectedBottoms: dataset.selectedBottoms,
+        selectedTops: dataset.selectedTops,
+        selectedCountScore: dataset.selectedCountScore,
+        alternationBreakCount: dataset.alternationBreakCount,
+        simulatedReps: dataset.simulatedReps,
+        repDifference: dataset.repDifference,
+        cycleAnalyzerStatus: dataset.cycleAnalyzerStatus,
+        usedBottoms: dataset.usedBottoms,
+        usedTops: dataset.usedTops,
+        ignoredEventsCount: dataset.ignoredEventsCount,
+      })),
   );
 
   printDiagnosticTable(datasets);
