@@ -91,6 +91,12 @@ type ValidatedCalibrationEvents = {
   debugEvents: CalibrationDebugEvent[];
 };
 
+type ChronologicalMinDistanceCandidate = {
+  type: "BOTTOM" | "TOP";
+  index: number;
+  value: number;
+};
+
 export type CalibrationDataset = {
   id: string;
   exercise: string;
@@ -103,6 +109,8 @@ export type CalibrationDataset = {
   notes?: string;
 };
 
+export type MinDistanceStrategy = "current" | "reset_on_opposite";
+
 export type CalibrationParameters = {
   prominenceWindowSize?: number;
   minimumProminenceRatio?: number;
@@ -110,6 +118,7 @@ export type CalibrationParameters = {
   peakWindowSize?: number;
   smoothingWindowSize?: number;
   rawDetectionStrategy?: RawDetectionStrategy;
+  minDistanceStrategy?: MinDistanceStrategy;
 };
 
 const DEFAULT_AXIS: CalibrationAxis = "az";
@@ -140,6 +149,7 @@ const CALIBRATION_AXES: CalibrationAxis[] = ["ax", "ay", "az"];
 export type RawDetectionStrategy = "local_extrema" | "direction_change";
 
 const RAW_DETECTION_STRATEGY: RawDetectionStrategy = "direction_change";
+const DEFAULT_MIN_DISTANCE_STRATEGY: MinDistanceStrategy = "current";
 
 type AxisDiagnostics = {
   min: number;
@@ -709,7 +719,7 @@ function hasMinimumDistance(
 }
 
 // Filtre les candidats trop proches et conserve le plus extrême dans chaque groupe.
-function filterEventsByMinimumDistance(
+function filterByMinimumDistanceCurrent(
   candidates: CalibrationEventCandidate[],
   minimumDistanceSamples: number,
   keepLowerValue: boolean,
@@ -814,6 +824,215 @@ function filterEventsByMinimumDistance(
   }
 
   return filteredEvents;
+}
+
+function filterByMinimumDistance(
+  candidates: CalibrationEventCandidate[],
+  minimumDistanceSamples: number,
+  keepLowerValue: boolean,
+  type: "BOTTOM" | "TOP",
+  debugEvents: CalibrationDebugEvent[],
+  strategy: MinDistanceStrategy,
+): CalibrationEventCandidate[] {
+  if (strategy === "current") {
+    return filterByMinimumDistanceCurrent(
+      candidates,
+      minimumDistanceSamples,
+      keepLowerValue,
+      type,
+      debugEvents,
+    );
+  }
+
+  return filterByMinimumDistanceCurrent(
+    candidates,
+    minimumDistanceSamples,
+    keepLowerValue,
+    type,
+    debugEvents,
+  );
+}
+
+function filterByMinimumDistanceResetOnOpposite(
+  bottoms: CalibrationEventCandidate[],
+  tops: CalibrationEventCandidate[],
+  minimumDistanceSamples: number,
+  debugEvents: CalibrationDebugEvent[],
+): {
+  bottoms: CalibrationEventCandidate[];
+  tops: CalibrationEventCandidate[];
+} {
+  const eligibleEvents: ChronologicalMinDistanceCandidate[] = [
+    ...bottoms.map((candidate) => ({
+      type: "BOTTOM" as const,
+      index: candidate.index,
+      value: candidate.value,
+    })),
+    ...tops.map((candidate) => ({
+      type: "TOP" as const,
+      index: candidate.index,
+      value: candidate.value,
+    })),
+  ].sort((left, right) => left.index - right.index);
+
+  const selectedBottoms: CalibrationEventCandidate[] = [];
+  const selectedTops: CalibrationEventCandidate[] = [];
+
+  let activeGroupType: "BOTTOM" | "TOP" | null = null;
+  let activeGroupSurvivor: (CalibrationEventCandidate & {
+    type: "BOTTOM" | "TOP";
+  }) | null = null;
+
+  const startNewGroup = (candidate: ChronologicalMinDistanceCandidate) => {
+    const mappedCandidate = {
+      index: candidate.index,
+      value: candidate.value,
+      type: candidate.type,
+    };
+
+    if (candidate.type === "BOTTOM") {
+      selectedBottoms.push(mappedCandidate);
+    } else {
+      selectedTops.push(mappedCandidate);
+    }
+
+    activeGroupType = candidate.type;
+    activeGroupSurvivor = mappedCandidate;
+  };
+
+  for (const candidate of eligibleEvents) {
+    const distanceToPreviousSameType = activeGroupSurvivor
+      ? candidate.index - activeGroupSurvivor.index
+      : undefined;
+
+    if (!activeGroupSurvivor || activeGroupType === null) {
+      startNewGroup(candidate);
+      debugEvents.push({
+        type: candidate.type,
+        index: candidate.index,
+        value: candidate.value,
+        filter: "MIN_DISTANCE",
+        kept: true,
+        distanceToPreviousSameType,
+        selectionRule:
+          "reset_on_opposite: start new cluster after opposite-type boundary",
+      });
+      continue;
+    }
+
+    if (candidate.type !== activeGroupType) {
+      startNewGroup(candidate);
+      debugEvents.push({
+        type: candidate.type,
+        index: candidate.index,
+        value: candidate.value,
+        filter: "MIN_DISTANCE",
+        kept: true,
+        distanceToPreviousSameType,
+        selectionRule:
+          "reset_on_opposite: opposite-type event closes the current cluster",
+      });
+      continue;
+    }
+
+    if (distanceToPreviousSameType !== undefined && distanceToPreviousSameType >= minimumDistanceSamples) {
+      startNewGroup(candidate);
+      debugEvents.push({
+        type: candidate.type,
+        index: candidate.index,
+        value: candidate.value,
+        filter: "MIN_DISTANCE",
+        kept: true,
+        distanceToPreviousSameType,
+        selectionRule:
+          "reset_on_opposite: same-type event starts a new temporal cluster",
+      });
+      continue;
+    }
+
+    const keepLowerValue = candidate.type === "BOTTOM";
+    const shouldReplace = keepLowerValue
+      ? candidate.value < activeGroupSurvivor.value
+      : candidate.value > activeGroupSurvivor.value;
+
+    if (shouldReplace) {
+      const previousSurvivor = activeGroupSurvivor;
+
+      if (candidate.type === "BOTTOM") {
+        selectedBottoms[selectedBottoms.length - 1] = {
+          index: candidate.index,
+          value: candidate.value,
+        };
+      } else {
+        selectedTops[selectedTops.length - 1] = {
+          index: candidate.index,
+          value: candidate.value,
+        };
+      }
+
+      activeGroupSurvivor = {
+        index: candidate.index,
+        value: candidate.value,
+        type: candidate.type,
+      };
+
+      debugEvents.push({
+        type: previousSurvivor.type,
+        index: previousSurvivor.index,
+        value: previousSurvivor.value,
+        filter: "MIN_DISTANCE",
+        kept: false,
+        rejectedReason: "MIN_DISTANCE",
+        distanceToPreviousSameType,
+        conflictWithIndex: candidate.index,
+        conflictWithValue: candidate.value,
+        conflictDistance: distanceToPreviousSameType,
+        keptIndex: candidate.index,
+        keptValue: candidate.value,
+        selectionRule:
+          "reset_on_opposite: same-type candidate replaces the previous survivor within the cluster",
+      });
+
+      debugEvents.push({
+        type: candidate.type,
+        index: candidate.index,
+        value: candidate.value,
+        filter: "MIN_DISTANCE",
+        kept: true,
+        distanceToPreviousSameType,
+        conflictWithIndex: previousSurvivor.index,
+        conflictWithValue: previousSurvivor.value,
+        conflictDistance: distanceToPreviousSameType,
+        keptIndex: candidate.index,
+        keptValue: candidate.value,
+        selectionRule:
+          "reset_on_opposite: same-type candidate replaces the previous survivor within the cluster",
+      });
+      continue;
+    }
+
+    debugEvents.push({
+      type: candidate.type,
+      index: candidate.index,
+      value: candidate.value,
+      filter: "MIN_DISTANCE",
+      kept: false,
+      rejectedReason: "MIN_DISTANCE",
+      distanceToPreviousSameType,
+      conflictWithIndex: activeGroupSurvivor.index,
+      conflictWithValue: activeGroupSurvivor.value,
+      conflictDistance: distanceToPreviousSameType,
+      keptIndex: activeGroupSurvivor.index,
+      keptValue: activeGroupSurvivor.value,
+      selectionRule:
+        "reset_on_opposite: same-type candidate is rejected within the current cluster",
+    });
+  }
+
+  return {
+    bottoms: selectedBottoms,
+    tops: selectedTops,
+  };
 }
 
 //**********************//
@@ -1017,70 +1236,120 @@ function validateCalibrationEvents(
   //     tops: tops.length,
   //   });
 
-  bottoms = filterEventsByMinimumDistance(
-    bottoms,
-    parameters.minimumDistanceSamples,
-    true,
-    "BOTTOM",
-    debugEvents,
-  );
+  if (parameters.minDistanceStrategy === "reset_on_opposite") {
+    bottoms = filterEventsByProminence(
+      values,
+      bottoms,
+      minimumProminence,
+      true,
+      parameters.prominenceWindowSize,
+      "BOTTOM",
+      debugEvents,
+    );
 
-  tops = filterEventsByMinimumDistance(
-    tops,
-    parameters.minimumDistanceSamples,
-    false,
-    "TOP",
-    debugEvents,
-  );
+    tops = filterEventsByProminence(
+      values,
+      tops,
+      minimumProminence,
+      false,
+      parameters.prominenceWindowSize,
+      "TOP",
+      debugEvents,
+    );
 
-  //   console.log("[CALIBRATION FILTERS] After Distance", {
-  //     bottoms: bottoms.length,
-  //     tops: tops.length,
-  //   });
+    bottoms = filterEventsByDirectionChange(
+      values,
+      bottoms,
+      true,
+      parameters.peakWindowSize,
+      "BOTTOM",
+      debugEvents,
+    );
 
-  bottoms = filterEventsByProminence(
-    values,
-    bottoms,
-    minimumProminence,
-    true,
-    parameters.prominenceWindowSize,
-    "BOTTOM",
-    debugEvents,
-  );
+    tops = filterEventsByDirectionChange(
+      values,
+      tops,
+      false,
+      parameters.peakWindowSize,
+      "TOP",
+      debugEvents,
+    );
 
-  tops = filterEventsByProminence(
-    values,
-    tops,
-    minimumProminence,
-    false,
-    parameters.prominenceWindowSize,
-    "TOP",
-    debugEvents,
-  );
+    const resetSelection = filterByMinimumDistanceResetOnOpposite(
+      bottoms,
+      tops,
+      parameters.minimumDistanceSamples,
+      debugEvents,
+    );
 
-  //   console.log("[CALIBRATION FILTERS] After Prominence", {
-  //     bottoms: bottoms.length,
-  //     tops: tops.length,
-  //     minimumProminence,
-  //   });
+    bottoms = resetSelection.bottoms;
+    tops = resetSelection.tops;
+  } else {
+    bottoms = filterByMinimumDistanceCurrent(
+      bottoms,
+      parameters.minimumDistanceSamples,
+      true,
+      "BOTTOM",
+      debugEvents,
+    );
 
-  bottoms = filterEventsByDirectionChange(
-    values,
-    bottoms,
-    true,
-    parameters.peakWindowSize,
-    "BOTTOM",
-    debugEvents,
-  );
+    tops = filterByMinimumDistanceCurrent(
+      tops,
+      parameters.minimumDistanceSamples,
+      false,
+      "TOP",
+      debugEvents,
+    );
 
-  tops = filterEventsByDirectionChange(
-    values,
-    tops,
-    false,
-    parameters.peakWindowSize,
-    "TOP",
-    debugEvents,
-  );
+    //   console.log("[CALIBRATION FILTERS] After Distance", {
+    //     bottoms: bottoms.length,
+    //     tops: tops.length,
+    //   });
+
+    bottoms = filterEventsByProminence(
+      values,
+      bottoms,
+      minimumProminence,
+      true,
+      parameters.prominenceWindowSize,
+      "BOTTOM",
+      debugEvents,
+    );
+
+    tops = filterEventsByProminence(
+      values,
+      tops,
+      minimumProminence,
+      false,
+      parameters.prominenceWindowSize,
+      "TOP",
+      debugEvents,
+    );
+
+    //   console.log("[CALIBRATION FILTERS] After Prominence", {
+    //     bottoms: bottoms.length,
+    //     tops: tops.length,
+    //     minimumProminence,
+    //   });
+
+    bottoms = filterEventsByDirectionChange(
+      values,
+      bottoms,
+      true,
+      parameters.peakWindowSize,
+      "BOTTOM",
+      debugEvents,
+    );
+
+    tops = filterEventsByDirectionChange(
+      values,
+      tops,
+      false,
+      parameters.peakWindowSize,
+      "TOP",
+      debugEvents,
+    );
+  }
 
   //   console.log("[CALIBRATION FILTERS] After Direction", {
   //     bottoms: bottoms.length,
@@ -1122,6 +1391,8 @@ export function calculateCalibration(
     smoothingWindowSize: parameters?.smoothingWindowSize ?? PEAK_WINDOW_SIZE,
     rawDetectionStrategy:
       parameters?.rawDetectionStrategy ?? RAW_DETECTION_STRATEGY,
+    minDistanceStrategy:
+      parameters?.minDistanceStrategy ?? DEFAULT_MIN_DISTANCE_STRATEGY,
   };
 
   const axisDiagnostics = getAllAxisDiagnostics(samples);
