@@ -32,6 +32,10 @@ export type CalibrationResult = {
     selectedTopIndexes: number[];
     filterDebugEvents: CalibrationDebugEvent[];
     rawCandidateDebugEvents: RawCalibrationCandidateDebug[];
+    selectionStrategy?: CalibrationSelectionStrategy;
+    admissibleCandidateCount?: number;
+    selectedChain?: Array<{ type: "BOTTOM" | "TOP"; index: number }>;
+    selectionScore?: number;
   };
 };
 
@@ -89,6 +93,10 @@ type ValidatedCalibrationEvents = {
   bottoms: CalibrationEventCandidate[];
   tops: CalibrationEventCandidate[];
   debugEvents: CalibrationDebugEvent[];
+  selectionStrategy?: CalibrationSelectionStrategy;
+  admissibleCandidateCount?: number;
+  selectedChain?: Array<{ type: "BOTTOM" | "TOP"; index: number }>;
+  selectionScore?: number;
 };
 
 type ChronologicalMinDistanceCandidate = {
@@ -110,6 +118,9 @@ export type CalibrationDataset = {
 };
 
 export type MinDistanceStrategy = "current" | "reset_on_opposite";
+export type CalibrationSelectionStrategy =
+  | "current_filters"
+  | "global_alternating_path";
 
 export type CalibrationParameters = {
   prominenceWindowSize?: number;
@@ -119,6 +130,7 @@ export type CalibrationParameters = {
   smoothingWindowSize?: number;
   rawDetectionStrategy?: RawDetectionStrategy;
   minDistanceStrategy?: MinDistanceStrategy;
+  selectionStrategy?: CalibrationSelectionStrategy;
 };
 
 const DEFAULT_AXIS: CalibrationAxis = "az";
@@ -150,6 +162,8 @@ export type RawDetectionStrategy = "local_extrema" | "direction_change";
 
 const RAW_DETECTION_STRATEGY: RawDetectionStrategy = "direction_change";
 const DEFAULT_MIN_DISTANCE_STRATEGY: MinDistanceStrategy = "current";
+const DEFAULT_SELECTION_STRATEGY: CalibrationSelectionStrategy =
+  "current_filters";
 
 type AxisDiagnostics = {
   min: number;
@@ -853,6 +867,223 @@ function filterByMinimumDistance(
   );
 }
 
+type GlobalAlternatingPathState = {
+  score: number;
+  predecessorKey: string | null;
+  candidateIndex: number;
+  lastBottomIndex: number | null;
+};
+
+function selectGlobalAlternatingPath(
+  bottoms: CalibrationEventCandidate[],
+  tops: CalibrationEventCandidate[],
+  expectedReps: number,
+  constraints: {
+    minConcentricDuration: number;
+    minEccentricDuration: number;
+    minRepDuration: number;
+  },
+  debugEvents: CalibrationDebugEvent[],
+): {
+  bottoms: CalibrationEventCandidate[];
+  tops: CalibrationEventCandidate[];
+  selectionScore: number;
+  selectedChain: Array<{ type: "BOTTOM" | "TOP"; index: number }>;
+} {
+  const pooledCandidates = [
+    ...bottoms.map((candidate) => ({
+      ...candidate,
+      type: "BOTTOM" as const,
+    })),
+    ...tops.map((candidate) => ({
+      ...candidate,
+      type: "TOP" as const,
+    })),
+  ].sort((left, right) => left.index - right.index);
+
+  const targetChainLength = expectedReps * 2 + 1;
+
+  if (pooledCandidates.length < targetChainLength) {
+    debugEvents.push({
+      type: "BOTTOM",
+      index: -1,
+      value: 0,
+      filter: "MIN_DISTANCE",
+      kept: false,
+      rejectedReason: "MIN_DISTANCE",
+      selectionRule: "GLOBAL_PATH_NOT_FOUND",
+    });
+
+    return {
+      bottoms: [],
+      tops: [],
+      selectionScore: 0,
+      selectedChain: [],
+    };
+  }
+
+  const stateStore = new Map<string, GlobalAlternatingPathState>();
+  let currentStates = new Map<string, GlobalAlternatingPathState>();
+  const initialStateKey = "0:-1:-1";
+  const initialState: GlobalAlternatingPathState = {
+    score: 0,
+    predecessorKey: null,
+    candidateIndex: -1,
+    lastBottomIndex: null,
+  };
+  currentStates.set(initialStateKey, initialState);
+  stateStore.set(initialStateKey, initialState);
+
+  for (let step = 0; step < targetChainLength; step += 1) {
+    const requiredType = step % 2 === 0 ? "BOTTOM" : "TOP";
+    const nextStates = new Map<string, GlobalAlternatingPathState>();
+
+    for (const [stateKey, state] of currentStates) {
+      const previousCandidateIndex = state.candidateIndex;
+      const previousCandidate =
+        previousCandidateIndex >= 0
+          ? pooledCandidates[previousCandidateIndex]
+          : null;
+
+      for (let candidateIndex = 0; candidateIndex < pooledCandidates.length; candidateIndex += 1) {
+        const candidate = pooledCandidates[candidateIndex];
+
+        if (candidate.type !== requiredType) {
+          continue;
+        }
+
+        if (previousCandidate && candidate.index <= previousCandidate.index) {
+          continue;
+        }
+
+        if (previousCandidate) {
+          const transitionDuration = candidate.index - previousCandidate.index;
+
+          if (requiredType === "TOP") {
+            if (transitionDuration < constraints.minConcentricDuration) {
+              continue;
+            }
+          } else {
+            if (transitionDuration < constraints.minEccentricDuration) {
+              continue;
+            }
+          }
+
+          if (
+            requiredType === "BOTTOM" &&
+            state.lastBottomIndex !== null &&
+            candidate.index - state.lastBottomIndex < constraints.minRepDuration
+          ) {
+            continue;
+          }
+        } else if (requiredType !== "BOTTOM") {
+          continue;
+        }
+
+        const nextLastBottomIndex =
+          requiredType === "BOTTOM" ? candidate.index : state.lastBottomIndex;
+        const nextScore = state.score + (candidate.type === "BOTTOM" ? -candidate.value : candidate.value);
+        const nextKey = `${step + 1}:${candidateIndex}:${nextLastBottomIndex ?? -1}`;
+        const existingState = nextStates.get(nextKey);
+
+        if (!existingState || nextScore > existingState.score) {
+          const nextState: GlobalAlternatingPathState = {
+            score: nextScore,
+            predecessorKey: stateKey,
+            candidateIndex,
+            lastBottomIndex: nextLastBottomIndex,
+          };
+          nextStates.set(nextKey, nextState);
+          stateStore.set(nextKey, nextState);
+        }
+      }
+    }
+
+    currentStates = nextStates;
+
+    if (currentStates.size === 0) {
+      break;
+    }
+  }
+
+  let bestTerminalState: GlobalAlternatingPathState | null = null;
+  let bestTerminalStateKey: string | null = null;
+
+  for (const [stateKey, state] of currentStates) {
+    if (
+      !bestTerminalState ||
+      state.score > bestTerminalState.score
+    ) {
+      bestTerminalState = state;
+      bestTerminalStateKey = stateKey;
+    }
+  }
+
+  if (!bestTerminalStateKey || !bestTerminalState) {
+    debugEvents.push({
+      type: "BOTTOM",
+      index: -1,
+      value: 0,
+      filter: "MIN_DISTANCE",
+      kept: false,
+      rejectedReason: "MIN_DISTANCE",
+      selectionRule: "GLOBAL_PATH_NOT_FOUND",
+    });
+
+    return {
+      bottoms: [],
+      tops: [],
+      selectionScore: 0,
+      selectedChain: [],
+    };
+  }
+
+  const selectedCandidateIndices: number[] = [];
+  let cursorKey: string | null = bestTerminalStateKey;
+
+  while (cursorKey) {
+    const state = stateStore.get(cursorKey);
+
+    if (!state) {
+      break;
+    }
+
+    if (state.candidateIndex >= 0) {
+      selectedCandidateIndices.push(state.candidateIndex);
+    }
+
+    cursorKey = state.predecessorKey;
+  }
+
+  selectedCandidateIndices.reverse();
+
+  const selectedCandidates = selectedCandidateIndices.map(
+    (candidateIndex) => pooledCandidates[candidateIndex],
+  );
+
+  const selectedBottoms = selectedCandidates.filter(
+    (candidate) => candidate.type === "BOTTOM",
+  );
+  const selectedTops = selectedCandidates.filter(
+    (candidate) => candidate.type === "TOP",
+  );
+
+  const selectionScore = selectedCandidates.reduce(
+    (sum, candidate) => sum + (candidate.type === "BOTTOM" ? -candidate.value : candidate.value),
+    0,
+  );
+
+  return {
+    bottoms: selectedBottoms,
+    tops: selectedTops,
+    selectionScore,
+    selectedChain: selectedCandidates.map((candidate) => ({
+      type: candidate.type,
+      index: candidate.index,
+    })),
+  };
+}
+
 function filterByMinimumDistanceResetOnOpposite(
   bottoms: CalibrationEventCandidate[],
   tops: CalibrationEventCandidate[],
@@ -1227,6 +1458,7 @@ function validateCalibrationEvents(
   bottoms: CalibrationEventCandidate[],
   tops: CalibrationEventCandidate[],
   parameters: Required<CalibrationParameters>,
+  expectedReps: number,
 ): ValidatedCalibrationEvents {
   const minimumProminence = robustRange * parameters.minimumProminenceRatio;
   const debugEvents: CalibrationDebugEvent[] = [];
@@ -1236,7 +1468,71 @@ function validateCalibrationEvents(
   //     tops: tops.length,
   //   });
 
-  if (parameters.minDistanceStrategy === "reset_on_opposite") {
+  if (parameters.selectionStrategy === "global_alternating_path") {
+    bottoms = filterEventsByProminence(
+      values,
+      bottoms,
+      minimumProminence,
+      true,
+      parameters.prominenceWindowSize,
+      "BOTTOM",
+      debugEvents,
+    );
+
+    tops = filterEventsByProminence(
+      values,
+      tops,
+      minimumProminence,
+      false,
+      parameters.prominenceWindowSize,
+      "TOP",
+      debugEvents,
+    );
+
+    bottoms = filterEventsByDirectionChange(
+      values,
+      bottoms,
+      true,
+      parameters.peakWindowSize,
+      "BOTTOM",
+      debugEvents,
+    );
+
+    tops = filterEventsByDirectionChange(
+      values,
+      tops,
+      false,
+      parameters.peakWindowSize,
+      "TOP",
+      debugEvents,
+    );
+
+    const admissibleCandidateCount = bottoms.length + tops.length;
+    const globalSelection = selectGlobalAlternatingPath(
+      bottoms,
+      tops,
+      expectedReps,
+      {
+        minConcentricDuration: 8,
+        minEccentricDuration: 8,
+        minRepDuration: 45,
+      },
+      debugEvents,
+    );
+
+    bottoms = globalSelection.bottoms;
+    tops = globalSelection.tops;
+
+    return {
+      bottoms,
+      tops,
+      debugEvents,
+      selectionStrategy: "global_alternating_path",
+      admissibleCandidateCount,
+      selectedChain: globalSelection.selectedChain,
+      selectionScore: globalSelection.selectionScore,
+    };
+  } else if (parameters.minDistanceStrategy === "reset_on_opposite") {
     bottoms = filterEventsByProminence(
       values,
       bottoms,
@@ -1360,6 +1656,8 @@ function validateCalibrationEvents(
     bottoms,
     tops,
     debugEvents,
+    selectionStrategy: undefined,
+    admissibleCandidateCount: bottoms.length + tops.length,
   };
 }
 
@@ -1367,6 +1665,7 @@ export function calculateCalibration(
   samples: MotionSample[],
   axis?: CalibrationAxis,
   parameters?: CalibrationParameters,
+  expectedReps?: number,
 ): CalibrationResult {
   if (samples.length === 0) {
     return {
@@ -1393,6 +1692,8 @@ export function calculateCalibration(
       parameters?.rawDetectionStrategy ?? RAW_DETECTION_STRATEGY,
     minDistanceStrategy:
       parameters?.minDistanceStrategy ?? DEFAULT_MIN_DISTANCE_STRATEGY,
+    selectionStrategy:
+      parameters?.selectionStrategy ?? DEFAULT_SELECTION_STRATEGY,
   };
 
   const axisDiagnostics = getAllAxisDiagnostics(samples);
@@ -1461,6 +1762,7 @@ export function calculateCalibration(
     detectedEvents.bottoms,
     detectedEvents.tops,
     resolvedParameters,
+    expectedReps ?? REQUIRED_CALIBRATION_REPS,
   );
 
   const selectedBottoms = validatedEvents.bottoms;
@@ -1561,6 +1863,10 @@ export function calculateCalibration(
       selectedTopIndexes: selectedTops.map((event) => event.index),
       filterDebugEvents: validatedEvents.debugEvents,
       rawCandidateDebugEvents: detectedEvents.rawDebugEvents,
+      selectionStrategy: validatedEvents.selectionStrategy,
+      admissibleCandidateCount: validatedEvents.admissibleCandidateCount,
+      selectedChain: validatedEvents.selectedChain,
+      selectionScore: validatedEvents.selectionScore,
     },
   };
 }

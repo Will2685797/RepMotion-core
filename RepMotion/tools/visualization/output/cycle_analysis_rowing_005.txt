@@ -1,0 +1,63 @@
+CYCLE ANALYSIS - How Events Convert to Reps
+================================================================================
+
+CURRENT_FILTERS STRATEGY
+Events sequence: 13 events
+   1. B @ index  26 (value:  17604)
+   2. B @ index 133 (value:  14656)
+   3. T @ index 154 (value:  27068)
+   4. B @ index 222 (value:  14808)
+   5. T @ index 245 (value:  23192)
+   6. T @ index 315 (value:  24032)
+   7. B @ index 331 (value:  13288)
+   8. B @ index 415 (value:  12380)
+   9. T @ index 420 (value:  26584)
+  10. B @ index 507 (value:  14072)
+  11. T @ index 515 (value:  27252)
+  12. T @ index 601 (value:  21800)
+  13. B @ index 603 (value:  16780)
+
+Found 2 complete B-T-B cycles:
+  Cycle 1: [133]-[154]-[222]
+    Concentric:  21  |  Eccentric:  68  |  Total:  89
+    Valid: True
+  Cycle 2: [415]-[420]-[507]
+    Concentric:   5  |  Eccentric:  87  |  Total:  92
+    Valid: False
+
+Valid reps: 1
+
+================================================================================
+
+GLOBAL_ALTERNATING_PATH STRATEGY
+Events sequence: 11 events
+   1. B @ index 133 (value:  14656)
+   2. T @ index 154 (value:  27068)
+   3. B @ index 222 (value:  14808)
+   4. T @ index 315 (value:  24032)
+   5. B @ index 331 (value:  13288)
+   6. T @ index 420 (value:  26584)
+   7. B @ index 442 (value:  14976)
+   8. T @ index 455 (value:  25268)
+   9. B @ index 507 (value:  14072)
+  10. T @ index 515 (value:  27252)
+  11. B @ index 557 (value:  14328)
+
+Found 5 complete B-T-B cycles:
+  Cycle 1: [133]-[154]-[222]
+    Concentric:  21  |  Eccentric:  68  |  Total:  89
+    Valid: True
+  Cycle 2: [222]-[315]-[331]
+    Concentric:  93  |  Eccentric:  16  |  Total: 109
+    Valid: True
+  Cycle 3: [331]-[420]-[442]
+    Concentric:  89  |  Eccentric:  22  |  Total: 111
+    Valid: True
+  Cycle 4: [442]-[455]-[507]
+    Concentric:  13  |  Eccentric:  52  |  Total:  65
+    Valid: True
+  Cycle 5: [507]-[515]-[557]
+    Concentric:   8  |  Eccentric:  42  |  Total:  50
+    Valid: True
+
+Valid reps: 5

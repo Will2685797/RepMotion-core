@@ -1,0 +1,41 @@
+STRATEGY COMPARISON SUMMARY
+============================================================
+Dataset: rowing_5reps_005.json
+Calibration Axis: az
+Total Samples: 637
+
+CURRENT_FILTERS CHAIN:
+  Bottoms: [26, 133, 222, 331, 415, 507, 603]
+  Tops: [154, 245, 315, 420, 515, 601]
+  Total events: 13
+
+GLOBAL_ALTERNATING_PATH CHAIN:
+  Bottoms: [133, 222, 331, 442, 507, 557]
+  Tops: [154, 315, 420, 455, 515]
+  Total events: 11
+
+COMPARISON:
+  Common events: 8
+  Current only: 5
+  Global only: 3
+
+DETAILED EVENTS:
+------------------------------------------------------------
+Index | Type | Current | Global | Value | Category
+------------------------------------------------------------
+   26 | B    | Y       |        | 17604 | Current only
+  133 | B    | Y       | Y      | 14656 | Common
+  154 | T    | Y       | Y      | 27068 | Common
+  222 | B    | Y       | Y      | 14808 | Common
+  245 | T    | Y       |        | 23192 | Current only
+  315 | T    | Y       | Y      | 24032 | Common
+  331 | B    | Y       | Y      | 13288 | Common
+  415 | B    | Y       |        | 12380 | Current only
+  420 | T    | Y       | Y      | 26584 | Common
+  442 | B    |         | Y      | 14976 | Global only
+  455 | T    |         | Y      | 25268 | Global only
+  507 | B    | Y       | Y      | 14072 | Common
+  515 | T    | Y       | Y      | 27252 | Common
+  557 | B    |         | Y      | 14328 | Global only
+  601 | T    | Y       |        | 21800 | Current only
+  603 | B    | Y       |        | 16780 | Current only
