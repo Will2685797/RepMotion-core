@@ -1,0 +1,78 @@
+{
+  "dataset": "rowing_5reps_007.json",
+  "video": "rowing_5reps_007.mov",
+  "exercise": "rowing",
+  "performedReps": 5,
+  "videoFps": 60,
+  "annotationMethod": "manual_video_review",
+
+  "sync": {
+    "type": "VIDEO_IMU_MANUAL_ANCHOR",
+    "videoTimeSeconds": 14.47,
+    "imuSampleIndex": 157,
+    "notes": "Petit rebond de synchronisation juste avant le premier Bottom."
+  },
+
+  "events": [
+    {
+      "type": "BOTTOM",
+      "rep": 1,
+      "videoTimeSeconds": 15.07
+    },
+    {
+      "type": "TOP",
+      "rep": 1,
+      "videoTimeSeconds": 16.59
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 2,
+      "videoTimeSeconds": 19.74
+    },
+    {
+      "type": "TOP",
+      "rep": 2,
+      "videoTimeSeconds": 21.19
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 3,
+      "videoTimeSeconds": 24.29
+    },
+    {
+      "type": "TOP",
+      "rep": 3,
+      "videoTimeSeconds": 25.79
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 4,
+      "videoTimeSeconds": 28.85
+    },
+    {
+      "type": "TOP",
+      "rep": 4,
+      "videoTimeSeconds": 30.30
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 5,
+      "videoTimeSeconds": 33.07
+    },
+    {
+      "type": "TOP",
+      "rep": 5,
+      "videoTimeSeconds": 34.51
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 6,
+      "videoTimeSeconds": 37.15
+    }
+  ]
+}
