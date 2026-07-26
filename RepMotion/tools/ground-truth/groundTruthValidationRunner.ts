@@ -65,6 +65,18 @@ type ValidationErrorCode =
   | "DP_SCORE_REPLAY_MISMATCH"
   | "GROUND_TRUTH_TRACE_ERROR"
   | "DOMINANCE_TRACE_ERROR"
+  | "GROUND_TRUTH_PATH_MISMATCH"
+  | "INVALID_PATH_STRUCTURE"
+  | "FEATURE_CALCULATION_ERROR"
+  | "EXPERIMENT_REPLAY_MISMATCH"
+  | "TERMINAL_PATH_COUNT_MISMATCH"
+  | "FEATURE_DEFINITION_MISMATCH"
+  | "NORMALIZATION_ERROR"
+  | "PATH_RANKING_ERROR"
+  | "TOP_K_K1_PARITY_MISMATCH"
+  | "TOP_K_BUCKET_INTEGRITY_ERROR"
+  | "DUPLICATE_PATH_STATE_ERROR"
+  | "TERMINAL_RECONSTRUCTION_ERROR"
   | "CANDIDATE_IDENTITY_ERROR"
   | "DATA_INTEGRITY_ERROR";
 
@@ -76,7 +88,11 @@ const VALIDATION_MODE:
   | "TRANSITION"
   | "DP_ISOLATION"
   | "DP_GROUND_TRUTH_INJECTION"
-  | "DP_SCORE_DECOMPOSITION" = "DP_SCORE_DECOMPOSITION";
+  | "DP_SCORE_DECOMPOSITION"
+  | "DP_V2_FEATURE_ANALYSIS"
+  | "DP_V2_PATH_RANKING_ANALYSIS"
+  | "DP_V2_TOP_K_SEARCH_DIAGNOSTIC" =
+  "DP_V2_TOP_K_SEARCH_DIAGNOSTIC";
 const RAW_WINDOW_START_INDEX = 100;
 const RAW_WINDOW_END_INDEX = 169;
 const DATASET_PATH = path.resolve(
@@ -3034,6 +3050,2577 @@ function dominanceTraceSafePrevious(
   );
 }
 
+function populationStd(values: number[]): number {
+  if (values.length === 0) return 0;
+  const average = mean(values);
+  return Math.sqrt(
+    mean(values.map((value) => (value - average) ** 2)),
+  );
+}
+
+function medianAbsoluteDeviation(values: number[]): number {
+  if (values.length === 0) return 0;
+  const center = median(values);
+  return median(values.map((value) => Math.abs(value - center)));
+}
+
+function linearTrend(values: number[]) {
+  const xs = values.map((_, index) => index + 1);
+  const xMean = mean(xs);
+  const yMean = mean(values);
+  const denominator = xs.reduce(
+    (sum, x) => sum + (x - xMean) ** 2,
+    0,
+  );
+  const slope =
+    denominator === 0
+      ? 0
+      : xs.reduce(
+          (sum, x, index) =>
+            sum + (x - xMean) * (values[index] - yMean),
+          0,
+        ) / denominator;
+  const intercept = yMean - slope * xMean;
+  const residualError = Math.sqrt(
+    mean(
+      values.map(
+        (value, index) =>
+          (value - (intercept + slope * xs[index])) ** 2,
+      ),
+    ),
+  );
+  const differences = values
+    .slice(1)
+    .map((value, index) => value - values[index]);
+  const differenceMad = medianAbsoluteDeviation(differences);
+  const differenceMedian =
+    differences.length > 0 ? median(differences) : 0;
+  const abruptThreshold = 3 * differenceMad;
+  return {
+    differences: differences.join(", "),
+    slope,
+    residualError,
+    abruptChangeThreshold:
+      differenceMad === 0 ? null : abruptThreshold,
+    abruptChangeCount:
+      differenceMad === 0
+        ? 0
+        : differences.filter(
+            (difference) =>
+              Math.abs(difference - differenceMedian) >
+              abruptThreshold,
+          ).length,
+  };
+}
+
+function resampleSignal(segment: number[], length: number): number[] {
+  if (segment.length === 0 || length <= 0) return [];
+  if (segment.length === 1) return Array(length).fill(segment[0]);
+  return Array.from({ length }, (_, outputIndex) => {
+    const sourcePosition =
+      (outputIndex / (length - 1)) * (segment.length - 1);
+    const left = Math.floor(sourcePosition);
+    const right = Math.min(segment.length - 1, left + 1);
+    const ratio = sourcePosition - left;
+    return segment[left] * (1 - ratio) + segment[right] * ratio;
+  });
+}
+
+function pearsonCorrelation(left: number[], right: number[]): number {
+  if (left.length !== right.length || left.length === 0) return 0;
+  const leftMean = mean(left);
+  const rightMean = mean(right);
+  const numerator = left.reduce(
+    (sum, value, index) =>
+      sum + (value - leftMean) * (right[index] - rightMean),
+    0,
+  );
+  const leftScale = Math.sqrt(
+    left.reduce((sum, value) => sum + (value - leftMean) ** 2, 0),
+  );
+  const rightScale = Math.sqrt(
+    right.reduce(
+      (sum, value) => sum + (value - rightMean) ** 2,
+      0,
+    ),
+  );
+  return leftScale === 0 || rightScale === 0
+    ? 0
+    : numerator / (leftScale * rightScale);
+}
+
+function renderComparisonLines(
+  title: string,
+  series: Array<{ label: string; values: number[]; color: RGB }>,
+  outputPath: string,
+): void {
+  const image = new Raster(1400, 760);
+  const left = 100;
+  const right = 1330;
+  const top = 100;
+  const bottom = 650;
+  const allValues = series.flatMap((entry) => entry.values);
+  const minimum = Math.min(...allValues);
+  const maximum = Math.max(...allValues);
+  const padding = Math.max((maximum - minimum) * 0.1, 0.01);
+  const maxLength = Math.max(
+    ...series.map((entry) => entry.values.length),
+  );
+  const x = (index: number) =>
+    left + (index / Math.max(1, maxLength - 1)) * (right - left);
+  const y = (value: number) =>
+    bottom -
+    ((value - (minimum - padding)) /
+      (maximum - minimum + 2 * padding)) *
+      (bottom - top);
+  image.text(left, 25, title, [0, 0, 0], 2);
+  image.line(left, top, left, bottom, [0, 0, 0]);
+  image.line(left, bottom, right, bottom, [0, 0, 0]);
+  series.forEach((entry, seriesIndex) => {
+    image.text(
+      left + seriesIndex * 300,
+      62,
+      entry.label,
+      entry.color,
+      1,
+    );
+    entry.values.forEach((value, index) => {
+      image.marker(x(index), y(value), "circle", entry.color);
+      if (index > 0) {
+        image.line(
+          x(index - 1),
+          y(entry.values[index - 1]),
+          x(index),
+          y(value),
+          entry.color,
+        );
+      }
+    });
+  });
+  for (let index = 0; index < maxLength; index += 1) {
+    image.text(x(index) - 4, bottom + 15, String(index + 1), [0, 0, 0], 1);
+  }
+  image.writePng(outputPath);
+}
+
+function renderCycleShapes(
+  winnerCycles: number[][],
+  groundTruthCycles: number[][],
+  outputPath: string,
+): void {
+  const image = new Raster(1500, 900);
+  const panels = [
+    {
+      title: "CURRENT DP WINNER - 5 NORMALIZED CYCLES",
+      cycles: winnerCycles,
+      top: 85,
+    },
+    {
+      title: "GROUND TRUTH - 5 NORMALIZED CYCLES",
+      cycles: groundTruthCycles,
+      top: 500,
+    },
+  ];
+  const colors: RGB[] = [
+    [210, 35, 35],
+    [30, 100, 210],
+    [20, 150, 70],
+    [150, 45, 180],
+    [225, 120, 10],
+  ];
+  panels.forEach((panel) => {
+    const left = 90;
+    const right = 1430;
+    const top = panel.top;
+    const bottom = top + 300;
+    const values = panel.cycles.flat();
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const x = (index: number) =>
+      left + (index / 99) * (right - left);
+    const y = (value: number) =>
+      bottom -
+      ((value - minValue) / Math.max(1, maxValue - minValue)) *
+        (bottom - top);
+    image.text(left, top - 45, panel.title, [0, 0, 0], 2);
+    image.line(left, top, left, bottom, [0, 0, 0]);
+    image.line(left, bottom, right, bottom, [0, 0, 0]);
+    panel.cycles.forEach((cycle, cycleIndex) => {
+      for (let index = 1; index < cycle.length; index += 1) {
+        image.line(
+          x(index - 1),
+          y(cycle[index - 1]),
+          x(index),
+          y(cycle[index]),
+          colors[cycleIndex],
+        );
+      }
+    });
+  });
+  image.writePng(outputPath);
+}
+
+function runDpV2FeatureAnalysis(
+  dataset: CalibrationDataset,
+  groundTruth: GroundTruthFile,
+  axis: keyof CalibrationDataset["samples"][number],
+  realDpCandidates: DpCandidate[],
+  calibrationWinner: TransitionCandidate[],
+  calibrationWinnerScore: number | undefined,
+  debug: NonNullable<ReturnType<typeof calculateCalibration>["debug"]>,
+): void {
+  const values = dataset.samples.map((sample) => sample[axis]);
+  const samplingRateHz = dataset.samplingRateHz;
+  const offset =
+    groundTruth.sync.videoTimeSeconds -
+    groundTruth.sync.imuSampleIndex / samplingRateHz;
+  const groundTruthPath: DpCandidate[] = groundTruth.events.map(
+    (event, index) => {
+      const sampleIndex = Math.round(
+        (event.videoTimeSeconds - offset) * samplingRateHz,
+      );
+      return {
+        candidateId: `GT_${index + 1}`,
+        type: event.type,
+        index: sampleIndex,
+        value: values[sampleIndex],
+      };
+    },
+  );
+  const realByIdentity = new Map(
+    realDpCandidates.map((candidate) => [
+      `${candidate.type}:${candidate.index}`,
+      candidate,
+    ]),
+  );
+  const winnerPath: DpCandidate[] = calibrationWinner.map(
+    (event, index) =>
+      realByIdentity.get(`${event.type}:${event.index}`) ?? {
+        candidateId: `WINNER_${index + 1}`,
+        type: event.type,
+        index: event.index,
+        value: values[event.index],
+      },
+  );
+  const expectedWinner =
+    "BOTTOM:169|TOP:195|BOTTOM:228|TOP:291|BOTTOM:299|TOP:333|BOTTOM:391|TOP:467|BOTTOM:500|TOP:509|BOTTOM:564";
+  const expectedGroundTruth =
+    "BOTTOM:169|TOP:199|BOTTOM:262|TOP:291|BOTTOM:353|TOP:383|BOTTOM:445|TOP:474|BOTTOM:529|TOP:558|BOTTOM:611";
+  const identity = (chain: DpCandidate[]) =>
+    chain.map((event) => `${event.type}:${event.index}`).join("|");
+  if (identity(winnerPath) !== expectedWinner) {
+    fail("WINNER_PATH_MISMATCH", identity(winnerPath));
+  }
+  if (calibrationWinnerScore !== 48176) {
+    fail(
+      "WINNER_SCORE_MISMATCH",
+      String(calibrationWinnerScore),
+    );
+  }
+  if (identity(groundTruthPath) !== expectedGroundTruth) {
+    fail("GROUND_TRUTH_PATH_MISMATCH", identity(groundTruthPath));
+  }
+  for (const chain of [winnerPath, groundTruthPath]) {
+    if (
+      chain.length !== 11 ||
+      !isExpectedAlternation(chain) ||
+      !isStrictlyIncreasing(chain.map((event) => event.index)) ||
+      chain.some(
+        (event) =>
+          event.index < 0 || event.index >= dataset.samples.length,
+      )
+    ) {
+      fail("INVALID_PATH_STRUCTURE", identity(chain));
+    }
+  }
+
+  const robustRange = debug.robustRange;
+  const descriptiveProminence = (
+    candidate: DpCandidate,
+  ): number => {
+    const future = values.slice(
+      candidate.index,
+      Math.min(
+        values.length,
+        candidate.index +
+          CALIBRATION_PARAMETERS.prominenceWindowSize,
+      ),
+    );
+    return candidate.type === "BOTTOM"
+      ? Math.max(...future) - candidate.value
+      : candidate.value - Math.min(...future);
+  };
+  const localNoise = (index: number) => {
+    const start = Math.max(0, index - 8);
+    const end = Math.min(values.length - 1, index + 8);
+    const segment = values.slice(start, end + 1);
+    return median(
+      segment
+        .slice(1)
+        .map((value, offsetIndex) =>
+          Math.abs(value - segment[offsetIndex]),
+        ),
+    );
+  };
+  const eventRowsFor = (
+    pathName: string,
+    chain: DpCandidate[],
+  ) =>
+    chain.map((candidate, index) => {
+      const identityKey = `${candidate.type}:${candidate.index}`;
+      const existed = realByIdentity.has(identityKey);
+      const prominenceDebug = debug.filterDebugEvents.find(
+        (event) =>
+          event.filter === "PROMINENCE" &&
+          event.type === candidate.type &&
+          event.index === candidate.index,
+      );
+      const directionDebug = debug.filterDebugEvents.find(
+        (event) =>
+          event.filter === "DIRECTION_CHANGE" &&
+          event.type === candidate.type &&
+          event.index === candidate.index,
+      );
+      const prominence =
+        prominenceDebug?.prominence ??
+        descriptiveProminence(candidate);
+      const noise = localNoise(candidate.index);
+      return {
+        pathName,
+        positionInPath: index + 1,
+        eventLabel: `${candidate.type === "BOTTOM" ? "B" : "T"}${Math.floor(index / 2) + 1}`,
+        type: candidate.type,
+        index: candidate.index,
+        rawSignalValue: candidate.value,
+        localProminence: prominence,
+        robustNormalizedProminence:
+          robustRange === 0 ? null : prominence / robustRange,
+        localNoiseEstimate: noise,
+        prominenceToNoiseRatio:
+          noise === 0 ? null : prominence / noise,
+        directionChangeMagnitude:
+          directionDebug?.directionChange ?? null,
+        directionChangeConfidence: null,
+        snapDistanceSamples: null,
+        candidateSource:
+          pathName === "CURRENT_DP_WINNER"
+            ? "REAL_CANDIDATE"
+            : existed
+              ? "EXISTED_BEFORE_INJECTION"
+              : "INJECTED_GROUND_TRUTH",
+        prominenceSource: prominenceDebug
+          ? "CALIBRATION_DEBUG"
+          : "DESCRIPTIVE_RECOMPUTATION",
+      };
+    });
+  const winnerEventRows = eventRowsFor(
+    "CURRENT_DP_WINNER",
+    winnerPath,
+  );
+  const groundTruthEventRows = eventRowsFor(
+    "GROUND_TRUTH_PATH",
+    groundTruthPath,
+  );
+  const eventRows = [...winnerEventRows, ...groundTruthEventRows];
+
+  const cyclesFor = (
+    pathName: string,
+    chain: DpCandidate[],
+  ) => {
+    const normalizedSegments = Array.from(
+      { length: 5 },
+      (_, repIndex) => {
+        const start = chain[repIndex * 2].index;
+        const end = chain[repIndex * 2 + 2].index;
+        return resampleSignal(values.slice(start, end + 1), 100);
+      },
+    );
+    const medianProfile = Array.from({ length: 100 }, (_, index) =>
+      median(normalizedSegments.map((segment) => segment[index])),
+    );
+    const rows = Array.from({ length: 5 }, (_, repIndex) => {
+      const bottomStart = chain[repIndex * 2];
+      const top = chain[repIndex * 2 + 1];
+      const bottomEnd = chain[repIndex * 2 + 2];
+      const bottomToTop = top.index - bottomStart.index;
+      const topToBottom = bottomEnd.index - top.index;
+      const fullRep = bottomEnd.index - bottomStart.index;
+      const upwardAmplitude = Math.abs(
+        top.value - bottomStart.value,
+      );
+      const downwardAmplitude = Math.abs(
+        top.value - bottomEnd.value,
+      );
+      const meanCycleAmplitude =
+        (upwardAmplitude + downwardAmplitude) / 2;
+      return {
+        pathName,
+        repNumber: repIndex + 1,
+        bottomStartIndex: bottomStart.index,
+        topIndex: top.index,
+        bottomEndIndex: bottomEnd.index,
+        bottomToTopDurationSamples: bottomToTop,
+        topToBottomDurationSamples: topToBottom,
+        fullRepDurationSamples: fullRep,
+        bottomToTopDurationMilliseconds:
+          bottomToTop * (1000 / samplingRateHz),
+        topToBottomDurationMilliseconds:
+          topToBottom * (1000 / samplingRateHz),
+        fullRepDurationMilliseconds:
+          fullRep * (1000 / samplingRateHz),
+        phaseDurationRatio:
+          topToBottom === 0 ? null : bottomToTop / topToBottom,
+        startBottomValue: bottomStart.value,
+        topValue: top.value,
+        endBottomValue: bottomEnd.value,
+        upwardAmplitude,
+        downwardAmplitude,
+        meanCycleAmplitude,
+        normalizedCycleAmplitude:
+          robustRange === 0
+            ? null
+            : meanCycleAmplitude / robustRange,
+        bottomDrift: Math.abs(bottomEnd.value - bottomStart.value),
+        correlationToMedianCycle: pearsonCorrelation(
+          normalizedSegments[repIndex],
+          medianProfile,
+        ),
+      };
+    });
+    return { rows, normalizedSegments, medianProfile };
+  };
+  const winnerCycles = cyclesFor("CURRENT_DP_WINNER", winnerPath);
+  const groundTruthCycles = cyclesFor(
+    "GROUND_TRUTH_PATH",
+    groundTruthPath,
+  );
+  const cycleRows = [
+    ...winnerCycles.rows,
+    ...groundTruthCycles.rows,
+  ];
+  if (cycleRows.length !== 10) {
+    fail(
+      "FEATURE_CALCULATION_ERROR",
+      `Expected 10 cycle rows, got ${cycleRows.length}.`,
+    );
+  }
+  const activeRegionStartIndex = Math.min(
+    ...realDpCandidates.map((candidate) => candidate.index),
+  );
+  const activeRegionEndIndex = Math.max(
+    ...realDpCandidates.map((candidate) => candidate.index),
+  );
+  const summarize = (
+    pathName: string,
+    chain: DpCandidate[],
+    events: typeof winnerEventRows,
+    cycles: typeof winnerCycles,
+    finalLegacyDpScore: number,
+  ) => {
+    const bottomToTop = cycles.rows.map(
+      (row) => row.bottomToTopDurationSamples,
+    );
+    const topToBottom = cycles.rows.map(
+      (row) => row.topToBottomDurationSamples,
+    );
+    const fullRep = cycles.rows.map(
+      (row) => row.fullRepDurationSamples,
+    );
+    const amplitudes = cycles.rows.map(
+      (row) => row.meanCycleAmplitude,
+    );
+    const drifts = cycles.rows.map((row) => row.bottomDrift);
+    const correlations = cycles.rows.map(
+      (row) => row.correlationToMedianCycle,
+    );
+    const gaps = chain
+      .slice(1)
+      .map((candidate, index) => candidate.index - chain[index].index);
+    const cv = (numbers: number[]) =>
+      mean(numbers) === 0
+        ? null
+        : populationStd(numbers) / mean(numbers);
+    return {
+      pathName,
+      finalLegacyDpScore,
+      meanNormalizedProminence: mean(
+        events.map(
+          (event) => event.robustNormalizedProminence as number,
+        ),
+      ),
+      medianNormalizedProminence: median(
+        events.map(
+          (event) => event.robustNormalizedProminence as number,
+        ),
+      ),
+      meanProminenceToNoiseRatio: mean(
+        events
+          .map((event) => event.prominenceToNoiseRatio)
+          .filter((value): value is number => value !== null),
+      ),
+      meanBottomToTopDuration: mean(bottomToTop),
+      medianBottomToTopDuration: median(bottomToTop),
+      stdBottomToTopDurationPopulation: populationStd(bottomToTop),
+      bottomToTopDurationCV: cv(bottomToTop),
+      meanTopToBottomDuration: mean(topToBottom),
+      medianTopToBottomDuration: median(topToBottom),
+      stdTopToBottomDurationPopulation: populationStd(topToBottom),
+      topToBottomDurationCV: cv(topToBottom),
+      meanFullRepDuration: mean(fullRep),
+      medianFullRepDuration: median(fullRep),
+      stdFullRepDurationPopulation: populationStd(fullRep),
+      fullRepDurationCV: cv(fullRep),
+      fullRepDurationMAD: medianAbsoluteDeviation(fullRep),
+      minFullRepDuration: Math.min(...fullRep),
+      maxFullRepDuration: Math.max(...fullRep),
+      fullRepDurationRange:
+        Math.max(...fullRep) - Math.min(...fullRep),
+      meanCycleAmplitude: mean(amplitudes),
+      medianCycleAmplitude: median(amplitudes),
+      stdCycleAmplitudePopulation: populationStd(amplitudes),
+      cycleAmplitudeCV: cv(amplitudes),
+      cycleAmplitudeMAD: medianAbsoluteDeviation(amplitudes),
+      minCycleAmplitude: Math.min(...amplitudes),
+      maxCycleAmplitude: Math.max(...amplitudes),
+      cycleAmplitudeRange:
+        Math.max(...amplitudes) - Math.min(...amplitudes),
+      meanBottomDrift: mean(drifts),
+      maxBottomDrift: Math.max(...drifts),
+      firstSelectedIndex: chain[0].index,
+      lastSelectedIndex: chain[chain.length - 1].index,
+      selectedSpanSamples:
+        chain[chain.length - 1].index - chain[0].index,
+      selectedSpanMilliseconds:
+        (chain[chain.length - 1].index - chain[0].index) *
+        (1000 / samplingRateHz),
+      activeRegionStartIndex,
+      activeRegionEndIndex,
+      activeRegionSpanSamples:
+        activeRegionEndIndex - activeRegionStartIndex,
+      coverageRatio:
+        (chain[chain.length - 1].index - chain[0].index) /
+        (activeRegionEndIndex - activeRegionStartIndex),
+      unselectedPrefixSamples:
+        chain[0].index - activeRegionStartIndex,
+      unselectedSuffixSamples:
+        activeRegionEndIndex - chain[chain.length - 1].index,
+      largestGapBetweenSelectedEvents: Math.max(...gaps),
+      meanGapBetweenSelectedEvents: mean(gaps),
+      numberOfLargeUnexplainedOscillations:
+        "ACTIVITY_REGION_DIAGNOSTIC_UNAVAILABLE",
+      meanCycleCorrelation: mean(correlations),
+      medianCycleCorrelation: median(correlations),
+      minCycleCorrelation: Math.min(...correlations),
+      cycleCorrelationStdPopulation: populationStd(correlations),
+    };
+  };
+  const legacyScore = (chain: DpCandidate[]) =>
+    chain.reduce(
+      (sum, candidate) =>
+        sum +
+        (candidate.type === "BOTTOM"
+          ? -candidate.value
+          : candidate.value),
+      0,
+    );
+  const winnerSummary = summarize(
+    "CURRENT_DP_WINNER",
+    winnerPath,
+    winnerEventRows,
+    winnerCycles,
+    legacyScore(winnerPath),
+  );
+  const groundTruthSummary = summarize(
+    "GROUND_TRUTH_PATH",
+    groundTruthPath,
+    groundTruthEventRows,
+    groundTruthCycles,
+    legacyScore(groundTruthPath),
+  );
+  const summaryRows = [winnerSummary, groundTruthSummary];
+  const trends = [
+    {
+      pathName: "CURRENT_DP_WINNER",
+      metric: "FULL_REP_DURATION",
+      ...linearTrend(
+        winnerCycles.rows.map((row) => row.fullRepDurationSamples),
+      ),
+    },
+    {
+      pathName: "GROUND_TRUTH_PATH",
+      metric: "FULL_REP_DURATION",
+      ...linearTrend(
+        groundTruthCycles.rows.map(
+          (row) => row.fullRepDurationSamples,
+        ),
+      ),
+    },
+    {
+      pathName: "CURRENT_DP_WINNER",
+      metric: "CYCLE_AMPLITUDE",
+      ...linearTrend(
+        winnerCycles.rows.map((row) => row.meanCycleAmplitude),
+      ),
+    },
+    {
+      pathName: "GROUND_TRUTH_PATH",
+      metric: "CYCLE_AMPLITUDE",
+      ...linearTrend(
+        groundTruthCycles.rows.map(
+          (row) => row.meanCycleAmplitude,
+        ),
+      ),
+    },
+  ];
+  type Direction =
+    | "LOWER_IS_MORE_REGULAR"
+    | "HIGHER_IS_MORE_COHERENT"
+    | "NO_AUTOMATIC_PREFERENCE"
+    | "UNAVAILABLE";
+  const metricDefinitions: Array<{
+    metricName: keyof typeof winnerSummary;
+    preferredDirectionKnown: Direction;
+    family: string;
+  }> = [
+    { metricName: "finalLegacyDpScore", preferredDirectionKnown: "NO_AUTOMATIC_PREFERENCE", family: "LOCAL_CANDIDATE_QUALITY" },
+    { metricName: "meanNormalizedProminence", preferredDirectionKnown: "HIGHER_IS_MORE_COHERENT", family: "LOCAL_CANDIDATE_QUALITY" },
+    { metricName: "medianNormalizedProminence", preferredDirectionKnown: "HIGHER_IS_MORE_COHERENT", family: "LOCAL_CANDIDATE_QUALITY" },
+    { metricName: "meanProminenceToNoiseRatio", preferredDirectionKnown: "HIGHER_IS_MORE_COHERENT", family: "LOCAL_CANDIDATE_QUALITY" },
+    { metricName: "fullRepDurationCV", preferredDirectionKnown: "LOWER_IS_MORE_REGULAR", family: "TEMPORAL_CONSISTENCY" },
+    { metricName: "fullRepDurationMAD", preferredDirectionKnown: "LOWER_IS_MORE_REGULAR", family: "TEMPORAL_CONSISTENCY" },
+    { metricName: "bottomToTopDurationCV", preferredDirectionKnown: "LOWER_IS_MORE_REGULAR", family: "TEMPORAL_CONSISTENCY" },
+    { metricName: "topToBottomDurationCV", preferredDirectionKnown: "LOWER_IS_MORE_REGULAR", family: "TEMPORAL_CONSISTENCY" },
+    { metricName: "cycleAmplitudeCV", preferredDirectionKnown: "LOWER_IS_MORE_REGULAR", family: "AMPLITUDE_CONSISTENCY" },
+    { metricName: "cycleAmplitudeMAD", preferredDirectionKnown: "LOWER_IS_MORE_REGULAR", family: "AMPLITUDE_CONSISTENCY" },
+    { metricName: "meanBottomDrift", preferredDirectionKnown: "LOWER_IS_MORE_REGULAR", family: "AMPLITUDE_CONSISTENCY" },
+    { metricName: "coverageRatio", preferredDirectionKnown: "NO_AUTOMATIC_PREFERENCE", family: "ACTIVITY_COVERAGE" },
+    { metricName: "meanCycleCorrelation", preferredDirectionKnown: "HIGHER_IS_MORE_COHERENT", family: "CYCLE_SHAPE_SIMILARITY" },
+    { metricName: "minCycleCorrelation", preferredDirectionKnown: "HIGHER_IS_MORE_COHERENT", family: "CYCLE_SHAPE_SIMILARITY" },
+  ];
+  const differenceRows = metricDefinitions.map((definition) => {
+    const winnerValue = winnerSummary[definition.metricName];
+    const gtValue = groundTruthSummary[definition.metricName];
+    const numericWinner =
+      typeof winnerValue === "number" ? winnerValue : null;
+    const numericGt = typeof gtValue === "number" ? gtValue : null;
+    const signedDelta =
+      numericWinner !== null && numericGt !== null
+        ? numericGt - numericWinner
+        : null;
+    return {
+      metricName: definition.metricName,
+      family: definition.family,
+      currentWinnerValue: numericWinner,
+      groundTruthValue: numericGt,
+      signedDelta,
+      absoluteDelta:
+        signedDelta === null ? null : Math.abs(signedDelta),
+      relativeDeltaPercent:
+        signedDelta === null ||
+        numericWinner === null ||
+        numericWinner === 0
+          ? null
+          : (signedDelta / Math.abs(numericWinner)) * 100,
+      preferredDirectionKnown: definition.preferredDirectionKnown,
+    };
+  });
+  const familyNames = [
+    "LOCAL_CANDIDATE_QUALITY",
+    "TEMPORAL_CONSISTENCY",
+    "AMPLITUDE_CONSISTENCY",
+    "ACTIVITY_COVERAGE",
+    "CYCLE_SHAPE_SIMILARITY",
+  ];
+  const familyRows = familyNames.map((family) => {
+    const metrics = differenceRows.filter(
+      (row) => row.family === family,
+    );
+    const directed = metrics.filter(
+      (row) =>
+        row.preferredDirectionKnown !==
+          "NO_AUTOMATIC_PREFERENCE" &&
+        row.preferredDirectionKnown !== "UNAVAILABLE" &&
+        row.signedDelta !== null &&
+        row.signedDelta !== 0,
+    );
+    const groundTruthFavored = directed.filter((row) =>
+      row.preferredDirectionKnown === "LOWER_IS_MORE_REGULAR"
+        ? (row.signedDelta as number) < 0
+        : (row.signedDelta as number) > 0,
+    ).length;
+    const winnerFavored = directed.length - groundTruthFavored;
+    const noPreference = metrics.filter(
+      (row) =>
+        row.preferredDirectionKnown ===
+        "NO_AUTOMATIC_PREFERENCE",
+    ).length;
+    const standardized = metrics
+      .map((row) => {
+        const denominator = Math.max(
+          Math.abs(row.currentWinnerValue ?? 0),
+          Math.abs(row.groundTruthValue ?? 0),
+        );
+        return denominator === 0 || row.absoluteDelta === null
+          ? null
+          : row.absoluteDelta / denominator;
+      })
+      .filter((value): value is number => value !== null);
+    const status =
+      directed.length === 0
+        ? noPreference === metrics.length
+          ? "NO_PREFERENCE_DEFINED"
+          : "INSUFFICIENT_DATA"
+        : groundTruthFavored === directed.length
+          ? `GROUND_TRUTH_MORE_REGULAR_ON_${groundTruthFavored}_METRICS`
+          : winnerFavored === directed.length
+            ? `WINNER_MORE_REGULAR_ON_${winnerFavored}_METRICS`
+            : "MIXED_RESULTS";
+    return {
+      family,
+      metricsIncluded: metrics
+        .map((row) => row.metricName)
+        .join(", "),
+      availableMetricCount: metrics.filter(
+        (row) => row.signedDelta !== null,
+      ).length,
+      groundTruthFavoredMetricCount: groundTruthFavored,
+      winnerFavoredMetricCount: winnerFavored,
+      noPreferenceMetricCount: noPreference,
+      largestObservableStandardizedDifference:
+        standardized.length > 0 ? Math.max(...standardized) : null,
+      status,
+    };
+  });
+  const outputDirectory = path.resolve(
+    __dirname,
+    "output",
+    "dp-v2-feature-analysis",
+  );
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  const graphPaths = {
+    repDurations: path.join(outputDirectory, "rep_durations_comparison.png"),
+    phaseDurations: path.join(outputDirectory, "phase_durations_comparison.png"),
+    amplitudes: path.join(outputDirectory, "cycle_amplitudes_comparison.png"),
+    shapes: path.join(outputDirectory, "cycle_shapes_comparison.png"),
+    summary: path.join(outputDirectory, "feature_summary_comparison.png"),
+  };
+  renderComparisonLines(
+    "FULL REP DURATIONS - SAMPLES",
+    [
+      { label: "WINNER", values: winnerCycles.rows.map((row) => row.fullRepDurationSamples), color: [210, 35, 35] },
+      { label: "GROUND TRUTH", values: groundTruthCycles.rows.map((row) => row.fullRepDurationSamples), color: [30, 100, 210] },
+    ],
+    graphPaths.repDurations,
+  );
+  renderComparisonLines(
+    "PHASE DURATIONS - SAMPLES",
+    [
+      { label: "WINNER B-T", values: winnerCycles.rows.map((row) => row.bottomToTopDurationSamples), color: [210, 35, 35] },
+      { label: "WINNER T-B", values: winnerCycles.rows.map((row) => row.topToBottomDurationSamples), color: [225, 120, 10] },
+      { label: "GT B-T", values: groundTruthCycles.rows.map((row) => row.bottomToTopDurationSamples), color: [30, 100, 210] },
+      { label: "GT T-B", values: groundTruthCycles.rows.map((row) => row.topToBottomDurationSamples), color: [20, 150, 70] },
+    ],
+    graphPaths.phaseDurations,
+  );
+  renderComparisonLines(
+    "MEAN CYCLE AMPLITUDES",
+    [
+      { label: "WINNER", values: winnerCycles.rows.map((row) => row.meanCycleAmplitude), color: [210, 35, 35] },
+      { label: "GROUND TRUTH", values: groundTruthCycles.rows.map((row) => row.meanCycleAmplitude), color: [30, 100, 210] },
+    ],
+    graphPaths.amplitudes,
+  );
+  renderCycleShapes(
+    winnerCycles.normalizedSegments,
+    groundTruthCycles.normalizedSegments,
+    graphPaths.shapes,
+  );
+  const comparableMetrics = differenceRows.filter(
+    (row) =>
+      row.currentWinnerValue !== null &&
+      row.groundTruthValue !== null,
+  );
+  renderComparisonLines(
+    "FEATURE SUMMARY - EACH METRIC DIVIDED BY PAIR MAX ABS",
+    [
+      {
+        label: "WINNER",
+        values: comparableMetrics.map((row) => {
+          const scale = Math.max(
+            Math.abs(row.currentWinnerValue as number),
+            Math.abs(row.groundTruthValue as number),
+          );
+          return scale === 0
+            ? 0
+            : (row.currentWinnerValue as number) / scale;
+        }),
+        color: [210, 35, 35],
+      },
+      {
+        label: "GROUND TRUTH",
+        values: comparableMetrics.map((row) => {
+          const scale = Math.max(
+            Math.abs(row.currentWinnerValue as number),
+            Math.abs(row.groundTruthValue as number),
+          );
+          return scale === 0
+            ? 0
+            : (row.groundTruthValue as number) / scale;
+        }),
+        color: [30, 100, 210],
+      },
+    ],
+    graphPaths.summary,
+  );
+  const reportPath = path.join(
+    outputDirectory,
+    "rowing_5reps_007_dp_v2_feature_analysis_report.md",
+  );
+  fs.writeFileSync(
+    reportPath,
+    [
+      "# Rowing 5 reps 007 — DP V2 feature analysis",
+      "",
+      "## Contexte et chaînes comparées",
+      "",
+      `- CURRENT_DP_WINNER: ${formatDpChain(winnerPath)}`,
+      `- GROUND_TRUTH_PATH: ${formatDpChain(groundTruthPath)}`,
+      "",
+      "## Définitions",
+      "",
+      `- Axe brut: ${String(axis)}.`,
+      `- robustSignalRange: ${robustRange}, valeur instrumentée par calibration.`,
+      "- Prominence réelle: diagnostic PROMINENCE de calibration lorsqu'il existe.",
+      "- Prominence injectée: DESCRIPTIVE_RECOMPUTATION sur la fenêtre future de 8 samples; elle n'est pas présentée comme une valeur interne officielle.",
+      "- Bruit local: médiane des différences absolues consécutives dans la fenêtre ±8 samples.",
+      "- Écart-type: population.",
+      "- Zone active descriptive: étendue min–max de tous les candidats réels admissibles entrant dans le DP; aucun détecteur d'activité supplémentaire.",
+      "- Cycles: interpolation linéaire à 100 points, profil médian point par point, corrélation de Pearson.",
+      "- Changements brusques: écart à la médiane des différences successives supérieur à 3 × MAD; mesure descriptive uniquement.",
+      "",
+      "## Tableau A — Événements",
+      "",
+      markdownTable(eventRows),
+      "",
+      "## Tableau B — Répétitions",
+      "",
+      markdownTable(cycleRows),
+      "",
+      "## Tableau C — Synthèse",
+      "",
+      markdownTable(summaryRows),
+      "",
+      "## Régularité et tendances",
+      "",
+      markdownTable(trends),
+      "",
+      "## Différences Winner vs Ground Truth",
+      "",
+      markdownTable(differenceRows),
+      "",
+      "## Résumé par famille",
+      "",
+      markdownTable(familyRows),
+      "",
+      "## Graphiques",
+      "",
+      ...Object.values(graphPaths).map((graphPath) => `- ${graphPath}`),
+      "",
+      "## Limites",
+      "",
+      "- Une seule vidéo annotée.",
+      "- Aucune généralisation possible.",
+      "- Aucune pondération apprise.",
+      "- Aucune conclusion biomécanique automatique.",
+      "",
+      "## Décision humaine sur les features à retenir",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  console.log("\n=== DP V2 FEATURE ANALYSIS: EVENTS ===\n");
+  console.table(eventRows);
+  console.log("\n=== DP V2 FEATURE ANALYSIS: REPS ===\n");
+  console.table(cycleRows);
+  console.log("\n=== DP V2 FEATURE ANALYSIS: SUMMARY ===\n");
+  console.table(summaryRows);
+  console.log("\n=== DP V2 FEATURE ANALYSIS: DIFFERENCES ===\n");
+  console.table(differenceRows);
+  console.log("\n=== DP V2 FEATURE ANALYSIS: FAMILIES ===\n");
+  console.table(familyRows);
+  console.log("\n=== DP V2 FEATURE ANALYSIS: ARTIFACTS ===\n");
+  Object.values(graphPaths).forEach((graphPath) =>
+    console.log(graphPath),
+  );
+  console.log(reportPath);
+}
+
+function rankNumbers(values: number[], descending: boolean): number[] {
+  const sorted = values
+    .map((value, index) => ({ value, index }))
+    .sort(
+      (left, right) =>
+        (descending
+          ? right.value - left.value
+          : left.value - right.value) || left.index - right.index,
+    );
+  const ranks = Array(values.length).fill(0) as number[];
+  for (let position = 0; position < sorted.length; ) {
+    let end = position + 1;
+    while (
+      end < sorted.length &&
+      sorted[end].value === sorted[position].value
+    ) {
+      end += 1;
+    }
+    const averageRank = (position + 1 + end) / 2;
+    for (let cursor = position; cursor < end; cursor += 1) {
+      ranks[sorted[cursor].index] = averageRank;
+    }
+    position = end;
+  }
+  return ranks;
+}
+
+function spearmanCorrelation(left: number[], right: number[]): number {
+  return pearsonCorrelation(
+    rankNumbers(left, false),
+    rankNumbers(right, false),
+  );
+}
+
+function renderScatterPlot(
+  points: Array<{
+    x: number;
+    y: number;
+    label: string;
+    color: RGB;
+  }>,
+  outputPath: string,
+): void {
+  const image = new Raster(1400, 850);
+  const left = 100;
+  const right = 1320;
+  const top = 100;
+  const bottom = 750;
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const x = (value: number) =>
+    left +
+    ((value - minX) / Math.max(0.000001, maxX - minX)) *
+      (right - left);
+  const y = (value: number) =>
+    bottom -
+    ((value - minY) / Math.max(0.000001, maxY - minY)) *
+      (bottom - top);
+  image.text(left, 25, "TEMPORAL SCORE VS SHAPE SCORE", [0, 0, 0], 2);
+  image.line(left, top, left, bottom, [0, 0, 0]);
+  image.line(left, bottom, right, bottom, [0, 0, 0]);
+  points.forEach((point) => {
+    image.marker(x(point.x), y(point.y), "circle", point.color);
+    image.text(x(point.x) + 8, y(point.y) - 8, point.label, point.color, 1);
+  });
+  image.writePng(outputPath);
+}
+
+function renderCorrelationMatrix(
+  metricNames: string[],
+  matrix: number[][],
+  outputPath: string,
+): void {
+  const cell = Math.max(18, Math.floor(1050 / metricNames.length));
+  const image = new Raster(1450, 1300);
+  const left = 330;
+  const top = 180;
+  image.text(50, 25, "SPEARMAN FEATURE CORRELATION MATRIX", [0, 0, 0], 2);
+  metricNames.forEach((name, index) => {
+    image.text(5, top + index * cell + 5, `${index + 1} ${name}`, [0, 0, 0], 1);
+    image.text(left + index * cell + 5, top - 25, String(index + 1), [0, 0, 0], 1);
+  });
+  matrix.forEach((row, rowIndex) =>
+    row.forEach((correlation, columnIndex) => {
+      const magnitude = Math.min(1, Math.abs(correlation));
+      const color: RGB =
+        correlation >= 0
+          ? [Math.round(255 * (1 - magnitude)), Math.round(255 * (1 - magnitude)), 255]
+          : [255, Math.round(255 * (1 - magnitude)), Math.round(255 * (1 - magnitude))];
+      image.rectangle(
+        left + columnIndex * cell,
+        top + rowIndex * cell,
+        cell - 1,
+        cell - 1,
+        color,
+      );
+    }),
+  );
+  image.writePng(outputPath);
+}
+
+function runDpV2PathRankingAnalysis(
+  dataset: CalibrationDataset,
+  groundTruth: GroundTruthFile,
+  axis: keyof CalibrationDataset["samples"][number],
+  realDpCandidates: DpCandidate[],
+  calibrationWinner: TransitionCandidate[],
+  calibrationWinnerScore: number | undefined,
+  debug: NonNullable<ReturnType<typeof calculateCalibration>["debug"]>,
+): void {
+  type Direction = "LOWER" | "HIGHER";
+  type PathFeatures = Record<string, number>;
+  type AnalyzedPath = {
+    pathId: string;
+    terminalStateId: string | null;
+    isGroundTruth: boolean;
+    isLegacyWinner: boolean;
+    legacyDpScore: number;
+    legacyDpRank: number;
+    chain: DpCandidate[];
+    fullPath: string;
+    features: PathFeatures;
+    familyScores: Record<string, number>;
+  };
+  const values = dataset.samples.map((sample) => sample[axis]);
+  const samplingRateHz = dataset.samplingRateHz;
+  const offset =
+    groundTruth.sync.videoTimeSeconds -
+    groundTruth.sync.imuSampleIndex / samplingRateHz;
+  const projectedGroundTruth: DpCandidate[] = groundTruth.events.map(
+    (event, index) => {
+      const sampleIndex = Math.round(
+        (event.videoTimeSeconds - offset) * samplingRateHz,
+      );
+      return {
+        candidateId: `INJECTED_GT_${index + 1}_${event.type}_${sampleIndex}`,
+        type: event.type,
+        index: sampleIndex,
+        value: values[sampleIndex],
+      };
+    },
+  );
+  const realByIdentity = new Map(
+    realDpCandidates.map((candidate) => [
+      `${candidate.type}:${candidate.index}`,
+      candidate,
+    ]),
+  );
+  const canonicalGroundTruth = projectedGroundTruth.map(
+    (candidate) =>
+      realByIdentity.get(`${candidate.type}:${candidate.index}`) ??
+      candidate,
+  );
+  const addedGroundTruth = canonicalGroundTruth.filter(
+    (candidate) =>
+      !realByIdentity.has(`${candidate.type}:${candidate.index}`),
+  );
+  const combinedCandidates = [
+    ...realDpCandidates,
+    ...addedGroundTruth,
+  ];
+  const replay = reconstructAllDpFinalPaths(
+    combinedCandidates,
+    EXPECTED_REPS,
+  );
+  const terminals = [...replay.finalPaths].sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.stateId.localeCompare(right.stateId),
+  );
+  const expectedWinner =
+    "BOTTOM:169|TOP:195|BOTTOM:228|TOP:291|BOTTOM:299|TOP:333|BOTTOM:391|TOP:467|BOTTOM:500|TOP:509|BOTTOM:564";
+  const identity = (chain: DpCandidate[]) =>
+    chain.map((candidate) => `${candidate.type}:${candidate.index}`).join("|");
+  if (
+    realDpCandidates.length !== 46 ||
+    combinedCandidates.length !== 55 ||
+    replay.createdStates.length !== 1207 ||
+    terminals.length !== 14
+  ) {
+    fail(
+      "EXPERIMENT_REPLAY_MISMATCH",
+      `real=${realDpCandidates.length}, combined=${combinedCandidates.length}, states=${replay.createdStates.length}, terminals=${terminals.length}`,
+    );
+  }
+  if (terminals.length !== 14) {
+    fail("TERMINAL_PATH_COUNT_MISMATCH", String(terminals.length));
+  }
+  if (
+    identity(terminals[0].chain) !== expectedWinner ||
+    identity(calibrationWinner as DpCandidate[]) !== expectedWinner
+  ) {
+    fail("WINNER_PATH_MISMATCH", identity(terminals[0].chain));
+  }
+  if (
+    terminals[0].score !== 48176 ||
+    calibrationWinnerScore !== 48176
+  ) {
+    fail(
+      "WINNER_SCORE_MISMATCH",
+      `${terminals[0].score}/${calibrationWinnerScore}`,
+    );
+  }
+  const expectedGroundTruth =
+    "BOTTOM:169|TOP:199|BOTTOM:262|TOP:291|BOTTOM:353|TOP:383|BOTTOM:445|TOP:474|BOTTOM:529|TOP:558|BOTTOM:611";
+  if (identity(canonicalGroundTruth) !== expectedGroundTruth) {
+    fail(
+      "GROUND_TRUTH_PATH_MISMATCH",
+      identity(canonicalGroundTruth),
+    );
+  }
+  const allChains = [
+    ...terminals.map((terminal, index) => ({
+      pathId: `TERMINAL_${String(index + 1).padStart(2, "0")}`,
+      terminalStateId: terminal.stateId,
+      chain: terminal.chain,
+      legacyDpScore: terminal.score,
+      isGroundTruth: false,
+      isLegacyWinner: index === 0,
+    })),
+    {
+      pathId: "GROUND_TRUTH_REFERENCE",
+      terminalStateId: null,
+      chain: canonicalGroundTruth,
+      legacyDpScore: canonicalGroundTruth.reduce(
+        (sum, candidate) =>
+          sum +
+          (candidate.type === "BOTTOM"
+            ? -candidate.value
+            : candidate.value),
+        0,
+      ),
+      isGroundTruth: true,
+      isLegacyWinner: false,
+    },
+  ];
+  if (
+    allChains.length !== 15 ||
+    allChains.some(
+      (path) =>
+        path.chain.length !== 11 ||
+        !isExpectedAlternation(path.chain) ||
+        !isStrictlyIncreasing(
+          path.chain.map((candidate) => candidate.index),
+        ),
+    )
+  ) {
+    fail("PATH_RANKING_ERROR", "Invalid 15-path population.");
+  }
+  const activeStart = Math.min(
+    ...realDpCandidates.map((candidate) => candidate.index),
+  );
+  const activeEnd = Math.max(
+    ...realDpCandidates.map((candidate) => candidate.index),
+  );
+  const robustRange = debug.robustRange;
+  const prominence = (candidate: DpCandidate) => {
+    const official = debug.filterDebugEvents.find(
+      (event) =>
+        event.filter === "PROMINENCE" &&
+        event.type === candidate.type &&
+        event.index === candidate.index,
+    )?.prominence;
+    if (official !== undefined) return official;
+    const future = values.slice(
+      candidate.index,
+      Math.min(
+        values.length,
+        candidate.index +
+          CALIBRATION_PARAMETERS.prominenceWindowSize,
+      ),
+    );
+    return candidate.type === "BOTTOM"
+      ? Math.max(...future) - candidate.value
+      : candidate.value - Math.min(...future);
+  };
+  const noise = (index: number) => {
+    const segment = values.slice(
+      Math.max(0, index - 8),
+      Math.min(values.length, index + 9),
+    );
+    return median(
+      segment
+        .slice(1)
+        .map((value, offsetIndex) =>
+          Math.abs(value - segment[offsetIndex]),
+        ),
+    );
+  };
+  const cv = (numbers: number[]) =>
+    mean(numbers) === 0
+      ? 0
+      : populationStd(numbers) / mean(numbers);
+  const calculateFeatures = (chain: DpCandidate[]): PathFeatures => {
+    const normalizedProminences = chain.map(
+      (candidate) => prominence(candidate) / robustRange,
+    );
+    const prominenceNoise = chain.map((candidate) => {
+      const localNoise = noise(candidate.index);
+      return localNoise === 0
+        ? 0
+        : prominence(candidate) / localNoise;
+    });
+    const bToT: number[] = [];
+    const tToB: number[] = [];
+    const full: number[] = [];
+    const amplitudes: number[] = [];
+    const drifts: number[] = [];
+    const normalizedCycles: number[][] = [];
+    for (let rep = 0; rep < 5; rep += 1) {
+      const bottomStart = chain[rep * 2];
+      const top = chain[rep * 2 + 1];
+      const bottomEnd = chain[rep * 2 + 2];
+      bToT.push(top.index - bottomStart.index);
+      tToB.push(bottomEnd.index - top.index);
+      full.push(bottomEnd.index - bottomStart.index);
+      const upward = Math.abs(top.value - bottomStart.value);
+      const downward = Math.abs(top.value - bottomEnd.value);
+      amplitudes.push((upward + downward) / 2);
+      drifts.push(Math.abs(bottomEnd.value - bottomStart.value));
+      normalizedCycles.push(
+        resampleSignal(
+          values.slice(bottomStart.index, bottomEnd.index + 1),
+          100,
+        ),
+      );
+    }
+    const medianProfile = Array.from({ length: 100 }, (_, index) =>
+      median(normalizedCycles.map((cycle) => cycle[index])),
+    );
+    const correlations = normalizedCycles.map((cycle) =>
+      pearsonCorrelation(cycle, medianProfile),
+    );
+    const range = (numbers: number[]) =>
+      Math.max(...numbers) - Math.min(...numbers);
+    return {
+      meanNormalizedProminence: mean(normalizedProminences),
+      medianNormalizedProminence: median(normalizedProminences),
+      meanProminenceToNoiseRatio: mean(prominenceNoise),
+      fullRepDurationCV: cv(full),
+      fullRepDurationMAD: medianAbsoluteDeviation(full),
+      bottomToTopDurationCV: cv(bToT),
+      topToBottomDurationCV: cv(tToB),
+      fullRepDurationRange: range(full),
+      bottomToTopDurationRange: range(bToT),
+      topToBottomDurationRange: range(tToB),
+      cycleAmplitudeCV: cv(amplitudes),
+      cycleAmplitudeMAD: medianAbsoluteDeviation(amplitudes),
+      meanBottomDrift: mean(drifts),
+      maxBottomDrift: Math.max(...drifts),
+      coverageRatio:
+        (chain[chain.length - 1].index - chain[0].index) /
+        (activeEnd - activeStart),
+      unselectedPrefixSamples: chain[0].index - activeStart,
+      unselectedSuffixSamples:
+        activeEnd - chain[chain.length - 1].index,
+      selectedSpanSamples:
+        chain[chain.length - 1].index - chain[0].index,
+      meanCycleCorrelation: mean(correlations),
+      medianCycleCorrelation: median(correlations),
+      minCycleCorrelation: Math.min(...correlations),
+      cycleCorrelationStd: populationStd(correlations),
+    };
+  };
+  const featureDefinitions: Array<{
+    name: string;
+    direction: Direction;
+    family: string;
+    definition: string;
+  }> = [
+    { name: "meanNormalizedProminence", direction: "HIGHER", family: "LOCAL", definition: "mean(localProminence / robustSignalRange)" },
+    { name: "medianNormalizedProminence", direction: "HIGHER", family: "LOCAL", definition: "median(localProminence / robustSignalRange)" },
+    { name: "meanProminenceToNoiseRatio", direction: "HIGHER", family: "LOCAL", definition: "mean(localProminence / localNoiseEstimate)" },
+    { name: "fullRepDurationCV", direction: "LOWER", family: "TEMPORAL", definition: "populationStd(B-B duration) / mean(B-B duration)" },
+    { name: "fullRepDurationMAD", direction: "LOWER", family: "TEMPORAL", definition: "MAD(B-B duration)" },
+    { name: "bottomToTopDurationCV", direction: "LOWER", family: "TEMPORAL", definition: "populationStd(B-T duration) / mean(B-T duration)" },
+    { name: "topToBottomDurationCV", direction: "LOWER", family: "TEMPORAL", definition: "populationStd(T-B duration) / mean(T-B duration)" },
+    { name: "fullRepDurationRange", direction: "LOWER", family: "TEMPORAL", definition: "max(B-B duration) - min(B-B duration)" },
+    { name: "bottomToTopDurationRange", direction: "LOWER", family: "TEMPORAL", definition: "max(B-T duration) - min(B-T duration)" },
+    { name: "topToBottomDurationRange", direction: "LOWER", family: "TEMPORAL", definition: "max(T-B duration) - min(T-B duration)" },
+    { name: "cycleAmplitudeCV", direction: "LOWER", family: "AMPLITUDE", definition: "populationStd(mean cycle amplitude) / mean(mean cycle amplitude)" },
+    { name: "cycleAmplitudeMAD", direction: "LOWER", family: "AMPLITUDE", definition: "MAD(mean cycle amplitude)" },
+    { name: "meanBottomDrift", direction: "LOWER", family: "AMPLITUDE", definition: "mean(abs(endBottomValue-startBottomValue))" },
+    { name: "maxBottomDrift", direction: "LOWER", family: "AMPLITUDE", definition: "max(abs(endBottomValue-startBottomValue))" },
+    { name: "coverageRatio", direction: "HIGHER", family: "COVERAGE", definition: "selectedSpan / real admissible candidate span" },
+    { name: "unselectedPrefixSamples", direction: "LOWER", family: "COVERAGE", definition: "firstSelectedIndex-activeRegionStart" },
+    { name: "unselectedSuffixSamples", direction: "LOWER", family: "COVERAGE", definition: "activeRegionEnd-lastSelectedIndex" },
+    { name: "selectedSpanSamples", direction: "HIGHER", family: "COVERAGE", definition: "lastSelectedIndex-firstSelectedIndex" },
+    { name: "meanCycleCorrelation", direction: "HIGHER", family: "SHAPE", definition: "mean Pearson correlation to pointwise median 100-point cycle" },
+    { name: "medianCycleCorrelation", direction: "HIGHER", family: "SHAPE", definition: "median Pearson correlation to pointwise median 100-point cycle" },
+    { name: "minCycleCorrelation", direction: "HIGHER", family: "SHAPE", definition: "minimum Pearson correlation to pointwise median 100-point cycle" },
+    { name: "cycleCorrelationStd", direction: "LOWER", family: "SHAPE", definition: "population std of cycle correlations" },
+  ];
+  const legacyRanks = rankNumbers(
+    allChains.map((path) => path.legacyDpScore),
+    true,
+  );
+  const analyzedPaths: AnalyzedPath[] = allChains.map(
+    (path, index) => ({
+      ...path,
+      legacyDpRank: legacyRanks[index],
+      fullPath: formatDpChain(path.chain),
+      features: calculateFeatures(path.chain),
+      familyScores: {},
+    }),
+  );
+  const normalizedMetricValues = new Map<string, number[]>();
+  const normalizationRows = featureDefinitions.map((definition) => {
+    const metricValues = analyzedPaths.map(
+      (path) => path.features[definition.name],
+    );
+    const center = median(metricValues);
+    const mad = medianAbsoluteDeviation(metricValues);
+    const standardDeviation = populationStd(metricValues);
+    const method =
+      mad !== 0
+        ? "ROBUST_Z_MEDIAN_MAD"
+        : standardDeviation !== 0
+          ? "STANDARD_Z_FALLBACK"
+          : "CONSTANT_METRIC";
+    const normalized = metricValues.map((value) => {
+      if (method === "CONSTANT_METRIC") return 0;
+      const z =
+        method === "ROBUST_Z_MEDIAN_MAD"
+          ? (value - center) / mad
+          : (value - mean(metricValues)) / standardDeviation;
+      const oriented = definition.direction === "LOWER" ? -z : z;
+      return Math.max(-3, Math.min(3, oriented));
+    });
+    normalizedMetricValues.set(definition.name, normalized);
+    return {
+      metricName: definition.name,
+      medianAcrossPaths: center,
+      madAcrossPaths: mad,
+      populationStdAcrossPaths: standardDeviation,
+      method,
+      orientation:
+        definition.direction === "LOWER"
+          ? "orientedValue=-z"
+          : "orientedValue=+z",
+      clipping: "[-3,+3]",
+    };
+  });
+  const familyDefinitions: Record<string, string[]> = {
+    LOCAL_QUALITY_SCORE: [
+      "meanNormalizedProminence",
+      "medianNormalizedProminence",
+      "meanProminenceToNoiseRatio",
+    ],
+    TEMPORAL_CONSISTENCY_SCORE: [
+      "fullRepDurationCV",
+      "fullRepDurationMAD",
+      "bottomToTopDurationCV",
+      "topToBottomDurationCV",
+    ],
+    AMPLITUDE_CONSISTENCY_SCORE: [
+      "cycleAmplitudeCV",
+      "cycleAmplitudeMAD",
+      "meanBottomDrift",
+    ],
+    COVERAGE_SCORE: [
+      "coverageRatio",
+      "unselectedPrefixSamples",
+      "unselectedSuffixSamples",
+    ],
+    SHAPE_SIMILARITY_SCORE: [
+      "meanCycleCorrelation",
+      "minCycleCorrelation",
+      "cycleCorrelationStd",
+    ],
+  };
+  Object.entries(familyDefinitions).forEach(
+    ([familyName, metricNames]) => {
+      analyzedPaths.forEach((path, pathIndex) => {
+        const available = metricNames
+          .map(
+            (metricName) =>
+              normalizedMetricValues.get(metricName)?.[pathIndex],
+          )
+          .filter((value): value is number => value !== undefined);
+        path.familyScores[familyName] = mean(available);
+      });
+    },
+  );
+  const groundTruthIndex = analyzedPaths.findIndex(
+    (path) => path.isGroundTruth,
+  );
+  const winnerIndex = analyzedPaths.findIndex(
+    (path) => path.isLegacyWinner,
+  );
+  const metricRankingDetails: Record<string, unknown>[] = [];
+  const metricRankingSummary = featureDefinitions.map((definition) => {
+    const metricValues = analyzedPaths.map(
+      (path) => path.features[definition.name],
+    );
+    const ranks = rankNumbers(
+      metricValues,
+      definition.direction === "HIGHER",
+    );
+    const ordered = analyzedPaths
+      .map((path, index) => ({
+        pathId: path.pathId,
+        value: metricValues[index],
+        rank: ranks[index],
+        normalizedRankPercentile:
+          ((analyzedPaths.length - ranks[index]) /
+            (analyzedPaths.length - 1)) *
+          100,
+        tiedRank:
+          ranks.filter((rank) => rank === ranks[index]).length > 1,
+      }))
+      .sort((left, right) => left.rank - right.rank);
+    ordered.forEach((row) =>
+      metricRankingDetails.push({
+        metricName: definition.name,
+        preferredDirection: definition.direction,
+        ...row,
+      }),
+    );
+    const gtRank = ranks[groundTruthIndex];
+    return {
+      metricName: definition.name,
+      preferredDirection: definition.direction,
+      groundTruthValue: metricValues[groundTruthIndex],
+      groundTruthRank: gtRank,
+      winnerValue: metricValues[winnerIndex],
+      winnerRank: ranks[winnerIndex],
+      bestPathId: ordered[0].pathId,
+      bestChainValue: ordered[0].value,
+      groundTruthMinusWinner:
+        metricValues[groundTruthIndex] - metricValues[winnerIndex],
+      groundTruthInTop1: gtRank <= 1,
+      groundTruthInTop3: gtRank <= 3,
+      groundTruthInTop5: gtRank <= 5,
+      topThreePaths: ordered
+        .filter((row) => row.rank <= 3)
+        .map((row) => row.pathId)
+        .join(", "),
+    };
+  });
+  const familyRankingDetails: Record<string, unknown>[] = [];
+  const familyRankingSummary = Object.keys(familyDefinitions).map(
+    (familyName) => {
+      const scores = analyzedPaths.map(
+        (path) => path.familyScores[familyName],
+      );
+      const ranks = rankNumbers(scores, true);
+      const ordered = analyzedPaths
+        .map((path, index) => ({
+          pathId: path.pathId,
+          score: scores[index],
+          rank: ranks[index],
+        }))
+        .sort((left, right) => left.rank - right.rank);
+      ordered.forEach((row) =>
+        familyRankingDetails.push({ familyName, ...row }),
+      );
+      return {
+        familyName,
+        groundTruthRank: ranks[groundTruthIndex],
+        winnerRank: ranks[winnerIndex],
+        bestPathId: ordered[0].pathId,
+        groundTruthFamilyScore: scores[groundTruthIndex],
+        winnerFamilyScore: scores[winnerIndex],
+        topFivePaths: ordered
+          .filter((row) => row.rank <= 5)
+          .map((row) => row.pathId)
+          .join(", "),
+        groundTruthTop1: ranks[groundTruthIndex] <= 1,
+        groundTruthTop3: ranks[groundTruthIndex] <= 3,
+        groundTruthTop5: ranks[groundTruthIndex] <= 5,
+      };
+    },
+  );
+  const legacyValues = analyzedPaths.map(
+    (path) => path.legacyDpScore,
+  );
+  const legacyMedian = median(legacyValues);
+  const legacyMad = medianAbsoluteDeviation(legacyValues);
+  const legacyStd = populationStd(legacyValues);
+  const normalizedLegacy = legacyValues.map((value) => {
+    const z =
+      legacyMad !== 0
+        ? (value - legacyMedian) / legacyMad
+        : legacyStd !== 0
+          ? (value - mean(legacyValues)) / legacyStd
+          : 0;
+    return Math.max(-3, Math.min(3, z));
+  });
+  const combos: Record<string, Record<string, number>> = {
+    COMBO_A_TEMPORAL_ONLY: { TEMPORAL_CONSISTENCY_SCORE: 1 },
+    COMBO_B_SHAPE_ONLY: { SHAPE_SIMILARITY_SCORE: 1 },
+    COMBO_C_TEMPORAL_SHAPE_EQUAL: {
+      TEMPORAL_CONSISTENCY_SCORE: 0.5,
+      SHAPE_SIMILARITY_SCORE: 0.5,
+    },
+    COMBO_D_TEMPORAL_SHAPE_LOCAL: {
+      TEMPORAL_CONSISTENCY_SCORE: 0.45,
+      SHAPE_SIMILARITY_SCORE: 0.35,
+      LOCAL_QUALITY_SCORE: 0.2,
+    },
+    COMBO_E_TEMPORAL_SHAPE_COVERAGE: {
+      TEMPORAL_CONSISTENCY_SCORE: 0.45,
+      SHAPE_SIMILARITY_SCORE: 0.35,
+      COVERAGE_SCORE: 0.2,
+    },
+    COMBO_F_BALANCED_WITHOUT_AMPLITUDE: {
+      TEMPORAL_CONSISTENCY_SCORE: 0.35,
+      SHAPE_SIMILARITY_SCORE: 0.3,
+      LOCAL_QUALITY_SCORE: 0.2,
+      COVERAGE_SCORE: 0.15,
+    },
+    COMBO_G_BALANCED_ALL_FAMILIES: {
+      TEMPORAL_CONSISTENCY_SCORE: 0.3,
+      SHAPE_SIMILARITY_SCORE: 0.25,
+      LOCAL_QUALITY_SCORE: 0.2,
+      COVERAGE_SCORE: 0.15,
+      AMPLITUDE_CONSISTENCY_SCORE: 0.1,
+    },
+    COMBO_H_LEGACY_PLUS_GLOBAL_FEATURES: {
+      LEGACY_LOCAL_SCORE_NORMALIZED: 0.2,
+      TEMPORAL_CONSISTENCY_SCORE: 0.35,
+      SHAPE_SIMILARITY_SCORE: 0.3,
+      COVERAGE_SCORE: 0.15,
+    },
+  };
+  const scoreWeights = (
+    weights: Record<string, number>,
+  ): number[] =>
+    analyzedPaths.map((path, pathIndex) =>
+      Object.entries(weights).reduce(
+        (score, [familyName, weight]) =>
+          score +
+          weight *
+            (familyName === "LEGACY_LOCAL_SCORE_NORMALIZED"
+              ? normalizedLegacy[pathIndex]
+              : path.familyScores[familyName]),
+        0,
+      ),
+    );
+  const combinationRankings: Record<string, unknown>[] = [];
+  const combinationSummary = Object.entries(combos).map(
+    ([comboName, weights]) => {
+      const scores = scoreWeights(weights);
+      const ranks = rankNumbers(scores, true);
+      const ordered = analyzedPaths
+        .map((path, index) => ({
+          pathId: path.pathId,
+          score: scores[index],
+          rank: ranks[index],
+          fullPath: path.fullPath,
+        }))
+        .sort((left, right) => left.rank - right.rank);
+      ordered.forEach((row) =>
+        combinationRankings.push({ comboName, ...row }),
+      );
+      const gtRank = ranks[groundTruthIndex];
+      const ahead = ordered.filter((row) => row.rank < gtRank);
+      return {
+        comboName,
+        groundTruthRank: gtRank,
+        legacyWinnerRank: ranks[winnerIndex],
+        winningPathId: ordered[0].pathId,
+        groundTruthScore: scores[groundTruthIndex],
+        winningScore: ordered[0].score,
+        groundTruthGapToBest:
+          scores[groundTruthIndex] - ordered[0].score,
+        pathsAheadOfGroundTruth: ahead.length,
+        groundTruthTop1: gtRank <= 1,
+        groundTruthTop3: gtRank <= 3,
+        groundTruthTop5: gtRank <= 5,
+        pathsAheadDetails: ahead
+          .map((row) => `${row.pathId}: ${row.fullPath}`)
+          .join(" | "),
+      };
+    },
+  );
+  const sensitivityCombos = [
+    "COMBO_C_TEMPORAL_SHAPE_EQUAL",
+    "COMBO_D_TEMPORAL_SHAPE_LOCAL",
+    "COMBO_E_TEMPORAL_SHAPE_COVERAGE",
+    "COMBO_F_BALANCED_WITHOUT_AMPLITUDE",
+  ];
+  const sensitivityRows = sensitivityCombos.map((comboName) => {
+    const base = combos[comboName];
+    const variants: Record<string, number>[] = [];
+    Object.keys(base).forEach((changedFamily) => {
+      for (const delta of [-0.1, 0.1]) {
+        const changed = {
+          ...base,
+          [changedFamily]: base[changedFamily] + delta,
+        };
+        if (changed[changedFamily] < 0) continue;
+        const total = Object.values(changed).reduce(
+          (sum, value) => sum + value,
+          0,
+        );
+        variants.push(
+          Object.fromEntries(
+            Object.entries(changed).map(([name, value]) => [
+              name,
+              value / total,
+            ]),
+          ),
+        );
+      }
+    });
+    const gtRanks = variants.map((variant) => {
+      const ranks = rankNumbers(scoreWeights(variant), true);
+      return ranks[groundTruthIndex];
+    });
+    return {
+      comboName,
+      testedVariantCount: variants.length,
+      groundTruthBestRank: Math.min(...gtRanks),
+      groundTruthWorstRank: Math.max(...gtRanks),
+      groundTruthMedianRank: median(gtRanks),
+      top1Count: gtRanks.filter((rank) => rank <= 1).length,
+      top3Count: gtRanks.filter((rank) => rank <= 3).length,
+      outsideTop5Count: gtRanks.filter((rank) => rank > 5).length,
+    };
+  });
+  const metricNames = featureDefinitions.map(
+    (definition) => definition.name,
+  );
+  const correlationMatrix = metricNames.map((leftName) =>
+    metricNames.map((rightName) =>
+      spearmanCorrelation(
+        analyzedPaths.map((path) => path.features[leftName]),
+        analyzedPaths.map((path) => path.features[rightName]),
+      ),
+    ),
+  );
+  const redundantPairs: Record<string, unknown>[] = [];
+  for (let left = 0; left < metricNames.length; left += 1) {
+    for (
+      let right = left + 1;
+      right < metricNames.length;
+      right += 1
+    ) {
+      const correlation = correlationMatrix[left][right];
+      if (Math.abs(correlation) >= 0.85) {
+        redundantPairs.push({
+          metricA: metricNames[left],
+          metricB: metricNames[right],
+          spearmanCorrelation: correlation,
+          absoluteCorrelation: Math.abs(correlation),
+        });
+      }
+    }
+  }
+  const pathTable = analyzedPaths.map((path) => ({
+    pathId: path.pathId,
+    terminalStateId: path.terminalStateId,
+    isGroundTruth: path.isGroundTruth,
+    isLegacyWinner: path.isLegacyWinner,
+    legacyDpScore: path.legacyDpScore,
+    legacyDpRank: path.legacyDpRank,
+    fullPath: path.fullPath,
+    ...path.familyScores,
+  }));
+  const outputDirectory = path.resolve(
+    __dirname,
+    "output",
+    "dp-v2-path-ranking-analysis",
+  );
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  const graphPaths = {
+    metricRanks: path.join(outputDirectory, "metric_ground_truth_ranks.png"),
+    familyRanking: path.join(outputDirectory, "family_score_ranking.png"),
+    comboRanks: path.join(outputDirectory, "combination_ground_truth_ranks.png"),
+    scatter: path.join(outputDirectory, "top_paths_temporal_vs_shape.png"),
+    correlation: path.join(outputDirectory, "feature_correlation_matrix.png"),
+    sensitivity: path.join(outputDirectory, "combination_sensitivity.png"),
+  };
+  renderComparisonLines(
+    "GROUND TRUTH RANK BY METRIC - LOWER RANK IS BETTER",
+    [{ label: "GROUND TRUTH RANK", values: metricRankingSummary.map((row) => row.groundTruthRank), color: [30, 100, 210] }],
+    graphPaths.metricRanks,
+  );
+  renderComparisonLines(
+    "FAMILY SCORES ACROSS 15 PATHS",
+    Object.keys(familyDefinitions).map((familyName, index) => ({
+      label: familyName,
+      values: analyzedPaths.map((path) => path.familyScores[familyName]),
+      color: ([[210, 35, 35], [30, 100, 210], [20, 150, 70], [150, 45, 180], [225, 120, 10]] as RGB[])[index],
+    })),
+    graphPaths.familyRanking,
+  );
+  renderComparisonLines(
+    "GROUND TRUTH RANK BY EXPERIMENTAL COMBINATION",
+    [{ label: "GROUND TRUTH RANK", values: combinationSummary.map((row) => row.groundTruthRank), color: [30, 100, 210] }],
+    graphPaths.comboRanks,
+  );
+  renderScatterPlot(
+    analyzedPaths.map((path) => ({
+      x: path.familyScores.TEMPORAL_CONSISTENCY_SCORE,
+      y: path.familyScores.SHAPE_SIMILARITY_SCORE,
+      label: path.pathId,
+      color: path.isGroundTruth
+        ? [30, 100, 210]
+        : path.isLegacyWinner
+          ? [210, 35, 35]
+          : [90, 90, 90],
+    })),
+    graphPaths.scatter,
+  );
+  renderCorrelationMatrix(
+    metricNames,
+    correlationMatrix,
+    graphPaths.correlation,
+  );
+  renderComparisonLines(
+    "GROUND TRUTH SENSITIVITY RANK INTERVALS",
+    [
+      { label: "BEST RANK", values: sensitivityRows.map((row) => row.groundTruthBestRank), color: [20, 150, 70] },
+      { label: "MEDIAN RANK", values: sensitivityRows.map((row) => row.groundTruthMedianRank), color: [30, 100, 210] },
+      { label: "WORST RANK", values: sensitivityRows.map((row) => row.groundTruthWorstRank), color: [210, 35, 35] },
+    ],
+    graphPaths.sensitivity,
+  );
+  const reportPath = path.join(
+    outputDirectory,
+    "rowing_5reps_007_dp_v2_path_ranking_report.md",
+  );
+  fs.writeFileSync(
+    reportPath,
+    [
+      "# Rowing 5 reps 007 — DP V2 path ranking analysis",
+      "",
+      "## Contexte et population",
+      "",
+      "- 46 candidats DP réels, 55 après injection sans doublon.",
+      "- 1207 états créés, 14 états terminaux.",
+      "- 14 chemins terminaux plus GROUND_TRUTH_REFERENCE externe.",
+      "",
+      "## Définitions et normalisation",
+      "",
+      markdownTable(featureDefinitions),
+      "",
+      "- Normalisation: robustZ=(value-medianAcrossPaths)/MADAcrossPaths.",
+      "- Si MAD=0: z-score population standard; si écart-type=0: CONSTANT_METRIC exclue.",
+      "- Orientation: signe inversé pour les métriques LOWER; signe conservé pour HIGHER.",
+      "- Valeurs orientées limitées à [-3,+3].",
+      "- Scores de famille: moyenne non pondérée des métriques disponibles.",
+      "",
+      markdownTable(normalizationRows),
+      "",
+      "## Tableau A — Toutes les chaînes",
+      "",
+      markdownTable(pathTable),
+      "",
+      "## Classement par métrique — résumé",
+      "",
+      markdownTable(metricRankingSummary),
+      "",
+      "## Classement complet par métrique",
+      "",
+      markdownTable(metricRankingDetails),
+      "",
+      "## Classement par famille — résumé",
+      "",
+      markdownTable(familyRankingSummary),
+      "",
+      "## Scores complets par famille",
+      "",
+      markdownTable(familyRankingDetails),
+      "",
+      "## Combinaisons — résumé",
+      "",
+      markdownTable(combinationSummary),
+      "",
+      "## Classements complets des combinaisons",
+      "",
+      markdownTable(combinationRankings),
+      "",
+      "## Sensibilité limitée",
+      "",
+      markdownTable(sensitivityRows),
+      "",
+      "## Redondance des métriques — Spearman |r| >= 0.85",
+      "",
+      markdownTable(redundantPairs),
+      "",
+      "## Chaînes devant la Ground Truth",
+      "",
+      markdownTable(
+        combinationSummary.map((row) => ({
+          comboName: row.comboName,
+          pathsAheadOfGroundTruth: row.pathsAheadOfGroundTruth,
+          details: row.pathsAheadDetails,
+        })),
+      ),
+      "",
+      "## Graphiques",
+      "",
+      ...Object.values(graphPaths).map((graphPath) => `- ${graphPath}`),
+      "",
+      "## Limites",
+      "",
+      "- Une seule vidéo annotée.",
+      "- Ground Truth utilisée pour l'analyse.",
+      "- Poids non généralisables.",
+      "- Aucun score de production validé.",
+      "- Aucune conclusion biomécanique universelle.",
+      "",
+      "## Décision humaine pour DP V2",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  console.log("\n=== ALL PATHS ===\n");
+  console.table(pathTable);
+  console.log("\n=== GROUND TRUTH RANK BY METRIC ===\n");
+  console.table(metricRankingSummary);
+  console.log("\n=== GROUND TRUTH RANK BY FAMILY ===\n");
+  console.table(familyRankingSummary);
+  console.log("\n=== EXPERIMENTAL COMBINATIONS ===\n");
+  console.table(combinationSummary);
+  console.log("\n=== LIMITED SENSITIVITY ===\n");
+  console.table(sensitivityRows);
+  console.log("\n=== HIGH SPEARMAN CORRELATIONS ===\n");
+  console.table(redundantPairs);
+  console.log("\n=== ARTIFACTS ===\n");
+  Object.values(graphPaths).forEach((graphPath) =>
+    console.log(graphPath),
+  );
+  console.log(reportPath);
+}
+
+type TopKPathState = {
+  stateId: string;
+  stateKey: string;
+  score: number;
+  candidateIndex: number;
+  lastBottomIndex: number | null;
+  chain: DpCandidate[];
+  pathSignature: string;
+};
+
+type TopKEviction = {
+  step: number;
+  stateKey: string;
+  evictedStateId: string;
+  evictedPathSignature: string;
+  evictedScore: number;
+  evictedByStateId: string;
+  evictedByScore: number;
+};
+
+type TopKSearchResult = {
+  k: number;
+  terminalStates: TopKPathState[];
+  uniqueTerminalStates: TopKPathState[];
+  evictions: TopKEviction[];
+  allCreatedBySignature: Map<string, TopKPathState>;
+  retainedByLayer: Array<Map<string, TopKPathState[]>>;
+  totalStatesGenerated: number;
+  totalTransitionStatesAttempted: number;
+  totalStatesRetained: number;
+  totalStatesEvicted: number;
+  totalBuckets: number;
+  meanBucketSize: number;
+  medianBucketSize: number;
+  maxBucketSize: number;
+  maximumMemoryEstimate: number;
+  executionTimeMilliseconds: number;
+};
+
+function topKPathSignature(chain: DpCandidate[]): string {
+  return chain
+    .map((candidate) => `${candidate.type}:${candidate.index}`)
+    .join("|");
+}
+
+function buildInjectedCandidatePool(
+  dataset: CalibrationDataset,
+  groundTruth: GroundTruthFile,
+  axis: keyof CalibrationDataset["samples"][number],
+  realCandidates: DpCandidate[],
+): {
+  pool: DpCandidate[];
+  groundTruthChain: DpCandidate[];
+  addedCount: number;
+} {
+  const offset =
+    groundTruth.sync.videoTimeSeconds -
+    groundTruth.sync.imuSampleIndex / dataset.samplingRateHz;
+  const realByIdentity = new Map(
+    realCandidates.map((candidate) => [
+      `${candidate.type}:${candidate.index}`,
+      candidate,
+    ]),
+  );
+  const projected = groundTruth.events.map(
+    (event, index): DpCandidate => {
+      const sampleIndex = Math.round(
+        (event.videoTimeSeconds - offset) *
+          dataset.samplingRateHz,
+      );
+      return {
+        candidateId: `TOP_K_GT_${index + 1}_${event.type}_${sampleIndex}`,
+        type: event.type,
+        index: sampleIndex,
+        value: dataset.samples[sampleIndex][axis],
+      };
+    },
+  );
+  const groundTruthChain = projected.map(
+    (candidate) =>
+      realByIdentity.get(`${candidate.type}:${candidate.index}`) ??
+      candidate,
+  );
+  const additions = groundTruthChain.filter(
+    (candidate) =>
+      !realByIdentity.has(`${candidate.type}:${candidate.index}`),
+  );
+  const pool = [...realCandidates, ...additions].sort(
+    (left, right) =>
+      left.index - right.index ||
+      left.type.localeCompare(right.type) ||
+      left.candidateId.localeCompare(right.candidateId),
+  );
+  const identities = new Set(
+    pool.map((candidate) => `${candidate.type}:${candidate.index}`),
+  );
+  if (
+    realCandidates.length !== 46 ||
+    pool.length !== 55 ||
+    additions.length !== 9 ||
+    identities.size !== pool.length
+  ) {
+    fail(
+      "INJECTED_POPULATION_MISMATCH",
+      `real=${realCandidates.length}, pool=${pool.length}, added=${additions.length}, identities=${identities.size}`,
+    );
+  }
+  return { pool, groundTruthChain, addedCount: additions.length };
+}
+
+function insertStateIntoTopKBucket(
+  bucket: TopKPathState[],
+  newState: TopKPathState,
+  k: number,
+  step: number,
+  evictions: TopKEviction[],
+): void {
+  if (
+    bucket.some(
+      (state) => state.pathSignature === newState.pathSignature,
+    )
+  ) {
+    fail(
+      "DUPLICATE_PATH_STATE_ERROR",
+      `${newState.stateKey}:${newState.pathSignature}`,
+    );
+  }
+  bucket.push(newState);
+  bucket.sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.pathSignature.localeCompare(right.pathSignature) ||
+      left.stateId.localeCompare(right.stateId),
+  );
+  if (bucket.length > k) {
+    const evicted = bucket.pop();
+    if (!evicted) {
+      fail(
+        "TOP_K_BUCKET_INTEGRITY_ERROR",
+        `Unable to evict from ${newState.stateKey}.`,
+      );
+    }
+    const responsible =
+      evicted.stateId === newState.stateId
+        ? bucket[0]
+        : newState;
+    evictions.push({
+      step,
+      stateKey: newState.stateKey,
+      evictedStateId: evicted.stateId,
+      evictedPathSignature: evicted.pathSignature,
+      evictedScore: evicted.score,
+      evictedByStateId: responsible.stateId,
+      evictedByScore: responsible.score,
+    });
+  }
+  if (
+    bucket.length > k ||
+    bucket.some(
+      (state, index) =>
+        index > 0 &&
+        (state.score > bucket[index - 1].score ||
+          (state.score === bucket[index - 1].score &&
+            state.pathSignature <
+              bucket[index - 1].pathSignature)),
+    )
+  ) {
+    fail(
+      "TOP_K_BUCKET_INTEGRITY_ERROR",
+      `Invalid ordering for ${newState.stateKey}.`,
+    );
+  }
+}
+
+function reconstructPathFromState(
+  state: TopKPathState,
+): DpCandidate[] {
+  const reconstructed = [...state.chain];
+  if (
+    topKPathSignature(reconstructed) !== state.pathSignature ||
+    reconstructed.length === 0
+  ) {
+    fail(
+      "TERMINAL_RECONSTRUCTION_ERROR",
+      state.stateId,
+    );
+  }
+  return reconstructed;
+}
+
+function searchTopKPathsDiagnostic(
+  candidates: DpCandidate[],
+  expectedReps: number,
+  k: number,
+): TopKSearchResult {
+  const startTime = performance.now();
+  const targetLength = expectedReps * 2 + 1;
+  const initialState: TopKPathState = {
+    stateId: `K${k}:INITIAL`,
+    stateKey: "0:-1:-1",
+    score: 0,
+    candidateIndex: -1,
+    lastBottomIndex: null,
+    chain: [],
+    pathSignature: "",
+  };
+  let currentStates = new Map<string, TopKPathState[]>([
+    [initialState.stateKey, [initialState]],
+  ]);
+  const retainedByLayer = [
+    new Map<string, TopKPathState[]>(currentStates),
+  ];
+  const evictions: TopKEviction[] = [];
+  const allCreatedBySignature = new Map<string, TopKPathState>();
+  let totalTransitionStatesAttempted = 0;
+  let maximumMemoryEstimate = 1;
+
+  for (let step = 0; step < targetLength; step += 1) {
+    const requiredType: EventType =
+      step % 2 === 0 ? "BOTTOM" : "TOP";
+    const nextStates = new Map<string, TopKPathState[]>();
+    const orderedStates = [...currentStates.values()]
+      .flat()
+      .sort((left, right) =>
+        left.stateId.localeCompare(right.stateId),
+      );
+    for (const state of orderedStates) {
+      const previous =
+        state.candidateIndex >= 0
+          ? candidates[state.candidateIndex]
+          : null;
+      for (
+        let candidateIndex = 0;
+        candidateIndex < candidates.length;
+        candidateIndex += 1
+      ) {
+        const candidate = candidates[candidateIndex];
+        if (candidate.type !== requiredType) continue;
+        if (previous && candidate.index <= previous.index) continue;
+        if (previous) {
+          const phaseDuration = candidate.index - previous.index;
+          if (
+            requiredType === "TOP" &&
+            phaseDuration < 8
+          ) {
+            continue;
+          }
+          if (
+            requiredType === "BOTTOM" &&
+            phaseDuration < 8
+          ) {
+            continue;
+          }
+          if (
+            requiredType === "BOTTOM" &&
+            state.lastBottomIndex !== null &&
+            candidate.index - state.lastBottomIndex < 45
+          ) {
+            continue;
+          }
+        } else if (requiredType !== "BOTTOM") {
+          continue;
+        }
+        totalTransitionStatesAttempted += 1;
+        const nextLastBottom =
+          requiredType === "BOTTOM"
+            ? candidate.index
+            : state.lastBottomIndex;
+        const nextChain = [...state.chain, candidate];
+        const signature = topKPathSignature(nextChain);
+        const stateKey =
+          `${step + 1}:${candidateIndex}:` +
+          `${nextLastBottom ?? -1}`;
+        const nextState: TopKPathState = {
+          stateId:
+            `K${k}:S${step + 1}:C${candidateIndex}:B` +
+            `${nextLastBottom ?? -1}:P${signature}`,
+          stateKey,
+          score:
+            state.score +
+            (candidate.type === "BOTTOM"
+              ? -candidate.value
+              : candidate.value),
+          candidateIndex,
+          lastBottomIndex: nextLastBottom,
+          chain: nextChain,
+          pathSignature: signature,
+        };
+        if (!allCreatedBySignature.has(signature)) {
+          allCreatedBySignature.set(signature, nextState);
+        }
+        const bucket = nextStates.get(stateKey) ?? [];
+        insertStateIntoTopKBucket(
+          bucket,
+          nextState,
+          k,
+          step + 1,
+          evictions,
+        );
+        nextStates.set(stateKey, bucket);
+      }
+    }
+    currentStates = nextStates;
+    retainedByLayer.push(
+      new Map(
+        [...currentStates.entries()].map(([key, bucket]) => [
+          key,
+          [...bucket],
+        ]),
+      ),
+    );
+    maximumMemoryEstimate = Math.max(
+      maximumMemoryEstimate,
+      [...currentStates.values()].reduce(
+        (sum, bucket) => sum + bucket.length,
+        0,
+      ),
+    );
+    if (currentStates.size === 0) break;
+  }
+  const terminalStates = [...currentStates.values()]
+    .flat()
+    .map((state) => ({
+      ...state,
+      chain: reconstructPathFromState(state),
+    }))
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.pathSignature.localeCompare(right.pathSignature),
+    );
+  const uniqueByPath = new Map<string, TopKPathState>();
+  terminalStates.forEach((state) => {
+    const existing = uniqueByPath.get(state.pathSignature);
+    if (!existing || state.score > existing.score) {
+      uniqueByPath.set(state.pathSignature, state);
+    }
+  });
+  const uniqueTerminalStates = [...uniqueByPath.values()].sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.pathSignature.localeCompare(right.pathSignature),
+  );
+  const bucketSizes = retainedByLayer
+    .slice(1)
+    .flatMap((layer) =>
+      [...layer.values()].map((bucket) => bucket.length),
+    );
+  const totalBuckets =
+    1 +
+    retainedByLayer
+      .slice(1)
+      .reduce((sum, layer) => sum + layer.size, 0);
+  const totalStatesRetained =
+    1 + bucketSizes.reduce((sum, size) => sum + size, 0);
+  return {
+    k,
+    terminalStates,
+    uniqueTerminalStates,
+    evictions,
+    allCreatedBySignature,
+    retainedByLayer,
+    totalStatesGenerated: totalBuckets,
+    totalTransitionStatesAttempted,
+    totalStatesRetained,
+    totalStatesEvicted: evictions.length,
+    totalBuckets,
+    meanBucketSize:
+      bucketSizes.length > 0 ? mean(bucketSizes) : 0,
+    medianBucketSize:
+      bucketSizes.length > 0 ? median(bucketSizes) : 0,
+    maxBucketSize:
+      bucketSizes.length > 0 ? Math.max(...bucketSizes) : 0,
+    maximumMemoryEstimate,
+    executionTimeMilliseconds: performance.now() - startTime,
+  };
+}
+
+function traceGroundTruthPrefixes(
+  result: TopKSearchResult,
+  groundTruthChain: DpCandidate[],
+) {
+  return groundTruthChain.map((_, index) => {
+    const prefix = groundTruthChain.slice(0, index + 1);
+    const signature = topKPathSignature(prefix);
+    const created = result.allCreatedBySignature.get(signature);
+    const eviction = created
+      ? result.evictions.find(
+          (entry) => entry.evictedStateId === created.stateId,
+        )
+      : null;
+    const layer = result.retainedByLayer[index + 1];
+    const retainedBucket = created
+      ? layer?.get(created.stateKey)
+      : undefined;
+    const retainedIndex =
+      created && retainedBucket
+        ? retainedBucket.findIndex(
+            (state) => state.pathSignature === signature,
+          )
+        : -1;
+    const terminal = result.uniqueTerminalStates.find(
+      (state) => state.pathSignature === signature,
+    );
+    const status = !created
+      ? "PREFIX_NOT_CREATED"
+      : terminal
+        ? "PREFIX_SURVIVED_TO_TERMINAL"
+        : eviction
+          ? "PREFIX_CREATED_THEN_EVICTED"
+          : retainedIndex >= 0
+            ? "PREFIX_CREATED_AND_RETAINED"
+            : "PREFIX_TRACE_UNAVAILABLE";
+    return {
+      K: result.k,
+      prefixLength: index + 1,
+      path: signature
+        .replaceAll("BOTTOM:", "B")
+        .replaceAll("TOP:", "T")
+        .replaceAll("|", "-"),
+      stateCreated: created ? "OUI" : "NON",
+      stateId: created?.stateId ?? null,
+      stateKey: created?.stateKey ?? null,
+      legacyScore: created?.score ?? null,
+      rankInsideBucket:
+        retainedIndex >= 0 ? retainedIndex + 1 : null,
+      bucketSize: retainedBucket?.length ?? null,
+      survivedBucketPruning:
+        retainedIndex >= 0 || terminal ? "OUI" : "NON",
+      evictedAtStep: eviction?.step ?? null,
+      evictedByStateId: eviction?.evictedByStateId ?? null,
+      evictedByScore: eviction?.evictedByScore ?? null,
+      terminalReached: terminal ? "OUI" : "NON",
+      status,
+    };
+  });
+}
+
+function summarizeTopKExperiment(
+  result: TopKSearchResult,
+  groundTruthChain: DpCandidate[],
+  trace: ReturnType<typeof traceGroundTruthPrefixes>,
+) {
+  const groundTruthSignature = topKPathSignature(groundTruthChain);
+  const groundTruthTerminalIndex =
+    result.uniqueTerminalStates.findIndex(
+      (state) => state.pathSignature === groundTruthSignature,
+    );
+  const groundTruthTerminal =
+    groundTruthTerminalIndex >= 0
+      ? result.uniqueTerminalStates[groundTruthTerminalIndex]
+      : null;
+  const lastReached = [...trace]
+    .reverse()
+    .find((row) => row.stateCreated === "OUI");
+  const firstLost = trace.find(
+    (row) =>
+      row.status === "PREFIX_NOT_CREATED" ||
+      row.status === "PREFIX_CREATED_THEN_EVICTED",
+  );
+  const winner = result.uniqueTerminalStates[0];
+  return {
+    K: result.k,
+    totalStatesGenerated: result.totalStatesGenerated,
+    totalTransitionStatesAttempted:
+      result.totalTransitionStatesAttempted,
+    totalStatesRetained: result.totalStatesRetained,
+    totalStatesEvicted: result.totalStatesEvicted,
+    totalBuckets: result.totalBuckets,
+    meanBucketSize: result.meanBucketSize,
+    medianBucketSize: result.medianBucketSize,
+    maxBucketSize: result.maxBucketSize,
+    terminalStateCount: result.terminalStates.length,
+    uniqueTerminalPathCount: result.uniqueTerminalStates.length,
+    legacyWinningPath: winner?.pathSignature ?? null,
+    legacyWinningScore: winner?.score ?? null,
+    groundTruthFullPathGenerated:
+      result.allCreatedBySignature.has(groundTruthSignature),
+    groundTruthTerminalReached: groundTruthTerminal !== null,
+    groundTruthTerminalStateId:
+      groundTruthTerminal?.stateId ?? null,
+    groundTruthLegacyScore:
+      groundTruthTerminal?.score ?? null,
+    groundTruthLegacyRankAmongTerminals:
+      groundTruthTerminalIndex >= 0
+        ? groundTruthTerminalIndex + 1
+        : null,
+    lastGroundTruthPrefixReached:
+      lastReached?.prefixLength ?? 0,
+    firstGroundTruthPrefixLost:
+      firstLost?.prefixLength ?? null,
+    maximumMemoryEstimate: result.maximumMemoryEstimate,
+    executionTimeMilliseconds:
+      result.executionTimeMilliseconds,
+  };
+}
+
+function runDpV2TopKSearchDiagnostic(
+  dataset: CalibrationDataset,
+  groundTruth: GroundTruthFile,
+  axis: keyof CalibrationDataset["samples"][number],
+  realDpCandidates: DpCandidate[],
+): void {
+  const { pool, groundTruthChain } =
+    buildInjectedCandidatePool(
+      dataset,
+      groundTruth,
+      axis,
+      realDpCandidates,
+    );
+  const kValues = [1, 3, 5, 10, 20, 30];
+  const experiments = kValues.map((k) => {
+    const result = searchTopKPathsDiagnostic(
+      pool,
+      EXPECTED_REPS,
+      k,
+    );
+    const trace = traceGroundTruthPrefixes(
+      result,
+      groundTruthChain,
+    );
+    const summary = summarizeTopKExperiment(
+      result,
+      groundTruthChain,
+      trace,
+    );
+    return { result, trace, summary };
+  });
+  const expectedWinner =
+    "BOTTOM:169|TOP:195|BOTTOM:228|TOP:291|BOTTOM:299|TOP:333|BOTTOM:391|TOP:467|BOTTOM:500|TOP:509|BOTTOM:564";
+  const k1 = experiments[0];
+  if (
+    k1.summary.totalStatesGenerated !== 1207 ||
+    k1.summary.uniqueTerminalPathCount !== 14 ||
+    k1.summary.legacyWinningPath !== expectedWinner ||
+    k1.summary.legacyWinningScore !== 48176
+  ) {
+    fail(
+      "TOP_K_K1_PARITY_MISMATCH",
+      JSON.stringify(k1.summary),
+    );
+  }
+  const summaries = experiments.map(
+    (experiment) => experiment.summary,
+  );
+  const traces = experiments.flatMap(
+    (experiment) => experiment.trace,
+  );
+  const terminalRows = experiments.flatMap(
+    ({ result }) =>
+      result.uniqueTerminalStates
+        .slice(0, 20)
+        .map((terminal, index) => ({
+          K: result.k,
+          legacyRank: index + 1,
+          stateId: terminal.stateId,
+          legacyScore: terminal.score,
+          isGroundTruth:
+            terminal.pathSignature ===
+            topKPathSignature(groundTruthChain),
+          path: terminal.pathSignature,
+        })),
+  );
+  const groundTruthPrefixSignatures = new Set(
+    groundTruthChain.map((_, index) =>
+      topKPathSignature(groundTruthChain.slice(0, index + 1)),
+    ),
+  );
+  const importantEvictions = experiments.flatMap(
+    ({ result }) =>
+      result.evictions
+        .filter((eviction) =>
+          groundTruthPrefixSignatures.has(
+            eviction.evictedPathSignature,
+          ),
+        )
+        .map((eviction) => ({ K: result.k, ...eviction })),
+  );
+  const reached = summaries.filter(
+    (summary) => summary.groundTruthTerminalReached,
+  );
+  const smallestKWhereGroundTruthReachesTerminal =
+    reached.length > 0 ? Math.min(...reached.map((row) => row.K)) : null;
+  const groundTruthReachedForAllLargerTestedK =
+    smallestKWhereGroundTruthReachesTerminal === null
+      ? false
+      : summaries
+          .filter(
+            (row) =>
+              row.K >= smallestKWhereGroundTruthReachesTerminal,
+          )
+          .every((row) => row.groundTruthTerminalReached);
+  const stability = {
+    smallestKWhereGroundTruthReachesTerminal,
+    groundTruthReachedForAllLargerTestedK,
+    terminalCountGrowthRatio:
+      summaries[summaries.length - 1].uniqueTerminalPathCount /
+      summaries[0].uniqueTerminalPathCount,
+    stateCountGrowthRatio:
+      summaries[summaries.length - 1].totalStatesRetained /
+      summaries[0].totalStatesRetained,
+  };
+  const outputDirectory = path.resolve(
+    __dirname,
+    "output",
+    "dp-v2-top-k-diagnostic",
+  );
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  const graphPaths = {
+    survival: path.join(outputDirectory, "ground_truth_survival_by_k.png"),
+    terminals: path.join(outputDirectory, "terminal_count_by_k.png"),
+    states: path.join(outputDirectory, "state_count_by_k.png"),
+    execution: path.join(outputDirectory, "execution_time_by_k.png"),
+    rank: path.join(outputDirectory, "ground_truth_legacy_rank_by_k.png"),
+  };
+  renderComparisonLines(
+    "MAX GT PREFIX - K ORDER 1 3 5 10 20 30",
+    [{ label: "PREFIX LENGTH", values: summaries.map((row) => row.lastGroundTruthPrefixReached), color: [30, 100, 210] }],
+    graphPaths.survival,
+  );
+  renderComparisonLines(
+    "UNIQUE TERMINALS - K ORDER 1 3 5 10 20 30",
+    [{ label: "TERMINALS", values: summaries.map((row) => row.uniqueTerminalPathCount), color: [30, 100, 210] }],
+    graphPaths.terminals,
+  );
+  renderComparisonLines(
+    "STATE COUNTS - K ORDER 1 3 5 10 20 30",
+    [
+      { label: "GENERATED KEYS", values: summaries.map((row) => row.totalStatesGenerated), color: [30, 100, 210] },
+      { label: "RETAINED", values: summaries.map((row) => row.totalStatesRetained), color: [20, 150, 70] },
+      { label: "EVICTED", values: summaries.map((row) => row.totalStatesEvicted), color: [210, 35, 35] },
+    ],
+    graphPaths.states,
+  );
+  renderComparisonLines(
+    "EXECUTION MS - K ORDER 1 3 5 10 20 30",
+    [{ label: "MS", values: summaries.map((row) => row.executionTimeMilliseconds), color: [150, 45, 180] }],
+    graphPaths.execution,
+  );
+  renderComparisonLines(
+    "GT LEGACY RANK - K 1 3 5 10 20 30 - 0 NOT TERMINAL",
+    [{
+      label: "LEGACY RANK",
+      values: summaries.map(
+        (row) => row.groundTruthLegacyRankAmongTerminals ?? 0,
+      ),
+      color: [225, 120, 10],
+    }],
+    graphPaths.rank,
+  );
+  const reportPath = path.join(
+    outputDirectory,
+    "rowing_5reps_007_dp_v2_top_k_diagnostic_report.md",
+  );
+  fs.writeFileSync(
+    reportPath,
+    [
+      "# Rowing 5 reps 007 — DP V2 Top-K search diagnostic",
+      "",
+      "## Contexte et rappel DP V1",
+      "",
+      "- Population réelle: 46; population injectée sans doublon: 55.",
+      "- Alternance, contraintes 8/8/45, score legacy et terminalité inchangés.",
+      "- K=1 attendu: 1207 clés matérialisées, 14 terminaux uniques, winner 48176.",
+      "",
+      "## Définition Top-K et égalité",
+      "",
+      "- Bucket: `step:candidateIndex:lastBottomIndex`.",
+      "- Jusqu'à K chemins distincts par bucket.",
+      "- Ordre déterministe: score legacy décroissant, puis signature complète lexicographique, puis stateId.",
+      "- `totalStatesGenerated` reprend la définition V1: état initial + clés DP matérialisées sur toutes les couches.",
+      "- `totalTransitionStatesAttempted` compte séparément toutes les transitions admissibles instanciées.",
+      "",
+      "## Parité K=1",
+      "",
+      "- TOP_K_K1_PARITY: MATCH.",
+      markdownTable([k1.summary]),
+      "",
+      "## Tableau comparatif de tous les K",
+      "",
+      markdownTable(summaries),
+      "",
+      "## Trace Ground Truth complète",
+      "",
+      markdownTable(traces),
+      "",
+      "## États évincés liés aux préfixes Ground Truth",
+      "",
+      markdownTable(importantEvictions),
+      "",
+      "## Top 20 terminaux par K",
+      "",
+      markdownTable(terminalRows),
+      "",
+      "## Stabilité",
+      "",
+      markdownTable([stability]),
+      "",
+      "## Graphiques",
+      "",
+      ...Object.values(graphPaths).map((graphPath) => `- ${graphPath}`),
+      "",
+      "## Limites",
+      "",
+      "- Candidats Ground Truth injectés.",
+      "- Une seule vidéo.",
+      "- Score legacy inchangé.",
+      "- Aucun reranker.",
+      "- Aucun choix de K de production.",
+      "",
+      "## Décision humaine pour la suite de DP V2",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  console.log("\n=== TOP-K K=1 PARITY ===\n");
+  console.table([k1.summary]);
+  console.log("\n=== TOP-K SUMMARY ===\n");
+  console.table(summaries);
+  console.log("\n=== GROUND TRUTH PREFIX TRACE ===\n");
+  console.table(traces);
+  console.log("\n=== TOP-K STABILITY ===\n");
+  console.table([stability]);
+  console.log("\n=== TOP TERMINALS ===\n");
+  console.table(terminalRows);
+  console.log("\n=== ARTIFACTS ===\n");
+  Object.values(graphPaths).forEach((graphPath) =>
+    console.log(graphPath),
+  );
+  console.log(reportPath);
+}
+
 function runTransitionValidation(
   dataset: CalibrationDataset,
   pointGroundTruth: GroundTruthFile,
@@ -3570,6 +6157,42 @@ function main(): void {
       "CANDIDATE_IDENTITY_ERROR",
       `DP input identity mismatch: directionEvents=${eligibleDirectionEvents.length}, uniqueCandidates=${eligibleCandidates.length}, admissibleCandidateCount=${debug.admissibleCandidateCount}.`,
     );
+  }
+
+  if (VALIDATION_MODE === "DP_V2_TOP_K_SEARCH_DIAGNOSTIC") {
+    runDpV2TopKSearchDiagnostic(
+      dataset,
+      groundTruth,
+      calibration.axis,
+      eligibleCandidates,
+    );
+    return;
+  }
+
+  if (VALIDATION_MODE === "DP_V2_PATH_RANKING_ANALYSIS") {
+    runDpV2PathRankingAnalysis(
+      dataset,
+      groundTruth,
+      calibration.axis,
+      eligibleCandidates,
+      globalChain,
+      debug.selectionScore,
+      debug,
+    );
+    return;
+  }
+
+  if (VALIDATION_MODE === "DP_V2_FEATURE_ANALYSIS") {
+    runDpV2FeatureAnalysis(
+      dataset,
+      groundTruth,
+      calibration.axis,
+      eligibleCandidates,
+      globalChain,
+      debug.selectionScore,
+      debug,
+    );
+    return;
   }
 
   if (VALIDATION_MODE === "DP_SCORE_DECOMPOSITION") {
