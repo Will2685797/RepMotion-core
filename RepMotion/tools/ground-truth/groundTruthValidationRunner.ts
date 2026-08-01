@@ -77,12 +77,24 @@ type ValidationErrorCode =
   | "TOP_K_BUCKET_INTEGRITY_ERROR"
   | "DUPLICATE_PATH_STATE_ERROR"
   | "TERMINAL_RECONSTRUCTION_ERROR"
+  | "DP_V1_REPLAY_MISMATCH"
+  | "PARTIAL_TEMPORAL_CALCULATION_ERROR"
+  | "TEMPORAL_FEATURE_PARITY_MISMATCH"
+  | "SHAPE_FEATURE_PARITY_MISMATCH"
+  | "BUCKET_INTEGRITY_ERROR"
+  | "COMPLETE_SEQUENCE_RECONSTRUCTION_ERROR"
+  | "RERANKING_ERROR"
   | "CANDIDATE_IDENTITY_ERROR"
   | "DATA_INTEGRITY_ERROR";
 
 const DATASET_NAME = "rowing_5reps_007.json";
 const EXPECTED_REPS = 5;
 const EXPECTED_EVENT_COUNT = EXPECTED_REPS * 2 + 1;
+const DP_V2_GROUND_TRUTH_DEBUG =
+  process.env.DP_V2_GROUND_TRUTH_DEBUG === "1";
+const RUN_NMS_CHARACTERIZATION =
+  process.env.RUN_NMS_CHARACTERIZATION === "1";
+const EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES = 2;
 const VALIDATION_MODE:
   | "POINT"
   | "TRANSITION"
@@ -91,8 +103,9 @@ const VALIDATION_MODE:
   | "DP_SCORE_DECOMPOSITION"
   | "DP_V2_FEATURE_ANALYSIS"
   | "DP_V2_PATH_RANKING_ANALYSIS"
-  | "DP_V2_TOP_K_SEARCH_DIAGNOSTIC" =
-  "DP_V2_TOP_K_SEARCH_DIAGNOSTIC";
+  | "DP_V2_TOP_K_SEARCH_DIAGNOSTIC"
+  | "DP_V2_EXPERIMENTAL_DIAGNOSTIC" =
+  "DP_V2_EXPERIMENTAL_DIAGNOSTIC";
 const RAW_WINDOW_START_INDEX = 100;
 const RAW_WINDOW_END_INDEX = 169;
 const DATASET_PATH = path.resolve(
@@ -2227,7 +2240,126 @@ function runDpIsolationExperiment(
     ].join("\n"),
     "utf8",
   );
+  /*
+  const diagnosticTrace = mainExperiments.flatMap(
+    (experiment, experimentIndex) => {
+      const combinedWinner = [...experiment.ranked].sort(
+        (left, right) => left.combinedRank - right.combinedRank,
+      )[0];
+      return [
+        ...buildV2DecisionTrace(
+          `GROUND_TRUTH_K${experiment.search.K}`,
+          experiment.search,
+          injected.groundTruthChain,
+        ),
+        ...(combinedWinner
+          ? buildV2DecisionTrace(
+              experimentIndex === 0
+                ? "QUASI_GROUND_TRUTH_WINNER_K5"
+                : `COMBINED_WINNER_K${experiment.search.K}`,
+              experiment.search,
+              combinedWinner.possibility.chain,
+            )
+          : []),
+      ];
+    },
+  );
+  const evictionTrace = diagnosticTrace.filter(
+    (row) => row.status === "EVICTED",
+  );
+  const architectureValidation = [
+    {
+      component: "Construction",
+      expected:
+        "Alternance stricte, ordre croissant, phase >= 8 samples, B-B >= 45 samples.",
+      observed:
+        "Les quatre contraintes sont appliquées avant toute création de possibilité.",
+      exactMatch: "OUI",
+    },
+    {
+      component: "Top-K",
+      expected:
+        "Conserver au plus K possibilités par bucket avec le comparateur annoncé.",
+      observed:
+        "Au plus K sont conservées, mais via deux passes: représentants de diversité, puis remplissage.",
+      exactMatch: "NON",
+    },
+    {
+      component: "Score temporel partiel",
+      expected:
+        "-moyenne des CV population B-B, B-T et T-B dès deux répétitions complètes.",
+      observed:
+        "Formule et seuil de disponibilité identiques.",
+      exactMatch: "OUI",
+    },
+    {
+      component: "Diversité",
+      expected:
+        "Troisième clé du comparateur mature; clé principale avant deux répétitions.",
+      observed:
+        "La signature est aussi utilisée pour élire un représentant par groupe avant le Top-K, y compris pour les buckets matures.",
+      exactMatch: "NON",
+    },
+    {
+      component: "Reranking",
+      expected:
+        "Reranker uniquement les possibilités terminales conservées avec Temporal + Shape.",
+      observed:
+        "Seules les possibilités présentes dans les buckets terminaux conservés sont rerankées.",
+      exactMatch: "OUI",
+    },
+  ];
+  const diagnosticReportPath = path.join(
+    outputDirectory,
+    "rowing_5reps_007_dp_v2_internal_decision_diagnostic_report.md",
+  );
+  fs.writeFileSync(
+    diagnosticReportPath,
+    [
+      "# RepMotion — Diagnostic interne des décisions DP V2",
+      "",
+      "Ce rapport est une instrumentation en lecture seule des décisions du prototype. Aucune règle de calcul n'a été modifiée.",
+      "",
+      "## Ordre de survie réellement exécuté",
+      "",
+      "1. Les possibilités sont séparées par `stateKey = étape:candidatCourant:dernierBottom`.",
+      "2. Si la taille brute du bucket est inférieure ou égale à K, toutes les possibilités survivent et sont ordonnées par `stableId`.",
+      "3. Sinon, les possibilités sont groupées par signature de diversité des trois derniers événements.",
+      "4. Le meilleur représentant de chaque groupe est choisi avec le comparateur exact.",
+      "5. Les représentants sont triés avec ce même comparateur; les K premiers sont retenus.",
+      "6. S'il existe moins de K groupes, les places restantes sont remplies avec les non-représentants triés par le même comparateur.",
+      "",
+      "Comparateur avant deux répétitions: `diversitySignature ASC > legacyScore DESC > stableId ASC`.",
+      "",
+      "Comparateur dès deux répétitions: `partialTemporalScore DESC > completedRepCount DESC > diversitySignature ASC > legacyScore DESC > stableId ASC`.",
+      "",
+      "Dans un bucket d'une étape donnée, `completedRepCount` est identique pour toutes les possibilités. Cette clé est donc présente dans le code mais ne tranche aucune comparaison observée ici.",
+      "",
+      "## Validation architecture attendue / observée",
+      "",
+      markdownTable(architectureValidation),
+      "",
+      "## Trace intégrale des chaînes ciblées",
+      "",
+      markdownTable(diagnosticTrace),
+      "",
+      "## Évictions ciblées et règle décisive",
+      "",
+      markdownTable(evictionTrace),
+      "",
+      "## Faits de restitution",
+      "",
+      "- La Ground Truth est tracée séparément pour K=5, 10, 20, 30 et 50.",
+      "- La quasi-Ground Truth gagnante K=5 est tracée événement par événement.",
+      "- Les gagnants combinés K=10, 20, 30 et 50 sont tracés séparément, car leurs chaînes ne sont pas toutes identiques.",
+      "- Une éviction désigne la comparaison déterministe qui explique la non-rétention dans la procédure représentants/remplissage; elle ne modifie pas le résultat du search.",
+      "- Aucune proposition de correction, nouvelle heuristique ou conclusion algorithmique n'est incluse.",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
 
+  */
   console.log("\n=== DP ISOLATION: INJECTED CANDIDATES ===\n");
   console.table(candidateTable);
   console.log("\n=== DP ISOLATION: ALL CREATED STATES ===\n");
@@ -3797,6 +3929,215 @@ function runDpV2FeatureAnalysis(
     "dp-v2-feature-analysis",
   );
   fs.mkdirSync(outputDirectory, { recursive: true });
+  /*
+  const sensitivityDirectory = path.join(
+    outputDirectory,
+    "temporal-tolerance-sensitivity",
+  );
+  fs.mkdirSync(sensitivityDirectory, { recursive: true });
+  const sensitivityRawPath = path.join(
+    sensitivityDirectory,
+    "rowing_5reps_007_temporal_tolerance_sensitivity_raw.json",
+  );
+  fs.writeFileSync(
+    sensitivityRawPath,
+    JSON.stringify(
+      {
+        metadata: {
+          dataset: DATASET_NAME,
+          kValues,
+          absoluteTolerances,
+          relativeTolerances,
+          minScale: sensitivityMinScale,
+          simulation:
+            "Strict K. Inside the cutoff band, temporal score is treated as equivalent; existing completedRepCount, diversity, legacyScore and stableId keys remain in their existing order.",
+        },
+        bucketDecisions: baselineDecisionData.flatMap(
+          (row) => row.bucketRows,
+        ),
+        evictions: allEvictionRows,
+        distributions: distributionRows,
+        groupedDistributions: groupedDistributionRows,
+        simulations: toleranceSimulationRows,
+        groundTruthTrace: groundTruthToleranceTrace,
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  const histogramPaths = {
+    globalGapToCutoff: path.join(
+      sensitivityDirectory,
+      "global_gap_to_cutoff_histogram.png",
+    ),
+    sameDiversityRepresentative: path.join(
+      sensitivityDirectory,
+      "same_diversity_representative_gap_histogram.png",
+    ),
+    normalizedGapToCutoff: path.join(
+      sensitivityDirectory,
+      "normalized_gap_to_cutoff_histogram.png",
+    ),
+    cutoffBands: path.join(
+      sensitivityDirectory,
+      "cutoff_band_population_by_tolerance.png",
+    ),
+  };
+  renderHistogram(
+    "GLOBAL GAP TO CUTOFF",
+    allEvictionRows.map((row) => row.gapToCutoff),
+    histogramPaths.globalGapToCutoff,
+  );
+  renderHistogram(
+    "SAME DIVERSITY REPRESENTATIVE GAP",
+    allEvictionRows
+      .map((row) => row.gapToSelectedRepresentative)
+      .filter((value): value is number => value !== null),
+    histogramPaths.sameDiversityRepresentative,
+  );
+  renderHistogram(
+    "NORMALIZED GAP TO CUTOFF",
+    allEvictionRows.map((row) => row.normalizedGapToCutoff),
+    histogramPaths.normalizedGapToCutoff,
+  );
+  const perKHistogramPaths = baselineDecisionData.map((data) => {
+    const outputPath = path.join(
+      sensitivityDirectory,
+      `gap_to_cutoff_histogram_k${data.K}.png`,
+    );
+    renderHistogram(
+      `GAP TO CUTOFF K ${data.K}`,
+      data.evictionRows.map((row) => row.gapToCutoff),
+      outputPath,
+    );
+    return outputPath;
+  });
+  renderComparisonLines(
+    "EVICTED POSSIBILITIES IN ABSOLUTE CUTOFF BANDS",
+    kValues.map((K, index) => ({
+      label: `K${K}`,
+      values: absoluteTolerances.map(
+        (tolerance) =>
+          allEvictionRows.filter(
+            (row) =>
+              row.K === K && row.gapToCutoff <= tolerance,
+          ).length,
+      ),
+      color: (
+        [
+          [30, 100, 210],
+          [20, 150, 70],
+          [210, 35, 35],
+          [150, 45, 180],
+          [225, 120, 10],
+        ] as RGB[]
+      )[index],
+    })),
+    histogramPaths.cutoffBands,
+  );
+  const gapsAtOrBelow0001 = allEvictionRows.filter(
+    (row) => row.gapToCutoff <= 0.0001,
+  ).length;
+  const firstLongerSurvival = (kind: "ABSOLUTE" | "RELATIVE") =>
+    kValues.map((K) => {
+      const baselineStep = toleranceSimulationRows.find(
+        (row) =>
+          row.K === K &&
+          row.toleranceKind === kind &&
+          row.tolerance === 0,
+      )?.groundTruthEliminationStep as number | null;
+      const match = toleranceSimulationRows.find(
+        (row) =>
+          row.K === K &&
+          row.toleranceKind === kind &&
+          (row.tolerance as number) > 0 &&
+          ((row.groundTruthEliminationStep === null &&
+            baselineStep !== null) ||
+            (typeof row.groundTruthEliminationStep === "number" &&
+              baselineStep !== null &&
+              row.groundTruthEliminationStep > baselineStep)),
+      );
+      return {
+        K,
+        toleranceKind: kind,
+        firstToleranceWithLongerGroundTruthSurvival:
+          match?.tolerance ?? null,
+      };
+    });
+  const sensitivityReportPath = path.join(
+    sensitivityDirectory,
+    "rowing_5reps_007_temporal_tolerance_sensitivity_report.md",
+  );
+  fs.writeFileSync(
+    sensitivityReportPath,
+    [
+      "# RepMotion — Sensibilité de la tolérance temporelle DP V2",
+      "",
+      "## Objectif et méthodologie",
+      "",
+      "Observation de chaque décision Top-K réelle, puis simulations séparées strictement bornées à K. Aucun résultat simulé n'est réinjecté dans le pipeline réel.",
+      "",
+      `MIN_SCALE descriptif: ${sensitivityMinScale}.`,
+      "",
+      "Dans la simulation, les possibilités situées dans la bande du cutoff sont temporellement équivalentes; les clés existantes completedRepCount, diversité, legacyScore et stableId départagent ensuite. Aucune place au-delà de K n'est créée.",
+      "",
+      "## Évictions Ground Truth connues",
+      "",
+      "- K=5 à 30: étape 7, B445, écart direct au représentant 0.00008915779515587252.",
+      "- K=50: étape 11, B611, écart direct au représentant 0.001217066923516512.",
+      "",
+      "## Distribution globale",
+      "",
+      markdownTable(
+        distributionRows.filter((row) => row.scope === "GLOBAL"),
+      ),
+      "",
+      `Écarts gapToCutoff <= 0.0001: ${gapsAtOrBelow0001}/${allEvictionRows.length} (${((gapsAtOrBelow0001 / Math.max(1, allEvictionRows.length)) * 100).toFixed(6)}%).`,
+      "",
+      "## Distribution par K",
+      "",
+      markdownTable(
+        distributionRows.filter((row) => row.scope === "BY_K"),
+      ),
+      "",
+      "## Distribution par étape, répétitions, bucket, comparaison et diversité",
+      "",
+      markdownTable(groupedDistributionRows),
+      "",
+      "## Impact des tolérances absolues et relatives",
+      "",
+      markdownTable(toleranceSimulationRows),
+      "",
+      "## Première tolérance avec survie Ground Truth prolongée",
+      "",
+      markdownTable([
+        ...firstLongerSurvival("ABSOLUTE"),
+        ...firstLongerSurvival("RELATIVE"),
+      ]),
+      "",
+      "## Trace Ground Truth",
+      "",
+      markdownTable(groundTruthToleranceTrace),
+      "",
+      "## Stabilité, coût et limites",
+      "",
+      "- Les gagnants, distances Ground Truth, remplacements, bandes, temps et mémoire approximative figurent dans le tableau K × tolérance.",
+      "- Les bandes devenant plus larges sont rapportées quantitativement; aucun seuil de largeur acceptable n'est choisi.",
+      "- Une seule vidéo et une seule population injectée sont analysées.",
+      "- Les tolérances relatives simulées sont 0, 0.001, 0.005, 0.01, 0.025, 0.05 et 0.1.",
+      "- La limite K est vérifiée structurellement à chaque bucket simulé.",
+      "- Aucune valeur finale d'epsilon et aucune correction ne sont proposées.",
+      "",
+      "## Graphiques",
+      "",
+      ...Object.values(histogramPaths).map((file) => `- ${file}`),
+      ...perKHistogramPaths.map((file) => `- ${file}`),
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  */
   const graphPaths = {
     repDurations: path.join(outputDirectory, "rep_durations_comparison.png"),
     phaseDurations: path.join(outputDirectory, "phase_durations_comparison.png"),
@@ -4999,6 +5340,514 @@ function buildInjectedCandidatePool(
   return { pool, groundTruthChain, addedCount: additions.length };
 }
 
+type NmsRepresentativeRule = "MOST_EXTREME" | "BEST_PROMINENCE" | "GROUP_CENTER";
+
+function runNmsCharacterizationExperiment(
+  dataset: CalibrationDataset,
+  groundTruth: GroundTruthFile,
+  axis: keyof CalibrationDataset["samples"][number],
+  realCandidates: DpCandidate[],
+): void {
+  const injected = buildInjectedCandidatePool(
+    dataset,
+    groundTruth,
+    axis,
+    realCandidates,
+  );
+  const values = dataset.samples.map((sample) => sample[axis]);
+  const windows = [1, 2, 3, 5];
+  const rules: NmsRepresentativeRule[] = [
+    "MOST_EXTREME",
+    "BEST_PROMINENCE",
+    "GROUP_CENTER",
+  ];
+  const prominence = (candidate: DpCandidate): number => {
+    const end = Math.min(
+      candidate.index + CALIBRATION_PARAMETERS.prominenceWindowSize,
+      values.length,
+    );
+    const future = values.slice(candidate.index, end);
+    const best =
+      candidate.type === "BOTTOM"
+        ? Math.max(...future)
+        : Math.min(...future);
+    return candidate.type === "BOTTOM"
+      ? best - candidate.value
+      : candidate.value - best;
+  };
+  const candidateLabel = (candidate: DpCandidate) =>
+    `${candidate.type}:${candidate.index}`;
+  const chooseRepresentative = (
+    group: DpCandidate[],
+    rule: NmsRepresentativeRule,
+  ): { representative: DpCandidate; reason: string } => {
+    const center = mean(group.map((candidate) => candidate.index));
+    const ordered = [...group].sort((left, right) => {
+      if (rule === "MOST_EXTREME") {
+        const valueDelta =
+          left.type === "BOTTOM"
+            ? left.value - right.value
+            : right.value - left.value;
+        return (
+          valueDelta ||
+          Math.abs(left.index - center) - Math.abs(right.index - center) ||
+          left.index - right.index ||
+          left.candidateId.localeCompare(right.candidateId)
+        );
+      }
+      if (rule === "BEST_PROMINENCE") {
+        return (
+          prominence(right) - prominence(left) ||
+          Math.abs(left.index - center) - Math.abs(right.index - center) ||
+          left.index - right.index ||
+          left.candidateId.localeCompare(right.candidateId)
+        );
+      }
+      return (
+        Math.abs(left.index - center) - Math.abs(right.index - center) ||
+        left.index - right.index ||
+        left.candidateId.localeCompare(right.candidateId)
+      );
+    });
+    const representative = ordered[0];
+    const reason =
+      rule === "MOST_EXTREME"
+        ? `${representative.type === "BOTTOM" ? "minimum" : "maximum"} value=${representative.value}`
+        : rule === "BEST_PROMINENCE"
+          ? `prominence=${prominence(representative)}`
+          : `distanceToGroupCenter=${Math.abs(representative.index - center)}, center=${center}`;
+    return { representative, reason };
+  };
+  const buildGroups = (window: number): DpCandidate[][] =>
+    (["BOTTOM", "TOP"] as const).flatMap((type) => {
+      const ordered = injected.pool
+        .filter((candidate) => candidate.type === type)
+        .sort(
+          (left, right) =>
+            left.index - right.index ||
+            left.candidateId.localeCompare(right.candidateId),
+        );
+      const groups: DpCandidate[][] = [];
+      ordered.forEach((candidate) => {
+        const current = groups[groups.length - 1];
+        if (
+          !current ||
+          candidate.index - current[current.length - 1].index > window
+        ) {
+          groups.push([candidate]);
+        } else {
+          current.push(candidate);
+        }
+      });
+      return groups;
+    });
+  const findAssociatedGroundTruth = (candidate: DpCandidate) => {
+    const sameType = injected.groundTruthChain
+      .filter((groundTruthCandidate) => groundTruthCandidate.type === candidate.type)
+      .sort(
+        (left, right) =>
+          Math.abs(left.index - candidate.index) -
+            Math.abs(right.index - candidate.index) ||
+          left.index - right.index,
+      );
+    return sameType[0] ?? null;
+  };
+  const canReconstructGroundTruth = (
+    representatives: DpCandidate[],
+  ): boolean => {
+    const ordered = [...representatives].sort(
+      (left, right) => left.index - right.index,
+    );
+    const visit = (groundTruthIndex: number, afterIndex: number): boolean => {
+      if (groundTruthIndex === injected.groundTruthChain.length) return true;
+      const target = injected.groundTruthChain[groundTruthIndex];
+      return ordered.some(
+        (candidate) =>
+          candidate.index > afterIndex &&
+          candidate.type === target.type &&
+          Math.abs(candidate.index - target.index) <=
+            EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES &&
+          visit(groundTruthIndex + 1, candidate.index),
+      );
+    };
+    return visit(0, -1);
+  };
+  const comparisonRows: Record<string, unknown>[] = [];
+  const groupRows: Record<string, unknown>[] = [];
+  const targetedRows: Record<string, unknown>[] = [];
+  const destroyedRows: Record<string, unknown>[] = [];
+  for (const window of windows) {
+    const groups = buildGroups(window);
+    for (const rule of rules) {
+      const representatives: DpCandidate[] = [];
+      let mergedGroundTruthGroupCount = 0;
+      groups.forEach((group, groupIndex) => {
+        const { representative, reason } = chooseRepresentative(group, rule);
+        representatives.push(representative);
+        const associatedGroundTruth = findAssociatedGroundTruth(representative);
+        const distanceToGroundTruth = associatedGroundTruth
+          ? representative.index - associatedGroundTruth.index
+          : null;
+        const groundTruthMembers = injected.groundTruthChain.filter(
+          (groundTruthCandidate) =>
+            group.some(
+              (candidate) =>
+                candidate.type === groundTruthCandidate.type &&
+                candidate.index === groundTruthCandidate.index,
+            ),
+        );
+        const mergesDistinctGroundTruth = groundTruthMembers.length > 1;
+        if (mergesDistinctGroundTruth) mergedGroundTruthGroupCount += 1;
+        const row = {
+          windowSamples: `±${window}`,
+          rule,
+          groupId: `${group[0].type}_${groupIndex + 1}`,
+          groupContent: group.map(candidateLabel).join(", "),
+          representative: candidateLabel(representative),
+          reason,
+          associatedGroundTruth: associatedGroundTruth
+            ? candidateLabel(associatedGroundTruth)
+            : null,
+          signedDistanceToGroundTruth: distanceToGroundTruth,
+          withinExistingTolerance:
+            distanceToGroundTruth !== null &&
+            Math.abs(distanceToGroundTruth) <=
+              EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES,
+          mergedGroundTruthEvents: groundTruthMembers
+            .map(candidateLabel)
+            .join(", "),
+          mergesDistinctGroundTruth,
+        };
+        groupRows.push(row);
+        if (
+          group.some(
+            (candidate) =>
+              candidate.type === "BOTTOM" &&
+              (candidate.index === 260 || candidate.index === 262),
+          )
+        ) {
+          targetedRows.push(row);
+        }
+      });
+      const missingGroundTruthPivots = injected.groundTruthChain.filter(
+        (groundTruthCandidate) =>
+          !representatives.some(
+            (representative) =>
+              representative.type === groundTruthCandidate.type &&
+              Math.abs(representative.index - groundTruthCandidate.index) <=
+                EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES,
+          ),
+      );
+      const reconstructible = canReconstructGroundTruth(representatives);
+      const summary = {
+        windowSamples: `±${window}`,
+        rule,
+        inputCandidateCount: injected.pool.length,
+        groupCount: groups.length,
+        candidatesRemoved: injected.pool.length - representatives.length,
+        mergedGroundTruthGroupCount,
+        allRequiredPivotsPresent: missingGroundTruthPivots.length === 0,
+        missingGroundTruthPivots:
+          missingGroundTruthPivots.map(candidateLabel).join(", "),
+        groundTruthSequenceReconstructible: reconstructible,
+        verdict: reconstructible ? "RECONSTRUCTIBLE" : "DESTROYED",
+      };
+      comparisonRows.push(summary);
+      if (!reconstructible) destroyedRows.push(summary);
+    }
+  }
+  const viable = comparisonRows.filter(
+    (row) => row.groundTruthSequenceReconstructible === true,
+  );
+  const bestRemoved = Math.max(
+    ...viable.map((row) => row.candidatesRemoved as number),
+  );
+  const bestRows = viable.filter(
+    (row) => row.candidatesRemoved === bestRemoved,
+  );
+  const comparisonGroups = buildGroups(2);
+  const comparisonRepresentatives = new Map<
+    NmsRepresentativeRule,
+    DpCandidate[]
+  >(
+    rules.map((rule) => [
+      rule,
+      comparisonGroups.map(
+        (group) => chooseRepresentative(group, rule).representative,
+      ),
+    ]),
+  );
+  const ruleReconstructibility = new Map(
+    rules.map((rule) => [
+      rule,
+      canReconstructGroundTruth(
+        comparisonRepresentatives.get(rule) as DpCandidate[],
+      ),
+    ]),
+  );
+  const discriminantRows: Record<string, unknown>[] = [];
+  const discriminantDistances = new Map<
+    NmsRepresentativeRule,
+    number[]
+  >(rules.map((rule) => [rule, []]));
+  const regressions = new Map<NmsRepresentativeRule, string[]>(
+    rules.map((rule) => [rule, []]),
+  );
+  comparisonGroups.forEach((group, groupIndex) => {
+    const choices = new Map(
+      rules.map((rule) => [rule, chooseRepresentative(group, rule)]),
+    );
+    if (
+      new Set(
+        [...choices.values()].map(({ representative }) =>
+          candidateLabel(representative),
+        ),
+      ).size < 2
+    ) {
+      return;
+    }
+    const coveredGroundTruth = injected.groundTruthChain.filter(
+      (groundTruthCandidate) =>
+        group.some(
+          (candidate) =>
+            candidate.type === groundTruthCandidate.type &&
+            Math.abs(candidate.index - groundTruthCandidate.index) <=
+              EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES,
+        ),
+    );
+    if (coveredGroundTruth.length === 0) return;
+    const associatedGroundTruth = [...coveredGroundTruth].sort(
+      (left, right) =>
+        Math.min(
+          ...group.map((candidate) =>
+            Math.abs(candidate.index - left.index),
+          ),
+        ) -
+          Math.min(
+            ...group.map((candidate) =>
+              Math.abs(candidate.index - right.index),
+            ),
+          ) ||
+        left.index - right.index,
+    )[0];
+    const row: Record<string, unknown> = {
+      dataset: groundTruth.dataset,
+      groupType: group[0].type,
+      groupId: `${group[0].type}_${groupIndex + 1}`,
+      candidates: group
+        .map(
+          (candidate) =>
+            `${candidateLabel(candidate)} value=${candidate.value} prominence=${prominence(candidate)}`,
+        )
+        .join(" ; "),
+      temporalCenter: mean(group.map((candidate) => candidate.index)),
+      associatedGroundTruth: candidateLabel(associatedGroundTruth),
+    };
+    rules.forEach((rule) => {
+      const representative = choices.get(rule)?.representative as DpCandidate;
+      const distance = representative.index - associatedGroundTruth.index;
+      const within =
+        Math.abs(distance) <= EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES;
+      discriminantDistances.get(rule)?.push(Math.abs(distance));
+      if (!within) {
+        regressions
+          .get(rule)
+          ?.push(
+            `${groundTruth.dataset}:${candidateLabel(associatedGroundTruth)}:` +
+              `${candidateLabel(representative)}:distance=${distance}`,
+          );
+      }
+      row[`${rule}_representative`] = candidateLabel(representative);
+      row[`${rule}_distance`] = distance;
+      row[`${rule}_withinTolerance`] = within;
+      row[`${rule}_pivotPresent`] = within;
+      row[`${rule}_chainReconstructible`] =
+        ruleReconstructibility.get(rule) ?? false;
+    });
+    discriminantRows.push(row);
+  });
+  const aggregationRows = rules.map((rule) => {
+    const representatives = comparisonRepresentatives.get(
+      rule,
+    ) as DpCandidate[];
+    const missingPivots = injected.groundTruthChain.filter(
+      (groundTruthCandidate) =>
+        !representatives.some(
+          (representative) =>
+            representative.type === groundTruthCandidate.type &&
+            Math.abs(representative.index - groundTruthCandidate.index) <=
+              EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES,
+        ),
+    );
+    const distances = discriminantDistances.get(rule) ?? [];
+    missingPivots.forEach((pivot) => {
+      const regression = `${groundTruth.dataset}:${candidateLabel(pivot)}:MISSING_AFTER_NMS`;
+      if (!regressions.get(rule)?.includes(regression)) {
+        regressions.get(rule)?.push(regression);
+      }
+    });
+    return {
+      rule,
+      discriminantGroupCount: discriminantRows.length,
+      representativesWithinTolerance: distances.filter(
+        (distance) =>
+          distance <= EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES,
+      ).length,
+      groundTruthPivotsDestroyed: missingPivots.length,
+      fullyReconstructibleDatasetCount:
+        ruleReconstructibility.get(rule) ? 1 : 0,
+      meanAbsoluteDistanceToGroundTruth:
+        distances.length > 0 ? mean(distances) : null,
+      maximumAbsoluteDistance:
+        distances.length > 0 ? Math.max(...distances) : null,
+      totalCandidatesRemoved: injected.pool.length - representatives.length,
+      exactRegressions: (regressions.get(rule) ?? []).join(" ; "),
+    };
+  });
+  const rankedRules = [...aggregationRows]
+    .sort(
+      (left, right) =>
+        left.groundTruthPivotsDestroyed - right.groundTruthPivotsDestroyed ||
+        right.fullyReconstructibleDatasetCount -
+          left.fullyReconstructibleDatasetCount ||
+        (left.meanAbsoluteDistanceToGroundTruth ?? Number.POSITIVE_INFINITY) -
+          (right.meanAbsoluteDistanceToGroundTruth ?? Number.POSITIVE_INFINITY) ||
+        (left.maximumAbsoluteDistance ?? Number.POSITIVE_INFINITY) -
+          (right.maximumAbsoluteDistance ?? Number.POSITIVE_INFINITY) ||
+        right.totalCandidatesRemoved - left.totalCandidatesRemoved ||
+        left.rule.localeCompare(right.rule),
+    )
+    .map((row, index) => ({ rank: index + 1, ...row }));
+  const metricIdentity = (row: (typeof aggregationRows)[number]) =>
+    [
+      row.groundTruthPivotsDestroyed,
+      row.fullyReconstructibleDatasetCount,
+      row.meanAbsoluteDistanceToGroundTruth,
+      row.maximumAbsoluteDistance,
+      row.totalCandidatesRemoved,
+      row.exactRegressions,
+    ].join("|");
+  const allRulesIndistinguishable =
+    new Set(aggregationRows.map(metricIdentity)).size === 1;
+  const evidenceCase = allRulesIndistinguishable ? "CAS C" : "INCONCLUSIVE_SINGLE_DATASET";
+  const provisionalEngineeringChoice = allRulesIndistinguishable
+    ? "MOST_EXTREME — choix provisoire déterministe uniquement; non validé scientifiquement."
+    : "Aucun: un seul dataset ponctuellement annoté ne permet pas une recommandation multi-dataset.";
+  const outputDirectory = path.join(
+    __dirname,
+    "output",
+    "nms-characterization",
+  );
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  const reportPath = path.join(
+    outputDirectory,
+    "rowing_5reps_007_nms_characterization_report.md",
+  );
+  fs.writeFileSync(
+    reportPath,
+    [
+      "# rowing_5reps_007 — NMS minimal characterization",
+      "",
+      "## Paramètres de l'expérience",
+      "",
+      `- Entrée contrôlée: ${realCandidates.length} candidats réels + ${injected.addedCount} candidats Ground Truth injectés individuellement = ${injected.pool.length} candidats.`,
+      "- Regroupement: composantes connexes de candidats du même type; deux voisins temporels successifs appartiennent au même groupe si leur écart est inférieur ou égal à la fenêtre testée.",
+      `- Fenêtres: ${windows.map((window) => `±${window}`).join(", ")} samples.`,
+      `- Tolérance Ground Truth existante réutilisée: ±${EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES} samples.`,
+      "- Règles: candidat le plus extrême, meilleure prominence existante, candidat le plus proche du centre temporel moyen du groupe.",
+      "- Aucun DP, score temporel partiel, gyroscope ou changement de stratégie n'intervient dans cette simulation.",
+      "",
+      "## Comparaison fenêtre × représentant",
+      "",
+      markdownTable(comparisonRows),
+      "",
+      "## Contenu de tous les groupes",
+      "",
+      markdownTable(groupRows),
+      "",
+      "## Analyse ciblée BOTTOM:260 / BOTTOM:262",
+      "",
+      markdownTable(targetedRows),
+      "",
+      "## Meilleure combinaison observée",
+      "",
+      markdownTable(bestRows),
+      "",
+      "La meilleure combinaison est définie uniquement parmi les configurations qui conservent la chaîne Ground Truth reconstructible, puis par le plus grand nombre de candidats supprimés. Les ex æquo sont tous conservés.",
+      "",
+      "## Cas où le regroupement détruit une Ground Truth",
+      "",
+      markdownTable(destroyedRows),
+      "",
+      "## Conclusion factuelle",
+      "",
+      viable.length === 0
+        ? "Aucune combinaison testée ne conserve tous les pivots Ground Truth dans la tolérance existante."
+        : `${viable.length}/${comparisonRows.length} combinaisons conservent une séquence Ground Truth reconstructible; ${destroyedRows.length}/${comparisonRows.length} la détruisent.`,
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  const representativeReportPath = path.join(
+    outputDirectory,
+    "rowing_5reps_007_nms_representative_comparison_report.md",
+  );
+  fs.writeFileSync(
+    representativeReportPath,
+    [
+      "# NMS representative comparison — all annotated datasets",
+      "",
+      "## Datasets testés",
+      "",
+      `- ${groundTruth.dataset} — annotations ponctuelles: rowing_5reps_007.annotations.json.`,
+      "- Nombre total de datasets avec annotations ponctuelles disponibles: 1.",
+      "- Le fichier transition-annotations décrit le même dataset et ne constitue pas un second dataset indépendant.",
+      "",
+      "## Paramètres",
+      "",
+      "- Fenêtre de regroupement mono-type: ±2 samples, composantes connexes par écart entre voisins.",
+      `- Tolérance Ground Truth existante: ±${EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES} samples.`,
+      `- Pool: ${realCandidates.length} candidats réels + ${injected.addedCount} injections individuelles Ground Truth + parasites conservés.`,
+      "- Aucun DP, partialTemporalScore ou stratégie de production n'est exécuté.",
+      "",
+      "## Groupes discriminants",
+      "",
+      `Nombre de groupes discriminants couvrant un pivot Ground Truth: ${discriminantRows.length}.`,
+      "",
+      markdownTable(discriminantRows),
+      "",
+      "## Agrégation par règle",
+      "",
+      markdownTable(aggregationRows),
+      "",
+      "## Classement selon l'ordre de décision imposé",
+      "",
+      markdownTable(rankedRules),
+      "",
+      "## Conclusion",
+      "",
+      `- Cas observé: ${evidenceCase}.`,
+      "- Résultat local: GROUP_CENTER est strictement premier sur ce dataset selon l'ordre imposé, après égalité sur les pivots détruits et la reconstructibilité, grâce à une distance moyenne/maximale de 0 contre 1 sample.",
+      "- Ce résultat présente le profil métrique du CAS B sur le seul dataset disponible, mais ne peut pas déclencher la recommandation multi-dataset demandée.",
+      `- Choix: ${provisionalEngineeringChoice}`,
+      "- La demande exige une décision sur l'ensemble des datasets annotés; le dépôt n'en contient actuellement qu'un avec pivots ponctuels. Aucun résultat de ce rapport ne peut donc établir une domination multi-dataset.",
+      "- Aucune stratégie NMS complète n'a été implémentée.",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  console.log("\n=== NMS CHARACTERIZATION SUMMARY ===\n");
+  console.table(comparisonRows);
+  console.log("\n=== NMS BOTTOM 260 / 262 ===\n");
+  console.table(targetedRows);
+  console.log(reportPath);
+  console.log("\n=== NMS DISCRIMINANT GROUPS ===\n");
+  console.table(discriminantRows);
+  console.log("\n=== NMS REPRESENTATIVE AGGREGATION ===\n");
+  console.table(rankedRules);
+  console.log(representativeReportPath);
+}
+
 function insertStateIntoTopKBucket(
   bucket: TopKPathState[],
   newState: TopKPathState,
@@ -5621,6 +6470,2407 @@ function runDpV2TopKSearchDiagnostic(
   console.log(reportPath);
 }
 
+type PartialTemporalFeatures = {
+  partialFullRepDurationCV: number | null;
+  partialBottomToTopDurationCV: number | null;
+  partialTopToBottomDurationCV: number | null;
+  status: "AVAILABLE" | "PARTIAL_TEMPORAL_FEATURE_UNAVAILABLE";
+};
+
+type V2SequencePossibility = {
+  stableId: string;
+  stateKey: string;
+  candidateIndex: number;
+  currentStep: number;
+  lastBottomIndex: number | null;
+  completedRepCount: number;
+  legacyScore: number;
+  partialTemporalFeatures: PartialTemporalFeatures;
+  partialTemporalScore: number | null;
+  predecessorStateId: string | null;
+  chain: DpCandidate[];
+  signature: string;
+  diversitySignature: string;
+};
+
+type V2Eviction = {
+  K: number;
+  step: number;
+  stateKey: string;
+  evictedStableId: string;
+  evictedSignature: string;
+  evictedPartialTemporalScore: number | null;
+  responsibleStableId: string | null;
+  responsiblePartialTemporalScore: number | null;
+  reason: "DIVERSITY_BUCKET_LIMIT" | "PARTIAL_TEMPORAL_BUCKET_LIMIT";
+};
+
+type V2GroundTruthDebugRecord = {
+  K: number;
+  iteration: number;
+  stateKey: string;
+  selectedCandidates: string;
+  pathLength: number;
+  partialTemporalScore: number | null;
+  legacyScore: number;
+  rankInState: number;
+  competitorCount: number;
+  topK: number;
+  decision: "RETAINED" | "EVICTED";
+  selectionPhase: string;
+  decisiveRule: string;
+  comparedWith: string | null;
+  survivingPaths: string;
+};
+
+type V2SearchResult = {
+  K: number;
+  candidatesCount: number;
+  completePossibilities: V2SequencePossibility[];
+  statesAttempted: number;
+  statesRetained: number;
+  statesEvicted: number;
+  bucketCount: number;
+  meanBucketSize: number;
+  maxBucketSize: number;
+  maximumMemoryEstimate: number;
+  executionTimeMs: number;
+  createdBySignature: Map<string, V2SequencePossibility>;
+  retainedLayers: Array<Map<string, V2SequencePossibility[]>>;
+  rawLayers: Array<Map<string, V2SequencePossibility[]>>;
+  evictions: V2Eviction[];
+  groundTruthDebugTrace?: V2GroundTruthDebugRecord[];
+};
+
+type TemporalToleranceSimulation = {
+  kind: "ABSOLUTE" | "RELATIVE";
+  value: number;
+  minScale: number;
+};
+
+type V2CompleteFeatures = {
+  fullRepDurationCV: number;
+  bottomToTopDurationCV: number;
+  topToBottomDurationCV: number;
+  meanCycleCorrelation: number;
+  minCycleCorrelation: number;
+  cycleCorrelationStd: number;
+};
+
+type V2RankedCompleteSequence = {
+  completeId: string;
+  possibility: V2SequencePossibility;
+  features: V2CompleteFeatures;
+  finalTemporalScore: number;
+  finalShapeScore: number;
+  finalRerankerScore: number;
+  temporalRank: number;
+  shapeRank: number;
+  combinedRank: number;
+};
+
+function buildCyclesFromSequence(
+  possibility: V2SequencePossibility,
+  values: number[],
+): Array<{
+  bottomToTopDuration: number;
+  topToBottomDuration: number;
+  fullRepDuration: number;
+  normalizedSignal: number[];
+}> {
+  if (
+    possibility.chain.length !== 11 ||
+    !isExpectedAlternation(possibility.chain)
+  ) {
+    fail(
+      "COMPLETE_SEQUENCE_RECONSTRUCTION_ERROR",
+      possibility.signature,
+    );
+  }
+  return Array.from({ length: 5 }, (_, repIndex) => {
+    const bottomStart = possibility.chain[repIndex * 2];
+    const top = possibility.chain[repIndex * 2 + 1];
+    const bottomEnd = possibility.chain[repIndex * 2 + 2];
+    return {
+      bottomToTopDuration: top.index - bottomStart.index,
+      topToBottomDuration: bottomEnd.index - top.index,
+      fullRepDuration: bottomEnd.index - bottomStart.index,
+      normalizedSignal: resampleSignal(
+        values.slice(bottomStart.index, bottomEnd.index + 1),
+        100,
+      ),
+    };
+  });
+}
+
+function calculatePartialTemporalFeatures(
+  chain: DpCandidate[],
+): PartialTemporalFeatures {
+  const completedRepCount = Math.floor((chain.length - 1) / 2);
+  if (completedRepCount < 2) {
+    return {
+      partialFullRepDurationCV: null,
+      partialBottomToTopDurationCV: null,
+      partialTopToBottomDurationCV: null,
+      status: "PARTIAL_TEMPORAL_FEATURE_UNAVAILABLE",
+    };
+  }
+  const bottomToTop: number[] = [];
+  const topToBottom: number[] = [];
+  const fullRep: number[] = [];
+  for (let rep = 0; rep < completedRepCount; rep += 1) {
+    const bottomStart = chain[rep * 2];
+    const top = chain[rep * 2 + 1];
+    const bottomEnd = chain[rep * 2 + 2];
+    if (!bottomStart || !top || !bottomEnd) {
+      fail(
+        "PARTIAL_TEMPORAL_CALCULATION_ERROR",
+        topKPathSignature(chain),
+      );
+    }
+    bottomToTop.push(top.index - bottomStart.index);
+    topToBottom.push(bottomEnd.index - top.index);
+    fullRep.push(bottomEnd.index - bottomStart.index);
+  }
+  const coefficient = (numbers: number[]) => {
+    const average = mean(numbers);
+    return average === 0 ? null : populationStd(numbers) / average;
+  };
+  const features = {
+    partialFullRepDurationCV: coefficient(fullRep),
+    partialBottomToTopDurationCV: coefficient(bottomToTop),
+    partialTopToBottomDurationCV: coefficient(topToBottom),
+  };
+  return {
+    ...features,
+    status: Object.values(features).some((value) => value === null)
+      ? "PARTIAL_TEMPORAL_FEATURE_UNAVAILABLE"
+      : "AVAILABLE",
+  };
+}
+
+function calculatePartialTemporalScore(
+  features: PartialTemporalFeatures,
+): number | null {
+  const available = [
+    features.partialFullRepDurationCV,
+    features.partialBottomToTopDurationCV,
+    features.partialTopToBottomDurationCV,
+  ].filter((value): value is number => value !== null);
+  return available.length === 0 ? null : -mean(available);
+}
+
+function insertPossibilityIntoBucket(
+  bucket: V2SequencePossibility[],
+  possibility: V2SequencePossibility,
+): void {
+  if (
+    bucket.some(
+      (existing) => existing.signature === possibility.signature,
+    )
+  ) {
+    fail(
+      "BUCKET_INTEGRITY_ERROR",
+      `Duplicate ${possibility.stateKey}:${possibility.signature}`,
+    );
+  }
+  bucket.push(possibility);
+}
+
+function retainTopKSequencePossibilities(
+  possibilities: V2SequencePossibility[],
+  k: number,
+): V2SequencePossibility[] {
+  if (possibilities.length <= k) {
+    return [...possibilities].sort((left, right) =>
+      left.stableId.localeCompare(right.stableId),
+    );
+  }
+  const mature =
+    possibilities[0]?.completedRepCount >= 2;
+  const comparator = (
+    left: V2SequencePossibility,
+    right: V2SequencePossibility,
+  ) => {
+    if (mature) {
+      const temporalDelta =
+        (right.partialTemporalScore ??
+          Number.NEGATIVE_INFINITY) -
+        (left.partialTemporalScore ??
+          Number.NEGATIVE_INFINITY);
+      if (temporalDelta !== 0) return temporalDelta;
+      if (right.completedRepCount !== left.completedRepCount) {
+        return right.completedRepCount - left.completedRepCount;
+      }
+    }
+    const diversityDelta = left.diversitySignature.localeCompare(
+      right.diversitySignature,
+    );
+    if (diversityDelta !== 0) return diversityDelta;
+    if (right.legacyScore !== left.legacyScore) {
+      return right.legacyScore - left.legacyScore;
+    }
+    return left.stableId.localeCompare(right.stableId);
+  };
+  const groups = new Map<string, V2SequencePossibility[]>();
+  possibilities.forEach((possibility) => {
+    const group = groups.get(possibility.diversitySignature) ?? [];
+    group.push(possibility);
+    groups.set(possibility.diversitySignature, group);
+  });
+  const representatives = [...groups.values()]
+    .map((group) => [...group].sort(comparator)[0])
+    .sort(comparator);
+  const retained = representatives.slice(0, k);
+  if (retained.length < k) {
+    const retainedIds = new Set(
+      retained.map((possibility) => possibility.stableId),
+    );
+    const remaining = possibilities
+      .filter(
+        (possibility) => !retainedIds.has(possibility.stableId),
+      )
+      .sort(comparator);
+    retained.push(...remaining.slice(0, k - retained.length));
+  }
+  return retained.sort(comparator);
+}
+
+function retainTopKWithSimulatedTemporalTolerance(
+  possibilities: V2SequencePossibility[],
+  k: number,
+  simulation: TemporalToleranceSimulation,
+): V2SequencePossibility[] {
+  const baseline = retainTopKSequencePossibilities(possibilities, k);
+  if (
+    possibilities.length <= k ||
+    possibilities[0]?.completedRepCount < 2
+  ) {
+    return baseline;
+  }
+  const cutoff = baseline[baseline.length - 1]?.partialTemporalScore;
+  if (cutoff === null || cutoff === undefined) return baseline;
+  const inBand = (possibility: V2SequencePossibility) => {
+    const score = possibility.partialTemporalScore;
+    if (score === null) return false;
+    const gap = Math.abs(score - cutoff);
+    return simulation.kind === "ABSOLUTE"
+      ? gap <= simulation.value
+      : gap /
+          Math.max(
+            Math.abs(score),
+            Math.abs(cutoff),
+            simulation.minScale,
+          ) <=
+          simulation.value;
+  };
+  const comparator = (
+    left: V2SequencePossibility,
+    right: V2SequencePossibility,
+  ) => {
+    if (!(inBand(left) && inBand(right))) {
+      const temporalDelta =
+        (right.partialTemporalScore ?? Number.NEGATIVE_INFINITY) -
+        (left.partialTemporalScore ?? Number.NEGATIVE_INFINITY);
+      if (temporalDelta !== 0) return temporalDelta;
+    }
+    if (right.completedRepCount !== left.completedRepCount) {
+      return right.completedRepCount - left.completedRepCount;
+    }
+    const diversityDelta = left.diversitySignature.localeCompare(
+      right.diversitySignature,
+    );
+    if (diversityDelta !== 0) return diversityDelta;
+    if (right.legacyScore !== left.legacyScore) {
+      return right.legacyScore - left.legacyScore;
+    }
+    return left.stableId.localeCompare(right.stableId);
+  };
+  const groups = new Map<string, V2SequencePossibility[]>();
+  possibilities.forEach((possibility) => {
+    const group = groups.get(possibility.diversitySignature) ?? [];
+    group.push(possibility);
+    groups.set(possibility.diversitySignature, group);
+  });
+  const representatives = [...groups.values()]
+    .map((group) => [...group].sort(comparator)[0])
+    .sort(comparator);
+  const retained = representatives.slice(0, k);
+  if (retained.length < k) {
+    const retainedIds = new Set(retained.map((row) => row.stableId));
+    retained.push(
+      ...possibilities
+        .filter((row) => !retainedIds.has(row.stableId))
+        .sort(comparator)
+        .slice(0, k - retained.length),
+    );
+  }
+  return retained.sort(comparator);
+}
+
+function searchSequencePossibilitiesV2(
+  candidates: DpCandidate[],
+  expectedReps: number,
+  k: number,
+  toleranceSimulation?: TemporalToleranceSimulation,
+  groundTruthDebugChain?: DpCandidate[],
+): V2SearchResult {
+  const startedAt = performance.now();
+  const targetLength = expectedReps * 2 + 1;
+  const initial: V2SequencePossibility = {
+    stableId: `V2K${k}:INITIAL`,
+    stateKey: "0:-1:-1",
+    candidateIndex: -1,
+    currentStep: 0,
+    lastBottomIndex: null,
+    completedRepCount: 0,
+    legacyScore: 0,
+    partialTemporalFeatures: {
+      partialFullRepDurationCV: null,
+      partialBottomToTopDurationCV: null,
+      partialTopToBottomDurationCV: null,
+      status: "PARTIAL_TEMPORAL_FEATURE_UNAVAILABLE",
+    },
+    partialTemporalScore: null,
+    predecessorStateId: null,
+    chain: [],
+    signature: "",
+    diversitySignature: "",
+  };
+  let current = new Map<string, V2SequencePossibility[]>([
+    [initial.stateKey, [initial]],
+  ]);
+  const retainedLayers = [
+    new Map<string, V2SequencePossibility[]>(current),
+  ];
+  const rawLayers: Array<
+    Map<string, V2SequencePossibility[]>
+  > = [new Map<string, V2SequencePossibility[]>()];
+  const createdBySignature = new Map<
+    string,
+    V2SequencePossibility
+  >();
+  const evictions: V2Eviction[] = [];
+  const groundTruthDebugTrace: V2GroundTruthDebugRecord[] = [];
+  let statesAttempted = 0;
+  let statesRetained = 1;
+  let bucketCount = 1;
+  let maximumMemoryEstimate = 1;
+  const bucketSizes: number[] = [];
+
+  for (let step = 0; step < targetLength; step += 1) {
+    const requiredType: EventType =
+      step % 2 === 0 ? "BOTTOM" : "TOP";
+    const rawBuckets = new Map<
+      string,
+      V2SequencePossibility[]
+    >();
+    const orderedCurrent = [...current.values()]
+      .flat()
+      .sort((left, right) =>
+        left.stableId.localeCompare(right.stableId),
+      );
+    for (const state of orderedCurrent) {
+      const previous =
+        state.candidateIndex >= 0
+          ? candidates[state.candidateIndex]
+          : null;
+      for (
+        let candidateIndex = 0;
+        candidateIndex < candidates.length;
+        candidateIndex += 1
+      ) {
+        const candidate = candidates[candidateIndex];
+        if (candidate.type !== requiredType) continue;
+        if (previous && candidate.index <= previous.index) continue;
+        if (previous) {
+          const duration = candidate.index - previous.index;
+          if (duration < 8) continue;
+          if (
+            requiredType === "BOTTOM" &&
+            state.lastBottomIndex !== null &&
+            candidate.index - state.lastBottomIndex < 45
+          ) {
+            continue;
+          }
+        }
+        statesAttempted += 1;
+        const chain = [...state.chain, candidate];
+        const signature = topKPathSignature(chain);
+        const nextBottom =
+          candidate.type === "BOTTOM"
+            ? candidate.index
+            : state.lastBottomIndex;
+        const stateKey =
+          `${step + 1}:${candidateIndex}:${nextBottom ?? -1}`;
+        const temporalFeatures =
+          calculatePartialTemporalFeatures(chain);
+        const possibility: V2SequencePossibility = {
+          stableId:
+            `V2K${k}:S${step + 1}:C${candidateIndex}:B` +
+            `${nextBottom ?? -1}:P${signature}`,
+          stateKey,
+          candidateIndex,
+          currentStep: step + 1,
+          lastBottomIndex: nextBottom,
+          completedRepCount: Math.floor((chain.length - 1) / 2),
+          legacyScore:
+            state.legacyScore +
+            (candidate.type === "BOTTOM"
+              ? -candidate.value
+              : candidate.value),
+          partialTemporalFeatures: temporalFeatures,
+          partialTemporalScore:
+            calculatePartialTemporalScore(temporalFeatures),
+          predecessorStateId: state.stableId,
+          chain,
+          signature,
+          diversitySignature: chain
+            .slice(-3)
+            .map(
+              (item) =>
+                `${item.type === "BOTTOM" ? "B" : "T"}${item.index}`,
+            )
+            .join("-"),
+        };
+        createdBySignature.set(signature, possibility);
+        const bucket = rawBuckets.get(stateKey) ?? [];
+        insertPossibilityIntoBucket(bucket, possibility);
+        rawBuckets.set(stateKey, bucket);
+      }
+    }
+    const next = new Map<string, V2SequencePossibility[]>();
+    rawLayers.push(
+      new Map(
+        [...rawBuckets.entries()].map(([key, bucket]) => [
+          key,
+          [...bucket],
+        ]),
+      ),
+    );
+    for (const [stateKey, rawBucket] of [...rawBuckets.entries()].sort(
+      ([left], [right]) => left.localeCompare(right),
+    )) {
+      const retained = toleranceSimulation
+        ? retainTopKWithSimulatedTemporalTolerance(
+            rawBucket,
+            k,
+            toleranceSimulation,
+          )
+        : retainTopKSequencePossibilities(rawBucket, k);
+      const retainedIds = new Set(
+        retained.map((possibility) => possibility.stableId),
+      );
+      if (groundTruthDebugChain) {
+        const groundTruthPrefixSignature = topKPathSignature(
+          groundTruthDebugChain.slice(0, step + 1),
+        );
+        const groundTruthPossibility = rawBucket.find(
+          (possibility) =>
+            possibility.signature === groundTruthPrefixSignature,
+        );
+        if (groundTruthPossibility) {
+          const comparator = (
+            left: V2SequencePossibility,
+            right: V2SequencePossibility,
+          ) => compareV2PossibilitiesForDiagnostic(left, right).result;
+          const sortedRaw = [...rawBucket].sort(comparator);
+          const diversityGroup = rawBucket.filter(
+            (possibility) =>
+              possibility.diversitySignature ===
+              groundTruthPossibility.diversitySignature,
+          );
+          const groupRepresentative = [...diversityGroup].sort(comparator)[0];
+          const representatives = [
+            ...new Map(
+              rawBucket.map((possibility) => [
+                possibility.diversitySignature,
+                rawBucket
+                  .filter(
+                    (candidate) =>
+                      candidate.diversitySignature ===
+                      possibility.diversitySignature,
+                  )
+                  .sort(comparator)[0],
+              ]),
+            ).values(),
+          ].sort(comparator);
+          const isRetained = retainedIds.has(
+            groundTruthPossibility.stableId,
+          );
+          let selectionPhase = "BUCKET_WITHIN_K";
+          let counterpart: V2SequencePossibility | null = null;
+          if (rawBucket.length > k) {
+            if (
+              groupRepresentative.stableId !==
+              groundTruthPossibility.stableId
+            ) {
+              selectionPhase = "DIVERSITY_GROUP_REPRESENTATIVE";
+              counterpart = groupRepresentative;
+            } else if (
+              representatives.findIndex(
+                (possibility) =>
+                  possibility.stableId === groundTruthPossibility.stableId,
+              ) >= k
+            ) {
+              selectionPhase = "REPRESENTATIVE_TOP_K_CUTOFF";
+              counterpart = representatives[k - 1] ?? null;
+            } else {
+              selectionPhase = "REMAINING_SLOT_CUTOFF";
+              counterpart = retained[retained.length - 1] ?? null;
+            }
+          }
+          const comparison =
+            counterpart &&
+            counterpart.stableId !== groundTruthPossibility.stableId
+              ? compareV2PossibilitiesForDiagnostic(
+                  groundTruthPossibility,
+                  counterpart,
+                )
+              : null;
+          groundTruthDebugTrace.push({
+            K: k,
+            iteration: step + 1,
+            stateKey,
+            selectedCandidates: groundTruthPossibility.signature,
+            pathLength: groundTruthPossibility.chain.length,
+            partialTemporalScore:
+              groundTruthPossibility.partialTemporalScore,
+            legacyScore: groundTruthPossibility.legacyScore,
+            rankInState:
+              sortedRaw.findIndex(
+                (possibility) =>
+                  possibility.stableId === groundTruthPossibility.stableId,
+              ) + 1,
+            competitorCount: rawBucket.length - 1,
+            topK: k,
+            decision: isRetained ? "RETAINED" : "EVICTED",
+            selectionPhase,
+            decisiveRule:
+              comparison?.decisiveRule ??
+              (isRetained ? "NO_CUTOFF" : "NO_COUNTERPART"),
+            comparedWith: counterpart?.signature ?? null,
+            survivingPaths: retained
+              .map(
+                (possibility) =>
+                  `${possibility.signature} ` +
+                  `(temporal=${possibility.partialTemporalScore}, legacy=${possibility.legacyScore})`,
+              )
+              .join(" ; "),
+          });
+        }
+      }
+      const responsible = retained[retained.length - 1] ?? null;
+      rawBucket
+        .filter(
+          (possibility) =>
+            !retainedIds.has(possibility.stableId),
+        )
+        .forEach((evicted) =>
+          evictions.push({
+            K: k,
+            step: step + 1,
+            stateKey,
+            evictedStableId: evicted.stableId,
+            evictedSignature: evicted.signature,
+            evictedPartialTemporalScore:
+              evicted.partialTemporalScore,
+            responsibleStableId: responsible?.stableId ?? null,
+            responsiblePartialTemporalScore:
+              responsible?.partialTemporalScore ?? null,
+            reason:
+              evicted.completedRepCount < 2
+                ? "DIVERSITY_BUCKET_LIMIT"
+                : "PARTIAL_TEMPORAL_BUCKET_LIMIT",
+          }),
+        );
+      next.set(stateKey, retained);
+      bucketSizes.push(retained.length);
+      statesRetained += retained.length;
+    }
+    bucketCount += next.size;
+    current = next;
+    retainedLayers.push(
+      new Map(
+        [...next.entries()].map(([key, bucket]) => [
+          key,
+          [...bucket],
+        ]),
+      ),
+    );
+    maximumMemoryEstimate = Math.max(
+      maximumMemoryEstimate,
+      [...next.values()].reduce(
+        (sum, bucket) => sum + bucket.length,
+        0,
+      ),
+    );
+  }
+  const completeBySignature = new Map<
+    string,
+    V2SequencePossibility
+  >();
+  [...current.values()]
+    .flat()
+    .forEach((possibility) => {
+      if (possibility.chain.length !== targetLength) return;
+      const existing = completeBySignature.get(
+        possibility.signature,
+      );
+      if (
+        !existing ||
+        possibility.stableId < existing.stableId
+      ) {
+        completeBySignature.set(
+          possibility.signature,
+          possibility,
+        );
+      }
+    });
+  return {
+    K: k,
+    candidatesCount: candidates.length,
+    completePossibilities: [...completeBySignature.values()],
+    statesAttempted,
+    statesRetained,
+    statesEvicted: evictions.length,
+    bucketCount,
+    meanBucketSize:
+      bucketSizes.length > 0 ? mean(bucketSizes) : 0,
+    maxBucketSize:
+      bucketSizes.length > 0 ? Math.max(...bucketSizes) : 0,
+    maximumMemoryEstimate,
+    executionTimeMs: performance.now() - startedAt,
+    createdBySignature,
+    retainedLayers,
+    rawLayers,
+    evictions,
+    groundTruthDebugTrace:
+      groundTruthDebugChain === undefined
+        ? undefined
+        : groundTruthDebugTrace,
+  };
+}
+
+function calculateFinalTemporalFeatures(
+  possibility: V2SequencePossibility,
+  values: number[],
+): Pick<
+  V2CompleteFeatures,
+  | "fullRepDurationCV"
+  | "bottomToTopDurationCV"
+  | "topToBottomDurationCV"
+> {
+  const cycles = buildCyclesFromSequence(possibility, values);
+  const cv = (numbers: number[]) =>
+    populationStd(numbers) / mean(numbers);
+  return {
+    fullRepDurationCV: cv(
+      cycles.map((cycle) => cycle.fullRepDuration),
+    ),
+    bottomToTopDurationCV: cv(
+      cycles.map((cycle) => cycle.bottomToTopDuration),
+    ),
+    topToBottomDurationCV: cv(
+      cycles.map((cycle) => cycle.topToBottomDuration),
+    ),
+  };
+}
+
+function calculateCycleShapeFeatures(
+  possibility: V2SequencePossibility,
+  values: number[],
+): Pick<
+  V2CompleteFeatures,
+  | "meanCycleCorrelation"
+  | "minCycleCorrelation"
+  | "cycleCorrelationStd"
+> {
+  const cycles = buildCyclesFromSequence(possibility, values);
+  const medianProfile = Array.from({ length: 100 }, (_, index) =>
+    median(cycles.map((cycle) => cycle.normalizedSignal[index])),
+  );
+  const correlations = cycles.map((cycle) =>
+    pearsonCorrelation(cycle.normalizedSignal, medianProfile),
+  );
+  return {
+    meanCycleCorrelation: mean(correlations),
+    minCycleCorrelation: Math.min(...correlations),
+    cycleCorrelationStd: populationStd(correlations),
+  };
+}
+
+function normalizeCompleteSequenceFeatures(
+  featureRows: V2CompleteFeatures[],
+): Array<{
+  finalTemporalScore: number;
+  finalShapeScore: number;
+}> {
+  const definitions: Array<{
+    name: keyof V2CompleteFeatures;
+    higher: boolean;
+    family: "TEMPORAL" | "SHAPE";
+  }> = [
+    { name: "fullRepDurationCV", higher: false, family: "TEMPORAL" },
+    { name: "bottomToTopDurationCV", higher: false, family: "TEMPORAL" },
+    { name: "topToBottomDurationCV", higher: false, family: "TEMPORAL" },
+    { name: "meanCycleCorrelation", higher: true, family: "SHAPE" },
+    { name: "minCycleCorrelation", higher: true, family: "SHAPE" },
+    { name: "cycleCorrelationStd", higher: false, family: "SHAPE" },
+  ];
+  const normalized = new Map<
+    keyof V2CompleteFeatures,
+    number[] | null
+  >();
+  definitions.forEach((definition) => {
+    const numbers = featureRows.map(
+      (features) => features[definition.name],
+    );
+    const center = median(numbers);
+    const mad = medianAbsoluteDeviation(numbers);
+    const std = populationStd(numbers);
+    if (mad === 0 && std === 0) {
+      normalized.set(definition.name, null);
+      return;
+    }
+    normalized.set(
+      definition.name,
+      numbers.map((value) => {
+        const z =
+          mad !== 0
+            ? (value - center) / mad
+            : (value - mean(numbers)) / std;
+        const clamped = Math.max(-3, Math.min(3, z));
+        return definition.higher ? clamped : -clamped;
+      }),
+    );
+  });
+  return featureRows.map((_, rowIndex) => {
+    const familyMean = (family: "TEMPORAL" | "SHAPE") => {
+      const values = definitions
+        .filter((definition) => definition.family === family)
+        .map(
+          (definition) =>
+            normalized.get(definition.name)?.[rowIndex],
+        )
+        .filter((value): value is number => value !== undefined);
+      if (values.length === 0) {
+        fail(
+          "RERANKING_ERROR",
+          `No available ${family} metric.`,
+        );
+      }
+      return mean(values);
+    };
+    return {
+      finalTemporalScore: familyMean("TEMPORAL"),
+      finalShapeScore: familyMean("SHAPE"),
+    };
+  });
+}
+
+function rerankCompleteSequences(
+  possibilities: V2SequencePossibility[],
+  values: number[],
+): V2RankedCompleteSequence[] {
+  const featureRows = possibilities.map((possibility) => ({
+    ...calculateFinalTemporalFeatures(possibility, values),
+    ...calculateCycleShapeFeatures(possibility, values),
+  }));
+  const normalized =
+    normalizeCompleteSequenceFeatures(featureRows);
+  const rows = possibilities.map((possibility, index) => ({
+    completeId: `COMPLETE_${String(index + 1).padStart(5, "0")}`,
+    possibility,
+    features: featureRows[index],
+    finalTemporalScore: normalized[index].finalTemporalScore,
+    finalShapeScore: normalized[index].finalShapeScore,
+    finalRerankerScore:
+      0.5 * normalized[index].finalTemporalScore +
+      0.5 * normalized[index].finalShapeScore,
+    temporalRank: 0,
+    shapeRank: 0,
+    combinedRank: 0,
+  }));
+  const temporalRanks = rankNumbers(
+    rows.map((row) => row.finalTemporalScore),
+    true,
+  );
+  const shapeRanks = rankNumbers(
+    rows.map((row) => row.finalShapeScore),
+    true,
+  );
+  const combinedOrder = [...rows].sort(
+    (left, right) =>
+      right.finalRerankerScore - left.finalRerankerScore ||
+      right.finalTemporalScore - left.finalTemporalScore ||
+      right.finalShapeScore - left.finalShapeScore ||
+      left.completeId.localeCompare(right.completeId),
+  );
+  const combinedRankById = new Map(
+    combinedOrder.map((row, index) => [
+      row.completeId,
+      index + 1,
+    ]),
+  );
+  return rows.map((row, index) => ({
+    ...row,
+    temporalRank: temporalRanks[index],
+    shapeRank: shapeRanks[index],
+    combinedRank: combinedRankById.get(row.completeId) as number,
+  }));
+}
+
+function traceGroundTruthSequence(
+  search: V2SearchResult,
+  groundTruth: DpCandidate[],
+) {
+  return groundTruth.map((_, index) => {
+    const chain = groundTruth.slice(0, index + 1);
+    const signature = topKPathSignature(chain);
+    const state = search.createdBySignature.get(signature);
+    const layer = search.retainedLayers[index + 1];
+    const bucket = state ? layer?.get(state.stateKey) : null;
+    const bucketIndex =
+      state && bucket
+        ? bucket.findIndex(
+            (possibility) =>
+              possibility.signature === signature,
+          )
+        : -1;
+    const eviction = state
+      ? search.evictions.find(
+          (entry) =>
+            entry.evictedStableId === state.stableId,
+        )
+      : null;
+    return {
+      K: search.K,
+      prefixLength: index + 1,
+      sequence: signature,
+      stateCreated: state ? "OUI" : "NON",
+      stateRetained: bucketIndex >= 0 ? "OUI" : "NON",
+      bucketRank: bucketIndex >= 0 ? bucketIndex + 1 : null,
+      bucketSize: bucket?.length ?? null,
+      completedRepCount: state?.completedRepCount ?? null,
+      partialFullRepDurationCV:
+        state?.partialTemporalFeatures
+          .partialFullRepDurationCV ?? null,
+      partialBottomToTopDurationCV:
+        state?.partialTemporalFeatures
+          .partialBottomToTopDurationCV ?? null,
+      partialTopToBottomDurationCV:
+        state?.partialTemporalFeatures
+          .partialTopToBottomDurationCV ?? null,
+      partialTemporalScore:
+        state?.partialTemporalScore ?? null,
+      legacyScore: state?.legacyScore ?? null,
+      evictionStateId: eviction?.responsibleStableId ?? null,
+      evictionReason: eviction?.reason ?? null,
+      terminalReached:
+        index === 10 && bucketIndex >= 0 ? "OUI" : "NON",
+    };
+  });
+}
+
+function compareV2PossibilitiesForDiagnostic(
+  left: V2SequencePossibility,
+  right: V2SequencePossibility,
+): {
+  result: number;
+  decisiveRule:
+    | "partialTemporalScore"
+    | "completedRepCount"
+    | "diversitySignature"
+    | "legacyScore"
+    | "stableId";
+} {
+  const mature = left.completedRepCount >= 2;
+  if (mature) {
+    const temporalDelta =
+      (right.partialTemporalScore ?? Number.NEGATIVE_INFINITY) -
+      (left.partialTemporalScore ?? Number.NEGATIVE_INFINITY);
+    if (temporalDelta !== 0) {
+      return { result: temporalDelta, decisiveRule: "partialTemporalScore" };
+    }
+    if (right.completedRepCount !== left.completedRepCount) {
+      return {
+        result: right.completedRepCount - left.completedRepCount,
+        decisiveRule: "completedRepCount",
+      };
+    }
+  }
+  const diversityDelta = left.diversitySignature.localeCompare(
+    right.diversitySignature,
+  );
+  if (diversityDelta !== 0) {
+    return { result: diversityDelta, decisiveRule: "diversitySignature" };
+  }
+  if (right.legacyScore !== left.legacyScore) {
+    return {
+      result: right.legacyScore - left.legacyScore,
+      decisiveRule: "legacyScore",
+    };
+  }
+  return {
+    result: left.stableId.localeCompare(right.stableId),
+    decisiveRule: "stableId",
+  };
+}
+
+function buildV2DecisionTrace(
+  label: string,
+  search: V2SearchResult,
+  chain: DpCandidate[],
+) {
+  return chain.map((candidate, index) => {
+    const step = index + 1;
+    const signature = topKPathSignature(chain.slice(0, step));
+    const rawOccurrences = [...(search.rawLayers[step]?.values() ?? [])]
+      .flat()
+      .filter((possibility) => possibility.signature === signature)
+      .sort((left, right) => left.stableId.localeCompare(right.stableId));
+    const retainedOccurrences = rawOccurrences.filter((possibility) =>
+      search.retainedLayers[step]
+        ?.get(possibility.stateKey)
+        ?.some((retained) => retained.stableId === possibility.stableId),
+    );
+    const possibility =
+      retainedOccurrences[0] ?? rawOccurrences[0] ?? null;
+    if (!possibility) {
+      return {
+        label,
+        K: search.K,
+        step,
+        candidateAdded: `${candidate.type[0]}${candidate.index}`,
+        prefix: signature,
+        status: "NOT_CONSTRUCTED",
+      };
+    }
+    const rawBucket = search.rawLayers[step]?.get(possibility.stateKey) ?? [];
+    const retainedBucket =
+      search.retainedLayers[step]?.get(possibility.stateKey) ?? [];
+    const comparator = (
+      left: V2SequencePossibility,
+      right: V2SequencePossibility,
+    ) => compareV2PossibilitiesForDiagnostic(left, right).result;
+    const sortedRaw = [...rawBucket].sort(comparator);
+    const groups = new Map<string, V2SequencePossibility[]>();
+    rawBucket.forEach((item) => {
+      const group = groups.get(item.diversitySignature) ?? [];
+      group.push(item);
+      groups.set(item.diversitySignature, group);
+    });
+    const group = groups.get(possibility.diversitySignature) ?? [];
+    const groupRepresentative = [...group].sort(comparator)[0] ?? null;
+    const representatives = [...groups.values()]
+      .map((items) => [...items].sort(comparator)[0])
+      .sort(comparator);
+    const retained = retainedBucket.some(
+      (item) => item.stableId === possibility.stableId,
+    );
+    let counterpart: V2SequencePossibility | null = null;
+    let selectionPhase = "BUCKET_WITHIN_K";
+    if (rawBucket.length > search.K) {
+      if (groupRepresentative?.stableId !== possibility.stableId) {
+        counterpart = groupRepresentative;
+        selectionPhase = "DIVERSITY_GROUP_REPRESENTATIVE";
+      } else if (
+        representatives.findIndex(
+          (item) => item.stableId === possibility.stableId,
+        ) >= search.K
+      ) {
+        counterpart = representatives[search.K - 1] ?? null;
+        selectionPhase = "REPRESENTATIVE_TOP_K_CUTOFF";
+      } else {
+        counterpart = retainedBucket[retainedBucket.length - 1] ?? null;
+        selectionPhase = "REMAINING_SLOT_CUTOFF";
+      }
+    }
+    const comparison =
+      counterpart &&
+      counterpart.stableId !== possibility.stableId
+        ? compareV2PossibilitiesForDiagnostic(
+            possibility,
+            counterpart,
+          )
+        : null;
+    return {
+      label,
+      K: search.K,
+      step,
+      candidateAdded: `${candidate.type[0]}${candidate.index}`,
+      prefix: signature,
+      completedRepCount: possibility.completedRepCount,
+      bucket: possibility.stateKey,
+      rawBucketSize: rawBucket.length,
+      retainedBucketSize: retainedBucket.length,
+      comparatorRank: sortedRaw.findIndex(
+        (item) => item.stableId === possibility.stableId,
+      ) + 1,
+      retainedRank:
+        retainedBucket.findIndex(
+          (item) => item.stableId === possibility.stableId,
+        ) + 1 || null,
+      partialTemporalScore: possibility.partialTemporalScore,
+      ...possibility.partialTemporalFeatures,
+      legacyScore: possibility.legacyScore,
+      diversity: possibility.diversitySignature,
+      exactSortOrder:
+        possibility.completedRepCount >= 2
+          ? "partialTemporalScore DESC > completedRepCount DESC > diversity ASC > legacyScore DESC > stableId ASC"
+          : "diversity ASC > legacyScore DESC > stableId ASC",
+      representative:
+        groupRepresentative?.stableId === possibility.stableId
+          ? "YES"
+          : "NO",
+      status: retained ? "RETAINED" : "EVICTED",
+      selectionPhase,
+      comparedWith: counterpart?.signature ?? null,
+      comparedLegacyScore: counterpart?.legacyScore ?? null,
+      comparedPartialTemporalScore:
+        counterpart?.partialTemporalScore ?? null,
+      comparedCompletedRepCount:
+        counterpart?.completedRepCount ?? null,
+      comparedDiversity:
+        counterpart?.diversitySignature ?? null,
+      decisiveComparatorRule:
+        comparison?.decisiveRule ??
+        (retained ? "NO_CUTOFF" : "NO_COUNTERPART"),
+      decisionExplanation: retained
+        ? rawBucket.length <= search.K
+          ? "Conservée car la taille brute du bucket ne dépasse pas K."
+          : "Conservée par la procédure représentants puis remplissage Top-K."
+        : comparison
+          ? `Éliminée face à la possibilité indiquée; première différence: ${comparison.decisiveRule}.`
+          : "Éliminée sans contrepartie diagnostic identifiable.",
+    };
+  });
+}
+
+function percentile(numbers: number[], probability: number): number | null {
+  if (numbers.length === 0) return null;
+  const sorted = [...numbers].sort((left, right) => left - right);
+  const position = (sorted.length - 1) * probability;
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  return lower === upper
+    ? sorted[lower]
+    : sorted[lower] +
+        (sorted[upper] - sorted[lower]) * (position - lower);
+}
+
+function summarizeDistribution(numbers: number[]) {
+  const extrema = numbers.reduce(
+    (result, value) => ({
+      minimum: Math.min(result.minimum, value),
+      maximum: Math.max(result.maximum, value),
+    }),
+    { minimum: Number.POSITIVE_INFINITY, maximum: Number.NEGATIVE_INFINITY },
+  );
+  return {
+    count: numbers.length,
+    minimum: numbers.length ? extrema.minimum : null,
+    p1: percentile(numbers, 0.01),
+    p5: percentile(numbers, 0.05),
+    p10: percentile(numbers, 0.1),
+    p25: percentile(numbers, 0.25),
+    median: percentile(numbers, 0.5),
+    p75: percentile(numbers, 0.75),
+    p90: percentile(numbers, 0.9),
+    p95: percentile(numbers, 0.95),
+    p99: percentile(numbers, 0.99),
+    maximum: numbers.length ? extrema.maximum : null,
+    average: numbers.length ? mean(numbers) : null,
+    standardDeviation: numbers.length
+      ? populationStd(numbers)
+      : null,
+  };
+}
+
+function collectTemporalToleranceDecisions(
+  search: V2SearchResult,
+  minScale: number,
+) {
+  const bucketRows: Record<string, unknown>[] = [];
+  const evictionRows: Array<Record<string, unknown> & {
+    gapToBest: number;
+    gapToCutoff: number;
+    gapToSelectedRepresentative: number | null;
+    normalizedGapToCutoff: number;
+  }> = [];
+  for (let step = 1; step < search.rawLayers.length; step += 1) {
+    for (const [bucket, raw] of search.rawLayers[step]) {
+      if (
+        raw.length <= search.K ||
+        raw[0]?.completedRepCount < 2
+      ) {
+        continue;
+      }
+      const retained = search.retainedLayers[step].get(bucket) ?? [];
+      const retainedIds = new Set(retained.map((row) => row.stableId));
+      const evicted = raw.filter((row) => !retainedIds.has(row.stableId));
+      const scored = raw.filter(
+        (row): row is V2SequencePossibility =>
+          row.partialTemporalScore !== null,
+      );
+      const bestScore = Math.max(
+        ...scored.map((row) => row.partialTemporalScore as number),
+      );
+      const cutoffScore = Math.min(
+        ...retained
+          .map((row) => row.partialTemporalScore)
+          .filter((score): score is number => score !== null),
+      );
+      const groups = new Map<string, V2SequencePossibility[]>();
+      raw.forEach((row) => {
+        const group = groups.get(row.diversitySignature) ?? [];
+        group.push(row);
+        groups.set(row.diversitySignature, group);
+      });
+      bucketRows.push({
+        K: search.K,
+        step,
+        completedRepCount: raw[0].completedRepCount,
+        bucket,
+        totalCandidates: raw.length,
+        placesAvailable: search.K,
+        bestScore,
+        cutoffScore,
+        firstEvictedScore: Math.max(
+          ...evicted
+            .map((row) => row.partialTemporalScore)
+            .filter((score): score is number => score !== null),
+        ),
+        retainedCount: retained.length,
+        evictedCount: evicted.length,
+        diversityGroupCount: groups.size,
+        diversityGroupSizes: [...groups.entries()]
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([signature, rows]) => `${signature}:${rows.length}`)
+          .join("|"),
+        exactComparatorOrder: [...raw]
+          .sort(
+            (left, right) =>
+              compareV2PossibilitiesForDiagnostic(left, right).result,
+          )
+          .map((row) => row.stableId)
+          .join(" > "),
+      });
+      evicted.forEach((row) => {
+        if (row.partialTemporalScore === null) return;
+        const representative = retained.find(
+          (selected) =>
+            selected.diversitySignature === row.diversitySignature,
+        );
+        const gapToCutoff = Math.abs(
+          row.partialTemporalScore - cutoffScore,
+        );
+        evictionRows.push({
+          K: search.K,
+          step,
+          completedRepCount: row.completedRepCount,
+          bucket,
+          signature: row.signature,
+          diversitySignature: row.diversitySignature,
+          sameDiversityAsSelected:
+            representative !== undefined,
+          scoreEvicted: row.partialTemporalScore,
+          bestScore,
+          cutoffScore,
+          selectedRepresentativeScore:
+            representative?.partialTemporalScore ?? null,
+          gapToBest: Math.abs(row.partialTemporalScore - bestScore),
+          gapToCutoff,
+          gapToSelectedRepresentative:
+            representative?.partialTemporalScore === null ||
+            representative?.partialTemporalScore === undefined
+              ? null
+              : Math.abs(
+                  row.partialTemporalScore -
+                    representative.partialTemporalScore,
+                ),
+          normalizedGapToCutoff:
+            gapToCutoff /
+            Math.max(
+              Math.abs(row.partialTemporalScore),
+              Math.abs(cutoffScore),
+              minScale,
+            ),
+          comparisonType: representative
+            ? "EVICTED_VS_SAME_DIVERSITY_REPRESENTATIVE"
+            : "EVICTED_VS_CUTOFF_AND_BEST",
+        });
+      });
+    }
+  }
+  return { bucketRows, evictionRows };
+}
+
+function renderHistogram(
+  title: string,
+  values: number[],
+  outputPath: string,
+  binCount = 40,
+): void {
+  const image = new Raster(1400, 760);
+  const left = 100;
+  const right = 1330;
+  const top = 100;
+  const bottom = 650;
+  const extrema = values.reduce(
+    (result, value) => ({
+      minimum: Math.min(result.minimum, value),
+      maximum: Math.max(result.maximum, value),
+    }),
+    { minimum: Number.POSITIVE_INFINITY, maximum: Number.NEGATIVE_INFINITY },
+  );
+  const minimum = values.length ? extrema.minimum : 0;
+  const maximum = values.length ? extrema.maximum : 1;
+  const width = Math.max(maximum - minimum, Number.EPSILON);
+  const bins = Array.from({ length: binCount }, () => 0);
+  values.forEach((value) => {
+    const index = Math.min(
+      binCount - 1,
+      Math.floor(((value - minimum) / width) * binCount),
+    );
+    bins[index] += 1;
+  });
+  const maxCount = Math.max(...bins, 1);
+  image.text(left, 25, title, [0, 0, 0], 2);
+  image.line(left, top, left, bottom, [0, 0, 0]);
+  image.line(left, bottom, right, bottom, [0, 0, 0]);
+  const barWidth = (right - left) / binCount;
+  bins.forEach((count, index) => {
+    const height = (count / maxCount) * (bottom - top);
+    image.rectangle(
+      Math.round(left + index * barWidth),
+      Math.round(bottom - height),
+      Math.max(1, Math.floor(barWidth - 1)),
+      Math.round(height),
+      [30, 100, 210],
+    );
+  });
+  image.text(left, bottom + 20, minimum.toExponential(2), [0, 0, 0], 1);
+  image.text(right - 80, bottom + 20, maximum.toExponential(2), [0, 0, 0], 1);
+  image.writePng(outputPath);
+}
+
+function summarizeDpV2Experiment(
+  search: V2SearchResult,
+  ranked: V2RankedCompleteSequence[],
+  groundTruth: DpCandidate[] | null,
+) {
+  const groundTruthSignature = groundTruth
+    ? topKPathSignature(groundTruth)
+    : null;
+  const groundTruthRow = groundTruthSignature
+    ? ranked.find(
+        (row) =>
+          row.possibility.signature === groundTruthSignature,
+      )
+    : null;
+  const temporalWinner = [...ranked].sort(
+    (left, right) =>
+      right.finalTemporalScore - left.finalTemporalScore ||
+      left.completeId.localeCompare(right.completeId),
+  )[0];
+  const shapeWinner = [...ranked].sort(
+    (left, right) =>
+      right.finalShapeScore - left.finalShapeScore ||
+      left.completeId.localeCompare(right.completeId),
+  )[0];
+  const combinedWinner = [...ranked].sort(
+    (left, right) => left.combinedRank - right.combinedRank,
+  )[0];
+  return {
+    K: search.K,
+    candidatesCount: search.candidatesCount,
+    statesAttempted: search.statesAttempted,
+    statesRetained: search.statesRetained,
+    statesEvicted: search.statesEvicted,
+    bucketCount: search.bucketCount,
+    meanBucketSize: search.meanBucketSize,
+    maxBucketSize: search.maxBucketSize,
+    completeSequenceCount: ranked.length,
+    executionTimeMs: search.executionTimeMs,
+    groundTruthCompleteSequenceReached:
+      groundTruthSignature !== null &&
+      groundTruthRow !== undefined,
+    groundTruthTemporalRank:
+      groundTruthRow?.temporalRank ?? null,
+    groundTruthShapeRank: groundTruthRow?.shapeRank ?? null,
+    groundTruthCombinedRank:
+      groundTruthRow?.combinedRank ?? null,
+    temporalWinnerSequence:
+      temporalWinner?.possibility.signature ?? null,
+    shapeWinnerSequence:
+      shapeWinner?.possibility.signature ?? null,
+    combinedWinnerSequence:
+      combinedWinner?.possibility.signature ?? null,
+    combinedWinnerScore:
+      combinedWinner?.finalRerankerScore ?? null,
+  };
+}
+
+function runDpV2ExperimentalDiagnostic(
+  dataset: CalibrationDataset,
+  groundTruth: GroundTruthFile,
+  axis: keyof CalibrationDataset["samples"][number],
+  realDpCandidates: DpCandidate[],
+  calibrationWinner: TransitionCandidate[],
+  calibrationWinnerScore: number | undefined,
+): void {
+  if (!fs.existsSync(TRANSITION_ANNOTATION_PATH)) {
+    fail("TRANSITION_ANNOTATION_FILE_NOT_FOUND", TRANSITION_ANNOTATION_PATH);
+  }
+  let transitionGroundTruth: TransitionGroundTruthFile;
+  try {
+    transitionGroundTruth = JSON.parse(
+      fs.readFileSync(TRANSITION_ANNOTATION_PATH, "utf8"),
+    ) as TransitionGroundTruthFile;
+  } catch (error) {
+    fail(
+      "DATA_INTEGRITY_ERROR",
+      `Unable to parse transition annotations: ${String(error)}`,
+    );
+  }
+  if (
+    transitionGroundTruth.dataset !== DATASET_NAME ||
+    transitionGroundTruth.events.length !== EXPECTED_EVENT_COUNT ||
+    !isExpectedAlternation(transitionGroundTruth.events)
+  ) {
+    fail(
+      "INVALID_TRANSITION_SEQUENCE",
+      "DP V2 diagnostic requires 11 alternating transition annotations.",
+    );
+  }
+  const transitionOffsetSeconds =
+    transitionGroundTruth.sync.videoTimeSeconds -
+    transitionGroundTruth.sync.imuSampleIndex /
+      dataset.samplingRateHz;
+  const transitionWindows = transitionGroundTruth.events.map(
+    (event) => {
+      const arrival = Math.round(
+        (event.arrivalTimeSeconds - transitionOffsetSeconds) *
+          dataset.samplingRateHz,
+      );
+      const departure =
+        event.departureTimeSeconds === null
+          ? arrival
+          : Math.round(
+              (event.departureTimeSeconds -
+                transitionOffsetSeconds) *
+                dataset.samplingRateHz,
+            );
+      return {
+        type: event.type,
+        start: Math.min(arrival, departure),
+        end: Math.max(arrival, departure),
+      };
+    },
+  );
+  const injected = buildInjectedCandidatePool(
+    dataset,
+    groundTruth,
+    axis,
+    realDpCandidates,
+  );
+  const v1Replay = reconstructAllDpFinalPaths(
+    injected.pool,
+    EXPECTED_REPS,
+  );
+  const v1Terminals = [...v1Replay.finalPaths].sort(
+    (left, right) => right.score - left.score,
+  );
+  const expectedV1 =
+    "BOTTOM:169|TOP:195|BOTTOM:228|TOP:291|BOTTOM:299|TOP:333|BOTTOM:391|TOP:467|BOTTOM:500|TOP:509|BOTTOM:564";
+  if (
+    v1Replay.createdStates.length !== 1207 ||
+    v1Terminals.length !== 14 ||
+    v1Terminals[0]?.score !== 48176 ||
+    topKPathSignature(v1Terminals[0]?.chain ?? []) !== expectedV1 ||
+    calibrationWinnerScore !== 48176 ||
+    calibrationWinner
+      .map((event) => `${event.type}:${event.index}`)
+      .join("|") !== expectedV1
+  ) {
+    fail(
+      "DP_V1_REPLAY_MISMATCH",
+      `states=${v1Replay.createdStates.length}, terminals=${v1Terminals.length}, score=${v1Terminals[0]?.score}`,
+    );
+  }
+  const values = dataset.samples.map((sample) => sample[axis]);
+  const gtSignature = topKPathSignature(injected.groundTruthChain);
+  const kValues = [5, 10, 20, 30, 50];
+  const mainExperiments = kValues.map((k) => {
+    const search = searchSequencePossibilitiesV2(
+      injected.pool,
+      EXPECTED_REPS,
+      k,
+      undefined,
+      DP_V2_GROUND_TRUTH_DEBUG
+        ? injected.groundTruthChain
+        : undefined,
+    );
+    const ranked = rerankCompleteSequences(
+      search.completePossibilities,
+      values,
+    );
+    const trace = traceGroundTruthSequence(
+      search,
+      injected.groundTruthChain,
+    );
+    return {
+      search,
+      ranked,
+      trace,
+      summary: summarizeDpV2Experiment(
+        search,
+        ranked,
+        injected.groundTruthChain,
+      ),
+    };
+  });
+  const parityPossibilities = [
+    {
+      stableId: "PARITY_WINNER",
+      chain: v1Terminals[0].chain,
+      signature: expectedV1,
+    },
+    {
+      stableId: "PARITY_GT",
+      chain: injected.groundTruthChain,
+      signature: gtSignature,
+    },
+  ].map(
+    (item) =>
+      ({
+        ...item,
+        stateKey: "",
+        candidateIndex: -1,
+        currentStep: 11,
+        lastBottomIndex: item.chain[10].index,
+        completedRepCount: 5,
+        legacyScore: 0,
+        partialTemporalFeatures:
+          calculatePartialTemporalFeatures(item.chain),
+        partialTemporalScore: null,
+        predecessorStateId: null,
+        diversitySignature: "",
+      }) satisfies V2SequencePossibility,
+  );
+  const winnerTemporal = calculateFinalTemporalFeatures(
+    parityPossibilities[0],
+    values,
+  );
+  const gtTemporal = calculateFinalTemporalFeatures(
+    parityPossibilities[1],
+    values,
+  );
+  const winnerShape = calculateCycleShapeFeatures(
+    parityPossibilities[0],
+    values,
+  );
+  const gtShape = calculateCycleShapeFeatures(
+    parityPossibilities[1],
+    values,
+  );
+  const close = (left: number, right: number) =>
+    Math.abs(left - right) <= 1e-12;
+  if (
+    !close(winnerTemporal.fullRepDurationCV, 0.2373544300422121) ||
+    !close(winnerTemporal.bottomToTopDurationCV, 0.5893297391275264) ||
+    !close(winnerTemporal.topToBottomDurationCV, 0.483831637915188) ||
+    !close(gtTemporal.fullRepDurationCV, 0.050892406693221676) ||
+    !close(gtTemporal.bottomToTopDurationCV, 0.016663195529137267) ||
+    !close(gtTemporal.topToBottomDurationCV, 0.07029302153670414)
+  ) {
+    fail(
+      "TEMPORAL_FEATURE_PARITY_MISMATCH",
+      JSON.stringify({ winnerTemporal, gtTemporal }),
+    );
+  }
+  if (
+    !close(winnerShape.meanCycleCorrelation, 0.5516053268020519) ||
+    !close(winnerShape.minCycleCorrelation, 0.3127284371247655) ||
+    !close(winnerShape.cycleCorrelationStd, 0.1519612538123109) ||
+    !close(gtShape.meanCycleCorrelation, 0.6293649964149314) ||
+    !close(gtShape.minCycleCorrelation, 0.5127806575493022) ||
+    !close(gtShape.cycleCorrelationStd, 0.06501870282566592)
+  ) {
+    fail(
+      "SHAPE_FEATURE_PARITY_MISMATCH",
+      JSON.stringify({ winnerShape, gtShape }),
+    );
+  }
+  const sensitivityMinScale = 1e-12;
+  const absoluteTolerances = [
+    0, 0.00001, 0.00005, 0.0001, 0.00025, 0.0005, 0.001,
+    0.0025, 0.005,
+  ];
+  const relativeTolerances = [0, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1];
+  const baselineDecisionData = mainExperiments.map((experiment) => ({
+    K: experiment.search.K,
+    ...collectTemporalToleranceDecisions(
+      experiment.search,
+      sensitivityMinScale,
+    ),
+  }));
+  const allEvictionRows = baselineDecisionData.flatMap(
+    (row) => row.evictionRows,
+  );
+  const metrics = [
+    "gapToCutoff",
+    "gapToBest",
+    "gapToSelectedRepresentative",
+    "normalizedGapToCutoff",
+  ] as const;
+  const distributionRows = [
+    ...metrics.map((metric) => ({
+      scope: "GLOBAL",
+      K: null,
+      metric,
+      ...summarizeDistribution(
+        allEvictionRows
+          .map((row) => row[metric])
+          .filter((value): value is number => value !== null),
+      ),
+    })),
+    ...baselineDecisionData.flatMap((data) =>
+      metrics.map((metric) => ({
+        scope: "BY_K",
+        K: data.K,
+        metric,
+        ...summarizeDistribution(
+          data.evictionRows
+            .map((row) => row[metric])
+            .filter((value): value is number => value !== null),
+        ),
+      })),
+    ),
+  ];
+  const groupedDistributionRows: Record<string, unknown>[] = [];
+  const groupingDefinitions = [
+    { name: "STEP", value: (row: Record<string, unknown>) => row.step },
+    {
+      name: "COMPLETED_REPS",
+      value: (row: Record<string, unknown>) => row.completedRepCount,
+    },
+    { name: "BUCKET", value: (row: Record<string, unknown>) => row.bucket },
+    {
+      name: "COMPARISON_TYPE",
+      value: (row: Record<string, unknown>) => row.comparisonType,
+    },
+    {
+      name: "DIVERSITY_RELATION",
+      value: (row: Record<string, unknown>) =>
+        row.sameDiversityAsSelected ? "SAME" : "DIFFERENT",
+    },
+  ];
+  groupingDefinitions.forEach((definition) => {
+    const groups = new Map<string, typeof allEvictionRows>();
+    allEvictionRows.forEach((row) => {
+      const key = String(definition.value(row));
+      const group = groups.get(key) ?? [];
+      group.push(row);
+      groups.set(key, group);
+    });
+    for (const [group, rows] of groups) {
+      metrics.forEach((metric) =>
+        groupedDistributionRows.push({
+          groupType: definition.name,
+          group,
+          metric,
+          ...summarizeDistribution(
+            rows
+              .map((row) => row[metric])
+              .filter((value): value is number => value !== null),
+          ),
+        }),
+      );
+    }
+  });
+  const simulationConfigurations: TemporalToleranceSimulation[] = [
+    ...absoluteTolerances.map((value) => ({
+      kind: "ABSOLUTE" as const,
+      value,
+      minScale: sensitivityMinScale,
+    })),
+    ...relativeTolerances.map((value) => ({
+      kind: "RELATIVE" as const,
+      value,
+      minScale: sensitivityMinScale,
+    })),
+  ];
+  const toleranceSimulationRows: Record<string, unknown>[] = [];
+  const groundTruthToleranceTrace: Record<string, unknown>[] = [];
+  for (const baseline of mainExperiments) {
+    const baselineBuckets = baseline.search.retainedLayers;
+    for (const configuration of simulationConfigurations) {
+      const simulationSearch =
+        configuration.value === 0
+          ? baseline.search
+          : searchSequencePossibilitiesV2(
+              injected.pool,
+              EXPECTED_REPS,
+              baseline.search.K,
+              configuration,
+            );
+      const ranked = rerankCompleteSequences(
+        simulationSearch.completePossibilities,
+        values,
+      );
+      const winner = [...ranked].sort(
+        (left, right) => left.combinedRank - right.combinedRank,
+      )[0];
+      let affectedBuckets = 0;
+      let replacements = 0;
+      let diversitySignaturesPreserved = 0;
+      for (
+        let step = 1;
+        step < simulationSearch.retainedLayers.length;
+        step += 1
+      ) {
+        for (const [bucket, simulated] of simulationSearch.retainedLayers[step]) {
+          const original = baselineBuckets[step]?.get(bucket) ?? [];
+          const originalSignatures = new Set(
+            original.map((row) => row.signature),
+          );
+          const simulatedSignatures = new Set(
+            simulated.map((row) => row.signature),
+          );
+          const changed =
+            originalSignatures.size !== simulatedSignatures.size ||
+            [...originalSignatures].some(
+              (signature) => !simulatedSignatures.has(signature),
+            );
+          if (changed) {
+            affectedBuckets += 1;
+            replacements += [...simulatedSignatures].filter(
+              (signature) => !originalSignatures.has(signature),
+            ).length;
+            const originalDiversity = new Set(
+              original.map((row) => row.diversitySignature),
+            );
+            diversitySignaturesPreserved += new Set(
+              simulated
+                .map((row) => row.diversitySignature)
+                .filter((signature) => originalDiversity.has(signature)),
+            ).size;
+          }
+        }
+      }
+      const baselineEvictions =
+        baselineDecisionData.find((row) => row.K === baseline.search.K)
+          ?.evictionRows ?? [];
+      const inTolerance = baselineEvictions.filter((row) =>
+        configuration.kind === "ABSOLUTE"
+          ? row.gapToCutoff <= configuration.value
+          : row.normalizedGapToCutoff <= configuration.value,
+      );
+      const bandByBucket = new Map<string, number>();
+      inTolerance.forEach((row) => {
+        const key = `${row.step}:${row.bucket}`;
+        bandByBucket.set(key, (bandByBucket.get(key) ?? 0) + 1);
+      });
+      const bandSizes = [...bandByBucket.values()];
+      const gtTrace = buildV2DecisionTrace(
+        `GT_${configuration.kind}_${configuration.value}`,
+        simulationSearch,
+        injected.groundTruthChain,
+      );
+      gtTrace.forEach((row) =>
+        groundTruthToleranceTrace.push({
+          toleranceKind: configuration.kind,
+          tolerance: configuration.value,
+          ...row,
+          activeBand:
+            configuration.kind === "ABSOLUTE"
+              ? configuration.value
+              : `normalized<=${configuration.value}`,
+          groundTruthQuasiEquivalent:
+            typeof row.partialTemporalScore === "number" &&
+            typeof row.comparedPartialTemporalScore === "number"
+              ? configuration.kind === "ABSOLUTE"
+                ? Math.abs(
+                    row.partialTemporalScore -
+                      row.comparedPartialTemporalScore,
+                  ) <= configuration.value
+                : Math.abs(
+                    row.partialTemporalScore -
+                      row.comparedPartialTemporalScore,
+                  ) /
+                    Math.max(
+                      Math.abs(row.partialTemporalScore),
+                      Math.abs(row.comparedPartialTemporalScore),
+                      sensitivityMinScale,
+                    ) <=
+                  configuration.value
+              : false,
+          placesAvailable: baseline.search.K,
+        }),
+      );
+      const firstEliminated = gtTrace.find(
+        (row) => row.status !== "RETAINED",
+      );
+      const winnerDistance = winner
+        ? winner.possibility.chain.reduce(
+            (sum, candidate, index) =>
+              sum +
+              Math.abs(
+                candidate.index -
+                  injected.groundTruthChain[index].index,
+              ),
+            0,
+          )
+        : null;
+      const totalEligibleBuckets =
+        baseline.search.retainedLayers
+          .slice(1)
+          .reduce((sum, layer) => sum + layer.size, 0);
+      toleranceSimulationRows.push({
+        K: baseline.search.K,
+        toleranceKind: configuration.kind,
+        tolerance: configuration.value,
+        affectedBuckets,
+        affectedBucketPercent:
+          totalEligibleBuckets === 0
+            ? 0
+            : (affectedBuckets / totalEligibleBuckets) * 100,
+        meanEquivalenceBandSize:
+          bandSizes.length > 0 ? mean(bandSizes) : 0,
+        maximumEquivalenceBandSize:
+          bandSizes.length > 0 ? Math.max(...bandSizes) : 0,
+        meanCompetitorsForKPlaces:
+          bandSizes.length > 0
+            ? mean(bandSizes.map((size) => baseline.search.K + size))
+            : 0,
+        replacements,
+        diversitySignaturesPreserved,
+        quasiEquivalentRejectedByK: Math.max(
+          0,
+          inTolerance.length - replacements,
+        ),
+        groundTruthEliminationStep:
+          firstEliminated?.step ?? null,
+        groundTruthCompleteReached:
+          !firstEliminated && gtTrace.length === EXPECTED_EVENT_COUNT,
+        finalWinner: winner?.possibility.signature ?? null,
+        finalDistanceToGroundTruthSamples: winnerDistance,
+        executionTimeMs: simulationSearch.executionTimeMs,
+        maximumMemoryEstimate:
+          simulationSearch.maximumMemoryEstimate,
+      });
+    }
+  }
+  const secondaryExperiments = kValues.map((k) => {
+    const realPool = [...realDpCandidates].sort(
+      (left, right) =>
+        left.index - right.index ||
+        left.type.localeCompare(right.type) ||
+        left.candidateId.localeCompare(right.candidateId),
+    );
+    const search = searchSequencePossibilitiesV2(
+      realPool,
+      EXPECTED_REPS,
+      k,
+    );
+    const ranked = rerankCompleteSequences(
+      search.completePossibilities,
+      values,
+    );
+    const summary = summarizeDpV2Experiment(
+      search,
+      ranked,
+      null,
+    );
+    const winner = [...ranked].sort(
+      (left, right) => left.combinedRank - right.combinedRank,
+    )[0];
+    const pointDistance = winner
+      ? winner.possibility.chain.reduce(
+          (sum, candidate, index) =>
+            sum +
+            Math.abs(
+              candidate.index -
+                injected.groundTruthChain[index].index,
+            ),
+          0,
+        )
+      : null;
+    const transitionDistance = winner
+      ? winner.possibility.chain.reduce(
+          (sum, candidate, index) => {
+            const window = transitionWindows[index];
+            if (
+              candidate.type !== window.type ||
+              candidate.index < window.start
+            ) {
+              return sum + Math.abs(candidate.index - window.start);
+            }
+            if (candidate.index > window.end) {
+              return sum + candidate.index - window.end;
+            }
+            return sum;
+          },
+          0,
+        )
+      : null;
+    return {
+      ...summary,
+      selectedTemporalScore:
+        winner?.finalTemporalScore ?? null,
+      selectedShapeScore: winner?.finalShapeScore ?? null,
+      selectedCombinedScore:
+        winner?.finalRerankerScore ?? null,
+      selectedLegacyScore:
+        winner?.possibility.legacyScore ?? null,
+      repetitionCount:
+        winner?.possibility.completedRepCount ?? null,
+      pointGroundTruthTotalAbsoluteDistanceSamples:
+        pointDistance,
+      transitionGroundTruthDistance:
+        transitionDistance,
+    };
+  });
+  const mainSummaries = mainExperiments.map(
+    (experiment) => experiment.summary,
+  );
+  const fullTrace = mainExperiments.flatMap(
+    (experiment) => experiment.trace,
+  );
+  const groundTruthDebugTrace = mainExperiments.flatMap(
+    (experiment) => experiment.search.groundTruthDebugTrace ?? [],
+  );
+  const groundTruthDebugOutcomes = mainExperiments.map((experiment) => {
+    const firstEviction = experiment.search.groundTruthDebugTrace?.find(
+      (record) => record.decision === "EVICTED",
+    );
+    const terminal = experiment.ranked.find(
+      (row) => row.possibility.signature === gtSignature,
+    );
+    return firstEviction
+      ? {
+          K: experiment.search.K,
+          case: "CAS 1",
+          iteration: firstEviction.iteration,
+          stateKey: firstEviction.stateKey,
+          reason:
+            `${firstEviction.selectionPhase}:` +
+            `${firstEviction.decisiveRule}`,
+          temporalScore: null,
+          shapeScore: null,
+          finalRank: null,
+          selectedByRerank: "NON",
+        }
+      : {
+          K: experiment.search.K,
+          case: terminal ? "CAS 2" : "TRACE_DEBUG_DESACTIVEE",
+          iteration: null,
+          stateKey: terminal?.possibility.stateKey ?? null,
+          reason: terminal
+            ? "GROUND_TRUTH_REACHED_TERMINALS"
+            : "GROUND_TRUTH_DEBUG_NOT_ENABLED",
+          temporalScore: terminal?.finalTemporalScore ?? null,
+          shapeScore: terminal?.finalShapeScore ?? null,
+          finalRank: terminal?.combinedRank ?? null,
+          selectedByRerank:
+            terminal?.combinedRank === 1 ? "OUI" : "NON",
+        };
+  });
+  const ablationRows = mainExperiments.flatMap(
+    ({ search, ranked }) => {
+      const gt = ranked.find(
+        (row) => row.possibility.signature === gtSignature,
+      );
+      const modes = [
+        {
+          strategyName: "DP_V2_TEMPORAL_ONLY",
+          score: (row: V2RankedCompleteSequence) =>
+            row.finalTemporalScore,
+          rank: gt?.temporalRank ?? null,
+        },
+        {
+          strategyName: "DP_V2_SHAPE_ONLY",
+          score: (row: V2RankedCompleteSequence) =>
+            row.finalShapeScore,
+          rank: gt?.shapeRank ?? null,
+        },
+        {
+          strategyName: "DP_V2_TEMPORAL_SHAPE_EQUAL",
+          score: (row: V2RankedCompleteSequence) =>
+            row.finalRerankerScore,
+          rank: gt?.combinedRank ?? null,
+        },
+      ];
+      return modes.map((mode) => {
+        const winner = [...ranked].sort(
+          (left, right) =>
+            mode.score(right) - mode.score(left) ||
+            left.completeId.localeCompare(right.completeId),
+        )[0];
+        return {
+          strategyName: mode.strategyName,
+          K: search.K,
+          completeSequenceCount: ranked.length,
+          selectedSequence:
+            winner?.possibility.signature ?? null,
+          selectedLegacyScore:
+            winner?.possibility.legacyScore ?? null,
+          selectedTemporalScore:
+            winner?.finalTemporalScore ?? null,
+          selectedShapeScore:
+            winner?.finalShapeScore ?? null,
+          selectedCombinedScore:
+            winner ? mode.score(winner) : null,
+          groundTruthReached: gt !== undefined,
+          groundTruthFinalRank: mode.rank,
+          executionTimeMs: search.executionTimeMs,
+        };
+      });
+    },
+  );
+  const comparisonRows = [
+    {
+      strategyName: "DP_V1_LEGACY",
+      K: 1,
+      completeSequenceCount: 14,
+      selectedSequence: expectedV1,
+      selectedLegacyScore: 48176,
+      selectedTemporalScore: null,
+      selectedShapeScore: null,
+      selectedCombinedScore: null,
+      groundTruthReached: false,
+      groundTruthFinalRank: null,
+      executionTimeMs: null,
+    },
+    ...ablationRows,
+  ];
+  const reachedRows = mainSummaries.filter(
+    (row) => row.groundTruthCompleteSequenceReached,
+  );
+  const rankOneRows = mainSummaries.filter(
+    (row) => row.groundTruthCombinedRank === 1,
+  );
+  const smallestKWhereGroundTruthReachesCompleteSequence =
+    reachedRows.length > 0
+      ? Math.min(...reachedRows.map((row) => row.K))
+      : null;
+  const smallestKWhereGroundTruthRanksFirstCombined =
+    rankOneRows.length > 0
+      ? Math.min(...rankOneRows.map((row) => row.K))
+      : null;
+  const resultStableForAllLargerK =
+    smallestKWhereGroundTruthRanksFirstCombined !== null &&
+    mainSummaries
+      .filter(
+        (row) =>
+          row.K >=
+          smallestKWhereGroundTruthRanksFirstCombined,
+      )
+      .every((row) => row.groundTruthCombinedRank === 1);
+  const stability = {
+    smallestKWhereGroundTruthReachesCompleteSequence,
+    smallestKWhereGroundTruthRanksFirstCombined,
+    resultStableForAllLargerK,
+    stateGrowthRatio:
+      mainSummaries[mainSummaries.length - 1].statesRetained /
+      mainSummaries[0].statesRetained,
+    runtimeGrowthRatio:
+      mainSummaries[mainSummaries.length - 1].executionTimeMs /
+      mainSummaries[0].executionTimeMs,
+  };
+  const outputDirectory = path.resolve(
+    __dirname,
+    "output",
+    "dp-v2-prototype",
+  );
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  const sensitivityDirectory = path.join(outputDirectory, "temporal-tolerance-sensitivity");
+  fs.mkdirSync(sensitivityDirectory, { recursive: true });
+  const sensitivityRawPath = path.join(
+    sensitivityDirectory,
+    "rowing_5reps_007_temporal_tolerance_sensitivity_raw.json",
+  );
+  const sensitivityReportPath = path.join(
+    sensitivityDirectory,
+    "rowing_5reps_007_temporal_tolerance_sensitivity_report.md",
+  );
+  const sensitivityHistogramPaths = {
+    global: path.join(sensitivityDirectory, "global_gap_to_cutoff_histogram.png"),
+    representative: path.join(sensitivityDirectory, "same_diversity_representative_gap_histogram.png"),
+    normalized: path.join(sensitivityDirectory, "normalized_gap_to_cutoff_histogram.png"),
+    bands: path.join(sensitivityDirectory, "cutoff_band_population_by_tolerance.png"),
+  };
+  const perKHistogramPaths = baselineDecisionData.map((data) => {
+    const file = path.join(sensitivityDirectory, `gap_to_cutoff_histogram_k${data.K}.png`);
+    renderHistogram(`GAP TO CUTOFF K ${data.K}`, data.evictionRows.map((row) => row.gapToCutoff), file);
+    return file;
+  });
+  renderHistogram("GLOBAL GAP TO CUTOFF", allEvictionRows.map((row) => row.gapToCutoff), sensitivityHistogramPaths.global);
+  renderHistogram(
+    "SAME DIVERSITY REPRESENTATIVE GAP",
+    allEvictionRows.map((row) => row.gapToSelectedRepresentative).filter((value): value is number => value !== null),
+    sensitivityHistogramPaths.representative,
+  );
+  renderHistogram("NORMALIZED GAP TO CUTOFF", allEvictionRows.map((row) => row.normalizedGapToCutoff), sensitivityHistogramPaths.normalized);
+  renderComparisonLines(
+    "EVICTED POSSIBILITIES IN ABSOLUTE CUTOFF BANDS",
+    kValues.map((K, index) => ({
+      label: `K${K}`,
+      values: absoluteTolerances.map((tolerance) =>
+        allEvictionRows.filter((row) => row.K === K && row.gapToCutoff <= tolerance).length,
+      ),
+      color: ([[30,100,210],[20,150,70],[210,35,35],[150,45,180],[225,120,10]] as RGB[][])[index],
+    })),
+    sensitivityHistogramPaths.bands,
+  );
+  fs.writeFileSync(
+    sensitivityRawPath,
+    JSON.stringify({
+      metadata: {
+        dataset: DATASET_NAME,
+        kValues,
+        absoluteTolerances,
+        relativeTolerances,
+        minScale: sensitivityMinScale,
+        strictK: true,
+        simulatedEquivalence:
+          "Inside cutoff band, ignore temporal difference then use existing completedRepCount, diversity, legacyScore, stableId keys.",
+      },
+      bucketDecisions: baselineDecisionData.flatMap((row) => row.bucketRows),
+      evictions: allEvictionRows,
+      distributions: distributionRows,
+      groupedDistributions: groupedDistributionRows,
+      simulations: toleranceSimulationRows,
+      groundTruthTrace: groundTruthToleranceTrace,
+    }, null, 2),
+    "utf8",
+  );
+  const gapsAtOrBelow0001 = allEvictionRows.filter((row) => row.gapToCutoff <= 0.0001).length;
+  fs.writeFileSync(
+    sensitivityReportPath,
+    [
+      "# RepMotion — Analyse de sensibilité de la tolérance temporelle",
+      "",
+      "## Objectif et méthodologie",
+      "",
+      "Mesure des décisions Top-K réelles et simulations séparées, toujours strictement bornées à K. Aucun résultat simulé n'est branché dans le pipeline.",
+      "",
+      `MIN_SCALE = ${sensitivityMinScale}, utilisé uniquement dans normalizedGapToCutoff.`,
+      "",
+      "Dans une bande simulée, la différence temporelle est neutralisée; les clés existantes completedRepCount, diversité, legacyScore et stableId restent dans leur ordre actuel.",
+      "",
+      "## Évictions Ground Truth connues",
+      "",
+      "- K=5 à 30: étape 7, B445, écart au représentant 0.00008915779515587252.",
+      "- K=50: étape 11, B611, écart au représentant 0.001217066923516512.",
+      "",
+      "## Distribution globale", "", markdownTable(distributionRows.filter((row) => row.scope === "GLOBAL")), "",
+      `gapToCutoff <= 0.0001: ${gapsAtOrBelow0001}/${allEvictionRows.length} (${((100 * gapsAtOrBelow0001) / Math.max(1, allEvictionRows.length)).toFixed(6)}%).`,
+      "",
+      "## Distribution par K", "", markdownTable(distributionRows.filter((row) => row.scope === "BY_K")), "",
+      "## Distribution par étape, répétitions, bucket, comparaison et diversité", "", markdownTable(groupedDistributionRows), "",
+      "## Tableau K × tolérance", "", markdownTable(toleranceSimulationRows), "",
+      "## Trace détaillée Ground Truth", "", markdownTable(groundTruthToleranceTrace), "",
+      "## Graphiques", "",
+      ...Object.values(sensitivityHistogramPaths).map((file) => `- ${file}`),
+      ...perKHistogramPaths.map((file) => `- ${file}`),
+      "",
+      "## Limites",
+      "",
+      "- Une seule vidéo et une population injectée.",
+      "- Les largeurs de bande sont mesurées sans définir de seuil acceptable.",
+      "- Aucune valeur finale d'epsilon, correction ou conclusion sur Temporal n'est proposée.",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  const graphPaths = {
+    survival: path.join(outputDirectory, "ground_truth_survival_by_k.png"),
+    rank: path.join(outputDirectory, "ground_truth_rank_by_k.png"),
+    complete: path.join(outputDirectory, "complete_sequences_by_k.png"),
+    statesRuntime: path.join(outputDirectory, "states_and_runtime_by_k.png"),
+    temporalShape: path.join(outputDirectory, "temporal_vs_shape_complete_sequences.png"),
+    featureComparison: path.join(outputDirectory, "dp_v1_vs_dp_v2_feature_comparison.png"),
+    selectedSequences: path.join(outputDirectory, "selected_sequences_comparison.png"),
+  };
+  renderComparisonLines(
+    "GT COMPLETE - K ORDER 5 10 20 30 50",
+    [{ label: "REACHED 1 YES", values: mainSummaries.map((row) => row.groundTruthCompleteSequenceReached ? 1 : 0), color: [30, 100, 210] }],
+    graphPaths.survival,
+  );
+  renderComparisonLines(
+    "GT RANKS - K ORDER 5 10 20 30 50",
+    [
+      { label: "TEMPORAL", values: mainSummaries.map((row) => row.groundTruthTemporalRank ?? 0), color: [20, 150, 70] },
+      { label: "SHAPE", values: mainSummaries.map((row) => row.groundTruthShapeRank ?? 0), color: [150, 45, 180] },
+      { label: "COMBINED", values: mainSummaries.map((row) => row.groundTruthCombinedRank ?? 0), color: [30, 100, 210] },
+    ],
+    graphPaths.rank,
+  );
+  renderComparisonLines(
+    "COMPLETE SEQUENCES - K 5 10 20 30 50",
+    [{ label: "COUNT", values: mainSummaries.map((row) => row.completeSequenceCount), color: [30, 100, 210] }],
+    graphPaths.complete,
+  );
+  renderComparisonLines(
+    "STATES AND RUNTIME - K 5 10 20 30 50",
+    [
+      { label: "RETAINED", values: mainSummaries.map((row) => row.statesRetained), color: [20, 150, 70] },
+      { label: "EVICTED", values: mainSummaries.map((row) => row.statesEvicted), color: [210, 35, 35] },
+      { label: "RUNTIME MS", values: mainSummaries.map((row) => row.executionTimeMs), color: [150, 45, 180] },
+    ],
+    graphPaths.statesRuntime,
+  );
+  const largestExperiment =
+    mainExperiments[mainExperiments.length - 1];
+  renderScatterPlot(
+    largestExperiment.ranked.map((row) => ({
+      x: row.finalTemporalScore,
+      y: row.finalShapeScore,
+      label:
+        row.possibility.signature === gtSignature
+          ? "GROUND_TRUTH"
+          : row.completeId,
+      color:
+        row.possibility.signature === gtSignature
+          ? [30, 100, 210]
+          : [90, 90, 90],
+    })),
+    graphPaths.temporalShape,
+  );
+  renderComparisonLines(
+    "DP V1 VS DP V2 WINNER FEATURES BY K",
+    [
+      { label: "TEMPORAL", values: mainExperiments.map((experiment) => [...experiment.ranked].sort((a,b)=>a.combinedRank-b.combinedRank)[0]?.finalTemporalScore ?? 0), color: [20, 150, 70] },
+      { label: "SHAPE", values: mainExperiments.map((experiment) => [...experiment.ranked].sort((a,b)=>a.combinedRank-b.combinedRank)[0]?.finalShapeScore ?? 0), color: [150, 45, 180] },
+      { label: "COMBINED", values: mainExperiments.map((experiment) => [...experiment.ranked].sort((a,b)=>a.combinedRank-b.combinedRank)[0]?.finalRerankerScore ?? 0), color: [30, 100, 210] },
+    ],
+    graphPaths.featureComparison,
+  );
+  renderComparisonLines(
+    "SELECTED SEQUENCE COMBINED SCORES - K 5 10 20 30 50",
+    [{ label: "COMBINED WINNER", values: mainSummaries.map((row) => row.combinedWinnerScore ?? 0), color: [30, 100, 210] }],
+    graphPaths.selectedSequences,
+  );
+  const reportPath = path.join(
+    outputDirectory,
+    "rowing_5reps_007_dp_v2_prototype_report.md",
+  );
+  fs.writeFileSync(
+    reportPath,
+    [
+      "# Rowing 5 reps 007 — Prototype expérimental DP V2",
+      "",
+      "## Contexte et rappel DP V1",
+      "",
+      "- DP V1 replay: MATCH, 1207 états, 14 possibilités complètes, winner 48176.",
+      "",
+      "## Architecture conceptuelle Selection Strategy",
+      "",
+      "`buildInjectedCandidatePool → searchSequencePossibilitiesV2 → calculatePartialTemporalConsistency → retainTopKSequencePossibilities → buildCompleteCycles → calculateFinalTemporalScore → calculateCycleShapeScore → rerankCompleteSequencePossibilities → selectedSequence`",
+      "",
+      "## Conservation progressive",
+      "",
+      "- Avant 2 reps: une possibilité représentante par signature des 3 derniers événements, puis remplissage déterministe; legacy uniquement après signature.",
+      "- À partir de 2 reps: partialTemporalScore décroissant, reps complètes, signature de diversité, legacy, stableId.",
+      "",
+      "## Score temporel partiel",
+      "",
+      "`partialTemporalScore = -mean(CV population B-B, B-T, T-B disponibles)`.",
+      "",
+      "## TemporalScore final",
+      "",
+      "- CV population B-B, B-T, T-B; robust Z médiane/MAD, fallback z-score standard, orientation négative, clamp [-3,+3], moyenne égale.",
+      "",
+      "## ShapeScore final",
+      "",
+      "- 5 cycles rééchantillonnés à 100 points; profil médian; Pearson; mean, min et std population; normalisation robuste orientée; moyenne égale.",
+      "",
+      "## Résultats avec injection",
+      "",
+      markdownTable(mainSummaries),
+      "",
+      "## Trace complète Ground Truth",
+      "",
+      markdownTable(fullTrace),
+      ...(DP_V2_GROUND_TRUTH_DEBUG
+        ? [
+            "",
+            "## DP V2 Ground Truth debug instrumentation",
+            "",
+            markdownTable(groundTruthDebugTrace),
+            "",
+            "## DP V2 Ground Truth verdict",
+            "",
+            markdownTable(groundTruthDebugOutcomes),
+          ]
+        : []),
+      "",
+      "## Ablations Temporal / Shape / combiné",
+      "",
+      markdownTable(ablationRows),
+      "",
+      "## Résultats sans injection",
+      "",
+      markdownTable(secondaryExperiments),
+      "",
+      "## Comparaison DP V1 vs DP V2",
+      "",
+      markdownTable(comparisonRows),
+      "",
+      "## Coûts et stabilité",
+      "",
+      markdownTable([stability]),
+      "",
+      "## Parité features",
+      "",
+      markdownTable([{ sequence: "CURRENT_DP_WINNER", ...winnerTemporal, ...winnerShape }, { sequence: "GROUND_TRUTH_REFERENCE", ...gtTemporal, ...gtShape }]),
+      "",
+      "## Graphiques",
+      "",
+      ...Object.values(graphPaths).map((graphPath) => `- ${graphPath}`),
+      "",
+      "## Limites",
+      "",
+      "- Une seule vidéo Ground Truth.",
+      "- Candidats Ground Truth injectés dans l'expérience principale.",
+      "- Poids 50/50 uniquement expérimentaux.",
+      "- Aucune généralisation possible.",
+      "- Aucune stratégie de production créée.",
+      "",
+      "## Décision humaine avant extraction dans Selection Strategy",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  const diagnosticTrace = mainExperiments.flatMap((experiment, index) => {
+    const winner = [...experiment.ranked].sort(
+      (left, right) => left.combinedRank - right.combinedRank,
+    )[0];
+    return [
+      ...buildV2DecisionTrace(
+        `GROUND_TRUTH_K${experiment.search.K}`,
+        experiment.search,
+        injected.groundTruthChain,
+      ),
+      ...(winner
+        ? buildV2DecisionTrace(
+            index === 0
+              ? "QUASI_GROUND_TRUTH_WINNER_K5"
+              : `COMBINED_WINNER_K${experiment.search.K}`,
+            experiment.search,
+            winner.possibility.chain,
+          )
+        : []),
+    ];
+  });
+  const evictionTrace = diagnosticTrace.filter(
+    (row) => row.status === "EVICTED",
+  );
+  const architectureValidation = [
+    {
+      component: "Construction",
+      expected: "Alternance, ordre croissant, phase >=8, B-B >=45.",
+      observed: "Les quatre contraintes précèdent la création.",
+      exactMatch: "OUI",
+    },
+    {
+      component: "Top-K",
+      expected: "K possibilités au plus selon le comparateur annoncé.",
+      observed: "Deux passes: représentants de diversité, puis remplissage.",
+      exactMatch: "NON",
+    },
+    {
+      component: "Score temporel partiel",
+      expected: "-moyenne des CV population B-B, B-T, T-B dès 2 reps.",
+      observed: "Même disponibilité et même formule.",
+      exactMatch: "OUI",
+    },
+    {
+      component: "Diversité",
+      expected: "Clé du comparateur: première avant 2 reps, troisième après.",
+      observed: "Sert aussi au pré-groupement des représentants, même après 2 reps.",
+      exactMatch: "NON",
+    },
+    {
+      component: "Reranking",
+      expected: "Temporal + Shape sur les terminaux conservés uniquement.",
+      observed: "Seuls les terminaux conservés sont rerankés.",
+      exactMatch: "OUI",
+    },
+  ];
+  const diagnosticReportPath = path.join(
+    outputDirectory,
+    "rowing_5reps_007_dp_v2_internal_decision_diagnostic_report.md",
+  );
+  fs.writeFileSync(
+    diagnosticReportPath,
+    [
+      "# RepMotion — Diagnostic interne des décisions DP V2",
+      "",
+      "Instrumentation descriptive uniquement; aucune règle n'a été modifiée.",
+      "",
+      "## Survie réellement exécutée",
+      "",
+      "1. Bucket: `étape:candidatCourant:dernierBottom`.",
+      "2. Si la taille brute est <= K, tout survit, trié par `stableId`.",
+      "3. Sinon, groupement par diversité des trois derniers événements.",
+      "4. Élection d'un représentant par groupe avec le comparateur.",
+      "5. Tri des représentants; conservation des K premiers.",
+      "6. S'il reste des places, remplissage par les non-représentants triés.",
+      "",
+      "Avant 2 reps: `diversité ASC > legacy DESC > stableId ASC`.",
+      "",
+      "Dès 2 reps: `partialTemporalScore DESC > completedRepCount DESC > diversité ASC > legacy DESC > stableId ASC`.",
+      "",
+      "`completedRepCount` est identique dans chaque bucket d'une étape donnée: cette clé ne tranche donc aucune comparaison observée.",
+      "",
+      "## Architecture attendue / observée",
+      "",
+      markdownTable(architectureValidation),
+      "",
+      "## Traces événement par événement",
+      "",
+      markdownTable(diagnosticTrace),
+      "",
+      "## Évictions ciblées",
+      "",
+      markdownTable(evictionTrace),
+      "",
+      "La Ground Truth est tracée pour chaque K. Le gagnant K=5 et chacun des gagnants K>=10 sont tracés séparément, leurs chaînes n'étant pas toutes identiques.",
+      "",
+      "Aucune correction, heuristique, score ou conclusion algorithmique n'est proposé.",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  console.log("\n=== DP V1 PARITY ===\n");
+  console.table([{ states: 1207, terminals: 14, score: 48176, sequence: expectedV1, status: "MATCH" }]);
+  console.log("\n=== DP V2 WITH INJECTION ===\n");
+  console.table(mainSummaries);
+  console.log("\n=== GROUND TRUTH TRACE ===\n");
+  console.table(fullTrace);
+  console.log("\n=== ABLATIONS ===\n");
+  console.table(ablationRows);
+  if (DP_V2_GROUND_TRUTH_DEBUG) {
+    console.log("\n=== DP V2 GROUND TRUTH DEBUG TRACE ===\n");
+    console.table(groundTruthDebugTrace);
+    console.log("\n=== DP V2 GROUND TRUTH VERDICT ===\n");
+    console.table(groundTruthDebugOutcomes);
+  }
+  console.log("\n=== DP V2 WITHOUT INJECTION ===\n");
+  console.table(secondaryExperiments);
+  console.log("\n=== STABILITY ===\n");
+  console.table([stability]);
+  console.log("\n=== ARTIFACTS ===\n");
+  Object.values(graphPaths).forEach((graphPath) => console.log(graphPath));
+  console.log(reportPath);
+  console.log(diagnosticReportPath);
+}
+
 function runTransitionValidation(
   dataset: CalibrationDataset,
   pointGroundTruth: GroundTruthFile,
@@ -6157,6 +9407,28 @@ function main(): void {
       "CANDIDATE_IDENTITY_ERROR",
       `DP input identity mismatch: directionEvents=${eligibleDirectionEvents.length}, uniqueCandidates=${eligibleCandidates.length}, admissibleCandidateCount=${debug.admissibleCandidateCount}.`,
     );
+  }
+
+  if (RUN_NMS_CHARACTERIZATION) {
+    runNmsCharacterizationExperiment(
+      dataset,
+      groundTruth,
+      calibration.axis,
+      eligibleCandidates,
+    );
+    return;
+  }
+
+  if (VALIDATION_MODE === "DP_V2_EXPERIMENTAL_DIAGNOSTIC") {
+    runDpV2ExperimentalDiagnostic(
+      dataset,
+      groundTruth,
+      calibration.axis,
+      eligibleCandidates,
+      globalChain,
+      debug.selectionScore,
+    );
+    return;
   }
 
   if (VALIDATION_MODE === "DP_V2_TOP_K_SEARCH_DIAGNOSTIC") {
@@ -7178,7 +10450,11 @@ try {
   if (error instanceof ValidationError) {
     console.error(`${error.code}: ${error.message}`);
   } else {
-    console.error(`DATA_INTEGRITY_ERROR: ${String(error)}`);
+    console.error(
+      `DATA_INTEGRITY_ERROR: ${
+        error instanceof Error ? error.stack : String(error)
+      }`,
+    );
   }
 
   process.exitCode = 1;
