@@ -104,8 +104,22 @@ const VALIDATION_MODE:
   | "DP_V2_FEATURE_ANALYSIS"
   | "DP_V2_PATH_RANKING_ANALYSIS"
   | "DP_V2_TOP_K_SEARCH_DIAGNOSTIC"
+  | "DELAYED_CONTEXT_METRIC_RELIABILITY"
+  | "DELAYED_CONTEXT_TRIGGER_AND_DEPTH"
   | "DP_V2_EXPERIMENTAL_DIAGNOSTIC" =
-  "DP_V2_EXPERIMENTAL_DIAGNOSTIC";
+  (process.env.GROUND_TRUTH_VALIDATION_MODE as
+    | "POINT"
+    | "TRANSITION"
+    | "DP_ISOLATION"
+    | "DP_GROUND_TRUTH_INJECTION"
+    | "DP_SCORE_DECOMPOSITION"
+    | "DP_V2_FEATURE_ANALYSIS"
+    | "DP_V2_PATH_RANKING_ANALYSIS"
+    | "DP_V2_TOP_K_SEARCH_DIAGNOSTIC"
+    | "DELAYED_CONTEXT_METRIC_RELIABILITY"
+    | "DELAYED_CONTEXT_TRIGGER_AND_DEPTH"
+    | "DP_V2_EXPERIMENTAL_DIAGNOSTIC"
+    | undefined) ?? "DP_V2_EXPERIMENTAL_DIAGNOSTIC";
 const RAW_WINDOW_START_INDEX = 100;
 const RAW_WINDOW_END_INDEX = 169;
 const DATASET_PATH = path.resolve(
@@ -7813,6 +7827,801 @@ function summarizeDpV2Experiment(
   };
 }
 
+type DelayedContextMetricRow = {
+  signature: string;
+  chain: DpCandidate[];
+  temporalScore: number | null;
+  shapeFeatures: Pick<
+    V2CompleteFeatures,
+    "meanCycleCorrelation" | "minCycleCorrelation" | "cycleCorrelationStd"
+  > | null;
+  shapeScore: number | null;
+};
+
+function runDelayedContextMetricReliability(
+  dataset: CalibrationDataset,
+  groundTruth: GroundTruthFile,
+  axis: keyof CalibrationDataset["samples"][number],
+  realCandidates: DpCandidate[],
+): void {
+  const injected = buildInjectedCandidatePool(
+    dataset,
+    groundTruth,
+    axis,
+    realCandidates,
+  );
+  const values = dataset.samples.map((sample) => sample[axis]);
+  const maxStates = Number(
+    process.env.DELAYED_CONTEXT_MAX_STATES ?? "5000000",
+  );
+  const timeoutMs = Number(
+    process.env.DELAYED_CONTEXT_TIMEOUT_MS ?? "60000",
+  );
+  if (!Number.isFinite(maxStates) || maxStates < 1) {
+    fail("DATA_INTEGRITY_ERROR", "DELAYED_CONTEXT_MAX_STATES must be positive.");
+  }
+  if (!Number.isFinite(timeoutMs) || timeoutMs < 1) {
+    fail("DATA_INTEGRITY_ERROR", "DELAYED_CONTEXT_TIMEOUT_MS must be positive.");
+  }
+
+  const startedAt = performance.now();
+  const rowsByCycle = new Map<number, DelayedContextMetricRow[]>(
+    Array.from({ length: EXPECTED_REPS }, (_, index) => [index + 1, []]),
+  );
+  const statesByLength = Array(EXPECTED_EVENT_COUNT + 1).fill(0) as number[];
+  let statesExplored = 0;
+  let approximateBytes = 0;
+  let limitReached = false;
+  let limitReason: string | null = null;
+
+  const experimentalShapeFeatures = (
+    chain: DpCandidate[],
+  ): DelayedContextMetricRow["shapeFeatures"] => {
+    const cycleCount = Math.floor((chain.length - 1) / 2);
+    if (cycleCount < 2 || chain.length !== cycleCount * 2 + 1) return null;
+    const cycles = Array.from({ length: cycleCount }, (_, cycleIndex) => {
+      const bottomStart = chain[cycleIndex * 2];
+      const bottomEnd = chain[cycleIndex * 2 + 2];
+      return resampleSignal(
+        values.slice(bottomStart.index, bottomEnd.index + 1),
+        100,
+      );
+    });
+    const medianProfile = Array.from({ length: 100 }, (_, index) =>
+      median(cycles.map((cycle) => cycle[index])),
+    );
+    const correlations = cycles.map((cycle) =>
+      pearsonCorrelation(cycle, medianProfile),
+    );
+    if (correlations.some((value) => !Number.isFinite(value))) return null;
+    return {
+      meanCycleCorrelation: mean(correlations),
+      minCycleCorrelation: Math.min(...correlations),
+      cycleCorrelationStd: populationStd(correlations),
+    };
+  };
+
+  const visit = (chain: DpCandidate[], startCandidateIndex: number): void => {
+    if (limitReached) return;
+    if (
+      statesExplored >= maxStates ||
+      performance.now() - startedAt >= timeoutMs
+    ) {
+      limitReached = true;
+      limitReason =
+        statesExplored >= maxStates ? "MAX_STATES" : "TIMEOUT";
+      return;
+    }
+    if (chain.length === EXPECTED_EVENT_COUNT) return;
+    const requiredType: EventType =
+      chain.length % 2 === 0 ? "BOTTOM" : "TOP";
+    const previous = chain[chain.length - 1] ?? null;
+    const lastBottom = [...chain]
+      .reverse()
+      .find((candidate) => candidate.type === "BOTTOM") ?? null;
+    for (
+      let candidateIndex = startCandidateIndex;
+      candidateIndex < injected.pool.length;
+      candidateIndex += 1
+    ) {
+      const candidate = injected.pool[candidateIndex];
+      if (candidate.type !== requiredType) continue;
+      if (previous) {
+        const duration = candidate.index - previous.index;
+        if (duration < 8) continue;
+        if (
+          candidate.type === "BOTTOM" &&
+          lastBottom &&
+          candidate.index - lastBottom.index < 45
+        ) {
+          continue;
+        }
+      }
+      statesExplored += 1;
+      const next = [...chain, candidate];
+      statesByLength[next.length] += 1;
+      approximateBytes += 96 + next.length * 8;
+      if (next.length >= 3 && next.length % 2 === 1) {
+        const cycleCount = (next.length - 1) / 2;
+        const temporalFeatures = calculatePartialTemporalFeatures(next);
+        rowsByCycle.get(cycleCount)?.push({
+          signature: topKPathSignature(next),
+          chain: next,
+          temporalScore: calculatePartialTemporalScore(temporalFeatures),
+          shapeFeatures: experimentalShapeFeatures(next),
+          shapeScore: null,
+        });
+      }
+      visit(next, candidateIndex + 1);
+      if (limitReached) return;
+    }
+  };
+  visit([], 0);
+
+  const gtSignatureAt = (cycles: number) =>
+    topKPathSignature(injected.groundTruthChain.slice(0, cycles * 2 + 1));
+  const tolerance = 1e-12;
+  const rankDescending = (scores: number[]) => rankNumbers(scores, true);
+  const fmt = (value: number | null | undefined) =>
+    value === null || value === undefined
+      ? "—"
+      : Number.isFinite(value)
+        ? value.toPrecision(8)
+        : String(value);
+  const verdictFor = (rank: number | null, total: number, available: boolean) => {
+    if (!available) return "NOT_COMPARABLE";
+    if (rank === null || total === 0) return "NOT_COMPUTABLE";
+    const percentile = 100 * (total - rank + 1) / total;
+    if (rank <= 3 && percentile >= 95) return "STRONGLY_DISCRIMINANT";
+    if (rank <= 10 && percentile >= 75) return "MODERATELY_DISCRIMINANT";
+    return "WEAKLY_DISCRIMINANT";
+  };
+
+  const summaries = Array.from({ length: EXPECTED_REPS }, (_, index) => {
+    const cycles = index + 1;
+    const rows = rowsByCycle.get(cycles) ?? [];
+    if (cycles >= 2 && rows.length > 0) {
+      const featureRows: V2CompleteFeatures[] = rows.map((row) => ({
+        fullRepDurationCV:
+          calculatePartialTemporalFeatures(row.chain).partialFullRepDurationCV ?? 0,
+        bottomToTopDurationCV:
+          calculatePartialTemporalFeatures(row.chain).partialBottomToTopDurationCV ?? 0,
+        topToBottomDurationCV:
+          calculatePartialTemporalFeatures(row.chain).partialTopToBottomDurationCV ?? 0,
+        meanCycleCorrelation: row.shapeFeatures?.meanCycleCorrelation ?? 0,
+        minCycleCorrelation: row.shapeFeatures?.minCycleCorrelation ?? 0,
+        cycleCorrelationStd: row.shapeFeatures?.cycleCorrelationStd ?? 0,
+      }));
+      const normalized = normalizeCompleteSequenceFeatures(featureRows);
+      rows.forEach((row, rowIndex) => {
+        row.shapeScore = row.shapeFeatures ? normalized[rowIndex].finalShapeScore : null;
+      });
+    }
+    const gtSignature = gtSignatureAt(cycles);
+    const gt = rows.find((row) => row.signature === gtSignature) ?? null;
+    const metricSummary = (metric: "temporalScore" | "shapeScore") => {
+      const scored = rows.filter(
+        (row): row is DelayedContextMetricRow & Record<typeof metric, number> =>
+          typeof row[metric] === "number" && Number.isFinite(row[metric]),
+      );
+      const ranks = rankDescending(scored.map((row) => row[metric]));
+      const ordered = scored
+        .map((row, rowIndex) => ({ row, rank: ranks[rowIndex] }))
+        .sort((left, right) =>
+          left.rank - right.rank || left.row.signature.localeCompare(right.row.signature),
+        );
+      const gtIndex = ordered.findIndex((entry) => entry.row.signature === gtSignature);
+      const gtEntry = gtIndex >= 0 ? ordered[gtIndex] : null;
+      const best = ordered[0]?.row[metric] ?? null;
+      const gtScore = gtEntry?.row[metric] ?? null;
+      const ties = gtScore === null
+        ? 0
+        : scored.filter((row) => Math.abs(row[metric] - gtScore) <= tolerance).length;
+      return {
+        score: gtScore,
+        rank: gtEntry?.rank ?? null,
+        total: scored.length,
+        percentile: gtEntry ? 100 * (scored.length - gtEntry.rank + 1) / scored.length : null,
+        gapToBest: gtScore === null || best === null ? null : best - gtScore,
+        ties,
+        stability: ties > 1 ? "UNSTABLE_QUASI_TIE" : "STABLE_UNIQUE_AT_1E-12",
+        ahead: gtIndex > 0 ? ordered[gtIndex - 1].row.signature : null,
+        behind: gtIndex >= 0 && gtIndex + 1 < ordered.length
+          ? ordered[gtIndex + 1].row.signature
+          : null,
+        top1: (gtEntry?.rank ?? Infinity) <= 1,
+        top3: (gtEntry?.rank ?? Infinity) <= 3,
+        top5: (gtEntry?.rank ?? Infinity) <= 5,
+        top10: (gtEntry?.rank ?? Infinity) <= 10,
+      };
+    };
+    const temporal = metricSummary("temporalScore");
+    const shape = metricSummary("shapeScore");
+    return {
+      cycles,
+      prefixCount: rows.length,
+      groundTruthConstructed: gt !== null,
+      temporal,
+      shape,
+      temporalVerdict: verdictFor(temporal.rank, temporal.total, cycles >= 2),
+      shapeVerdict: verdictFor(shape.rank, shape.total, cycles >= 2),
+    };
+  });
+
+  const sufficient = summaries.find(
+    (summary) =>
+      summary.cycles >= 2 &&
+      summary.temporal.rank !== null && summary.temporal.rank <= 10 &&
+      summary.shape.rank !== null && summary.shape.rank <= 10,
+  )?.cycles;
+  const finalVerdict = limitReached
+    ? "COMBINATORIAL_LIMIT_REACHED"
+    : sufficient === 2
+      ? "TWO_CYCLES_SUFFICIENT"
+      : sufficient === 3
+        ? "THREE_CYCLES_REQUIRED"
+        : sufficient !== undefined
+          ? "FOUR_OR_MORE_CYCLES_REQUIRED"
+          : "TEMPORAL_AND_SHAPE_DO_NOT_CONVERGE";
+  const table = (headers: string[], rows: string[][]) => [
+    `| ${headers.join(" | ")} |`,
+    `| ${headers.map(() => "---").join(" | ")} |`,
+    ...rows.map((row) => `| ${row.join(" | ")} |`),
+  ].join("\n");
+  const detailSections = summaries.flatMap((summary) => [
+    `## ${7 + summary.cycles}. Résultats à ${summary.cycles} cycle${summary.cycles > 1 ? "s" : ""}`,
+    "",
+    `- Préfixes valides : ${summary.prefixCount}.`,
+    `- Préfixe Ground Truth construit : ${summary.groundTruthConstructed ? "OUI" : "NON"}.`,
+    `- Temporal : score=${fmt(summary.temporal.score)}, rang=${summary.temporal.rank ?? "—"}/${summary.temporal.total}, percentile=${fmt(summary.temporal.percentile)}, écart au meilleur=${fmt(summary.temporal.gapToBest)}, quasi-ex-aequo=${summary.temporal.ties}, stabilité=${summary.temporal.stability}, verdict=${summary.temporalVerdict}.`,
+    `- Temporal voisins : devant=${summary.temporal.ahead ?? "—"}; derrière=${summary.temporal.behind ?? "—"}.`,
+    `- Temporal Top-1/3/5/10 : ${summary.temporal.top1}/${summary.temporal.top3}/${summary.temporal.top5}/${summary.temporal.top10}.`,
+    `- Shape : score=${fmt(summary.shape.score)}, rang=${summary.shape.rank ?? "—"}/${summary.shape.total}, percentile=${fmt(summary.shape.percentile)}, écart au meilleur=${fmt(summary.shape.gapToBest)}, quasi-ex-aequo=${summary.shape.ties}, stabilité=${summary.shape.stability}, verdict=${summary.shapeVerdict}.`,
+    `- Shape voisins : devant=${summary.shape.ahead ?? "—"}; derrière=${summary.shape.behind ?? "—"}.`,
+    `- Shape Top-1/3/5/10 : ${summary.shape.top1}/${summary.shape.top3}/${summary.shape.top5}/${summary.shape.top10}.`,
+    "",
+  ]);
+  const outputDirectory = path.resolve(
+    __dirname,
+    "output",
+    "delayed-context-path",
+  );
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  const reportPath = path.join(
+    outputDirectory,
+    "delayed_context_metric_reliability_report.md",
+  );
+  const report = [
+    "# Delayed Context Path – Fiabilité de Temporal et Shape selon le nombre de cycles",
+    "",
+    "## 1. Objectif",
+    "",
+    "Mesurer séparément le pouvoir discriminant de Temporal et Shape sur les préfixes exhaustifs de 1 à 5 cycles, sans sélection ni pruning biomécanique.",
+    "",
+    "## 2. Hypothèse",
+    "",
+    "Un contexte de plusieurs cycles doit améliorer le rang de la branche Ground Truth avant le rerank terminal.",
+    "",
+    "## 3. Dataset et pool contrôlé",
+    "",
+    `Dataset: ${DATASET_NAME}. Pool: ${realCandidates.length} RAW + ${injected.addedCount} injections individuelles = ${injected.pool.length} candidats, parasites conservés. Tolérance Ground Truth existante: ±${EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES} samples; l'identité injectée exacte est utilisée par la trace existante.`,
+    "",
+    "## 4. Logique réutilisée",
+    "",
+    "`buildInjectedCandidatePool`, `calculatePartialTemporalFeatures`, `calculatePartialTemporalScore`, `resampleSignal`, `pearsonCorrelation`, la normalisation robuste Shape de `normalizeCompleteSequenceFeatures`, les annotations et signatures de chemins existantes.",
+    "",
+    "## 5. Rejets structurels conservés",
+    "",
+    "Alternance B/T, indices strictement croissants par parcours du pool trié, transition minimale de 8 samples et durée B-B minimale de 45 samples. Aucun Top-K, score legacy, partialTemporalScore ou Shape n'élimine un chemin.",
+    "",
+    "## 6. Audit de Temporal",
+    "",
+    "`calculatePartialTemporalScore` est inchangé: opposé de la moyenne des CV population des durées B-B, B-T et T-B disponibles. Il est indisponible avec un cycle (une seule observation) et calculable dès deux cycles. Aucun seuil de sélection n'existe dans cette caractérisation; l'écart à un seuil est donc non applicable.",
+    "",
+    "## 7. Audit de Shape",
+    "",
+    "La fonction actuelle passe par `buildCyclesFromSequence`, qui exige explicitement 11 événements alternés et construit exactement 5 cycles. L'adaptation locale expérimentale construit 2, 3 ou 4 cycles avec le même découpage B-T-B, rééchantillonne chacun à 100 points, construit le profil médian point par point et calcule les mêmes corrélations de Pearson (moyenne, minimum, écart-type population). La même normalisation robuste par métrique Shape est appliquée séparément à la population de chaque longueur. Un cycle est `NOT_COMPARABLE`. Les corrélations non finies sont rapportées comme non calculables.",
+    "",
+    ...detailSections,
+    "## 13. Tableau comparatif Temporal vs Shape",
+    "",
+    table(
+      ["Cycles", "Temporal rang GT", "Shape rang GT", "Temporal verdict", "Shape verdict"],
+      summaries.map((summary) => [
+        String(summary.cycles),
+        `${summary.temporal.rank ?? "—"}/${summary.temporal.total}`,
+        `${summary.shape.rank ?? "—"}/${summary.shape.total}`,
+        summary.temporalVerdict,
+        summary.shapeVerdict,
+      ]),
+    ),
+    "",
+    "## 14. Rang de la Ground Truth par nombre de cycles",
+    "",
+    table(
+      ["Cycles", "Temporal percentile", "Shape percentile", "Temporal Top-10", "Shape Top-10"],
+      summaries.map((summary) => [
+        String(summary.cycles), fmt(summary.temporal.percentile), fmt(summary.shape.percentile),
+        String(summary.temporal.top10), String(summary.shape.top10),
+      ]),
+    ),
+    "",
+    "Les verdicts descriptifs sont documentés ainsi: fort = Top-3 et percentile ≥95; modéré = Top-10 et percentile ≥75; faible sinon. `STABLE_UNIQUE_AT_1E-12` signifie absence d'ex-aequo numérique à 1e-12; ce n'est pas un test par perturbation. La compatibilité avec un futur pruning est décrite, sans créer de règle, par l'entrée simultanée des deux métriques dans le Top-10.",
+    "",
+    "## 15. Complexité combinatoire",
+    "",
+    table(
+      ["Cycles", "Préfixes valides"],
+      summaries.map((summary) => [String(summary.cycles), String(summary.prefixCount)]),
+    ),
+    "",
+    `Maximum de chemins actifs observés (largeur d'une couche${limitReached ? ", comptage incomplet avant garde-fou" : ""}): ${Math.max(...statesByLength)}. États explorés: ${statesExplored}. Temps: ${(performance.now() - startedAt).toFixed(3)} ms. Mémoire cumulative approximative des représentations visitées: ${(approximateBytes / 1024 / 1024).toFixed(3)} MiB (ce n'est pas le pic du processus). Garde-fous: maxStates=${maxStates}, timeoutMs=${timeoutMs}.`,
+    "",
+    "## 16. Cas dégénérés ou limites",
+    "",
+    `Un cycle ne permet ni CV inter-cycles Temporal ni similarité Shape inter-cycles. Limite atteinte: ${limitReached ? `OUI (${limitReason})` : "NON"}.`,
+    "",
+    "## 17. Conclusion factuelle",
+    "",
+    `Verdict final: **${finalVerdict}**. Premier contexte où Temporal et Shape sont simultanément Top-10: ${sufficient ?? "aucun"} cycle(s). Ce résultat porte sur un seul dataset annoté et ne constitue pas encore un seuil de production.`,
+    "",
+    "## 18. Étape suivante recommandée uniquement à partir des résultats",
+    "",
+    limitReached
+      ? "Augmenter prudemment le garde-fou ou réduire le problème par un rejet structurel déjà validé avant toute conclusion métrique."
+      : sufficient
+        ? `Tester séparément un premier pruning après ${sufficient} cycle(s), avec une règle explicitement spécifiée, puis reproduire sur plusieurs datasets annotés.`
+        : "Ne pas implémenter delayed_context_path avant d'avoir davantage de données ou une meilleure séparation métrique.",
+    "",
+    "## Validation finale",
+    "",
+    "Aucun changement à DP V1, DP V2, `current_filters` ou au pipeline de production. Aucun pruning, Top-K expérimental ou score combiné n'a été ajouté. Les fonctions des expériences existantes sont inchangées; leur parité est conservée. Seul un mode diagnostique opt-in du runner Ground Truth a été ajouté.",
+    "",
+    "Commande de reproduction (depuis `RepMotion/tools/calibration-runner`):",
+    "",
+    "```powershell",
+    `$env:GROUND_TRUTH_VALIDATION_MODE='DELAYED_CONTEXT_METRIC_RELIABILITY'; $env:DELAYED_CONTEXT_MAX_STATES='${maxStates}'; $env:DELAYED_CONTEXT_TIMEOUT_MS='${timeoutMs}'; npx tsx ../ground-truth/groundTruthValidationRunner.ts`,
+    "```",
+    "",
+  ];
+  fs.writeFileSync(reportPath, `${report.join("\n")}\n`, "utf8");
+  console.table(summaries.map((summary) => ({
+    cycles: summary.cycles,
+    prefixes: summary.prefixCount,
+    temporalRank: summary.temporal.rank,
+    shapeRank: summary.shape.rank,
+    temporalVerdict: summary.temporalVerdict,
+    shapeVerdict: summary.shapeVerdict,
+  })));
+  console.log(JSON.stringify({ finalVerdict, statesExplored, limitReached, reportPath }, null, 2));
+}
+
+function runDelayedContextTriggerAndDepth(
+  dataset: CalibrationDataset,
+  groundTruth: GroundTruthFile,
+  axis: keyof CalibrationDataset["samples"][number],
+  realCandidates: DpCandidate[],
+): void {
+  const injected = buildInjectedCandidatePool(dataset, groundTruth, axis, realCandidates);
+  const values = dataset.samples.map((sample) => sample[axis]);
+  const gt = injected.groundTruthChain;
+  const ambiguousPosition = gt.findIndex(
+    (candidate) => candidate.type === "BOTTOM" && candidate.index === 262,
+  );
+  const activePivot = injected.pool.find(
+    (candidate) => candidate.type === "BOTTOM" && candidate.index === 260,
+  );
+  if (ambiguousPosition < 0 || !activePivot) {
+    fail("DATA_INTEGRITY_ERROR", "Expected controlled BOTTOM:260/BOTTOM:262 case.");
+  }
+  const active = [...gt];
+  active[ambiguousPosition] = activePivot;
+  const nearEqual = 1e-12;
+
+  const shapeFeaturesForPrefix = (chain: DpCandidate[]) => {
+    const cycleCount = Math.floor((chain.length - 1) / 2);
+    if (cycleCount < 2 || chain.length !== cycleCount * 2 + 1) return null;
+    const cycles = Array.from({ length: cycleCount }, (_, cycleIndex) => {
+      const start = chain[cycleIndex * 2].index;
+      const end = chain[cycleIndex * 2 + 2].index;
+      return resampleSignal(values.slice(start, end + 1), 100);
+    });
+    const profile = Array.from({ length: 100 }, (_, sampleIndex) =>
+      median(cycles.map((cycle) => cycle[sampleIndex])),
+    );
+    const correlations = cycles.map((cycle) => pearsonCorrelation(cycle, profile));
+    if (correlations.some((value) => !Number.isFinite(value))) return null;
+    return {
+      meanCycleCorrelation: mean(correlations),
+      minCycleCorrelation: Math.min(...correlations),
+      cycleCorrelationStd: populationStd(correlations),
+    };
+  };
+  const durationFeatures = (chain: DpCandidate[]) => {
+    const cycleCount = Math.floor((chain.length - 1) / 2);
+    return Array.from({ length: cycleCount }, (_, cycleIndex) => {
+      const bottom = chain[cycleIndex * 2];
+      const top = chain[cycleIndex * 2 + 1];
+      const end = chain[cycleIndex * 2 + 2];
+      return {
+        concentric: top.index - bottom.index,
+        eccentric: end.index - top.index,
+        total: end.index - bottom.index,
+      };
+    });
+  };
+  const rawMetrics = (chain: DpCandidate[]) => {
+    const temporalFeatures = calculatePartialTemporalFeatures(chain);
+    return {
+      temporalFeatures,
+      temporalScore: calculatePartialTemporalScore(temporalFeatures),
+      shapeFeatures: shapeFeaturesForPrefix(chain),
+      durations: durationFeatures(chain),
+    };
+  };
+  const normalizedShapeScores = (
+    chains: DpCandidate[][],
+  ): Array<number | null> => {
+    const metrics = chains.map(rawMetrics);
+    if (metrics.some((metric) => metric.shapeFeatures === null)) {
+      return chains.map(() => null);
+    }
+    const features = metrics.map((metric) => ({
+      fullRepDurationCV:
+        metric.temporalFeatures.partialFullRepDurationCV ?? 0,
+      bottomToTopDurationCV:
+        metric.temporalFeatures.partialBottomToTopDurationCV ?? 0,
+      topToBottomDurationCV:
+        metric.temporalFeatures.partialTopToBottomDurationCV ?? 0,
+      ...(metric.shapeFeatures as Pick<
+        V2CompleteFeatures,
+        "meanCycleCorrelation" | "minCycleCorrelation" | "cycleCorrelationStd"
+      >),
+    }));
+    return normalizeCompleteSequenceFeatures(features).map(
+      (row) => row.finalShapeScore,
+    );
+  };
+  const relativeGap = (left: number | null, right: number | null) =>
+    left === null || right === null
+      ? null
+      : Math.abs(left - right) /
+        Math.max(Math.abs(left), Math.abs(right), Number.EPSILON);
+  const winner = (activeScore: number | null, alternativeScore: number | null) => {
+    if (activeScore === null || alternativeScore === null) return "NOT_COMPUTABLE";
+    if (Math.abs(activeScore - alternativeScore) <= nearEqual) return "QUASI_EQUAL";
+    return alternativeScore > activeScore ? "BOTTOM:262" : "BOTTOM:260";
+  };
+
+  const stageRows = Array.from({ length: EXPECTED_REPS }, (_, index) => {
+    const cycles = index + 1;
+    const length = cycles * 2 + 1;
+    const activePrefix = active.slice(0, length);
+    const alternativePrefix = gt.slice(0, length);
+    const activeMetrics = rawMetrics(activePrefix);
+    const alternativeMetrics = rawMetrics(alternativePrefix);
+    const [activeShapeScore, alternativeShapeScore] =
+      normalizedShapeScores([activePrefix, alternativePrefix]);
+    return {
+      cycles,
+      activePrefix: topKPathSignature(activePrefix),
+      alternativePrefix: topKPathSignature(alternativePrefix),
+      activeTemporal: activeMetrics.temporalScore,
+      alternativeTemporal: alternativeMetrics.temporalScore,
+      temporalAbsoluteGap:
+        activeMetrics.temporalScore === null || alternativeMetrics.temporalScore === null
+          ? null
+          : Math.abs(alternativeMetrics.temporalScore - activeMetrics.temporalScore),
+      temporalRelativeGap: relativeGap(
+        activeMetrics.temporalScore,
+        alternativeMetrics.temporalScore,
+      ),
+      temporalWinner: winner(
+        activeMetrics.temporalScore,
+        alternativeMetrics.temporalScore,
+      ),
+      activeShape: activeShapeScore,
+      alternativeShape: alternativeShapeScore,
+      shapeAbsoluteGap:
+        activeShapeScore === null || alternativeShapeScore === null
+          ? null
+          : Math.abs(alternativeShapeScore - activeShapeScore),
+      shapeRelativeGap: relativeGap(activeShapeScore, alternativeShapeScore),
+      shapeWinner: winner(activeShapeScore, alternativeShapeScore),
+      activeShapeFeatures: activeMetrics.shapeFeatures,
+      alternativeShapeFeatures: alternativeMetrics.shapeFeatures,
+      activeDurations: activeMetrics.durations,
+      alternativeDurations: alternativeMetrics.durations,
+      activeTemporalFeatures: activeMetrics.temporalFeatures,
+      alternativeTemporalFeatures: alternativeMetrics.temporalFeatures,
+    };
+  });
+  const withStability = stageRows.map((row, index) => ({
+    ...row,
+    temporalStableNext:
+      index + 1 < stageRows.length
+        ? row.temporalWinner === stageRows[index + 1].temporalWinner
+        : null,
+    shapeStableNext:
+      index + 1 < stageRows.length
+        ? row.shapeWinner === stageRows[index + 1].shapeWinner
+        : null,
+  }));
+
+  const structurallyValid = (chain: DpCandidate[]) =>
+    isExpectedAlternation(chain) &&
+    isStrictlyIncreasing(chain.map((candidate) => candidate.index)) &&
+    chain.every((candidate, index) => {
+      if (index === 0) return true;
+      if (candidate.index - chain[index - 1].index < 8) return false;
+      return candidate.type !== "BOTTOM" || candidate.index - chain[index - 2].index >= 45;
+    });
+  const matchesGt = (chain: DpCandidate[], tolerance: number) =>
+    chain.length === gt.length &&
+    chain.every(
+      (candidate, index) =>
+        candidate.type === gt[index].type &&
+        Math.abs(candidate.index - gt[index].index) <= tolerance,
+    );
+  const revisionDefinitions = [
+    { level: 1, label: "ONE_PIVOT", positions: [ambiguousPosition] },
+    {
+      level: 2,
+      label: "THREE_PIVOTS",
+      positions: [ambiguousPosition - 1, ambiguousPosition, ambiguousPosition + 1],
+    },
+    { level: 3, label: "ONE_CYCLE", positions: [0, 1, 2] },
+    { level: 4, label: "TWO_CYCLES", positions: [0, 1, 2, 3, 4] },
+  ];
+  const revisionRows = revisionDefinitions.map((definition) => {
+    const started = performance.now();
+    const positions = definition.positions.filter(
+      (position) => position >= 0 && position < active.length,
+    );
+    const variants: DpCandidate[][] = [];
+    let states = 0;
+    const build = (positionIndex: number, chain: DpCandidate[]) => {
+      if (positionIndex === positions.length) {
+        if (structurallyValid(chain)) variants.push(chain);
+        return;
+      }
+      const position = positions[positionIndex];
+      const previousFixed = position > 0 ? chain[position - 1] : null;
+      const nextFixedPosition = positions.includes(position + 1) ? null : active[position + 1];
+      for (const candidate of injected.pool) {
+        if (candidate.type !== active[position].type) continue;
+        if (previousFixed && candidate.index <= previousFixed.index) continue;
+        if (nextFixedPosition && candidate.index >= nextFixedPosition.index) continue;
+        states += 1;
+        const next = [...chain];
+        next[position] = candidate;
+        build(positionIndex + 1, next);
+      }
+    };
+    build(0, [...active]);
+    const unique = [
+      ...new Map(variants.map((variant) => [topKPathSignature(variant), variant])).values(),
+    ];
+    const temporalRows = unique.map((chain) => ({
+      chain,
+      score: rawMetrics(chain).temporalScore,
+    }));
+    const shapeScores = normalizedShapeScores(unique);
+    const bestTemporal = [...temporalRows]
+      .filter((row): row is typeof row & { score: number } => row.score !== null)
+      .sort((left, right) => right.score - left.score)[0] ?? null;
+    const bestShapeIndex = shapeScores.reduce(
+      (best, score, index) =>
+        score !== null && (best < 0 || score > (shapeScores[best] ?? -Infinity))
+          ? index
+          : best,
+      -1,
+    );
+    const exact = unique.find((chain) => matchesGt(chain, 0)) ?? null;
+    const tolerant = unique.find((chain) =>
+      matchesGt(chain, EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES),
+    ) ?? null;
+    const bestReference = exact ?? tolerant ?? bestTemporal?.chain ?? null;
+    return {
+      ...definition,
+      candidatesReexamined: new Set(
+        positions.flatMap((position) =>
+          injected.pool
+            .filter((candidate) => candidate.type === active[position].type)
+            .map((candidate) => candidate.candidateId),
+        ),
+      ).size,
+      variants: unique.length,
+      states,
+      exactGroundTruth: exact !== null,
+      tolerantGroundTruth: tolerant !== null,
+      bestTemporal: bestTemporal?.score ?? null,
+      bestTemporalPath: bestTemporal ? topKPathSignature(bestTemporal.chain) : null,
+      bestShape: bestShapeIndex >= 0 ? shapeScores[bestShapeIndex] : null,
+      bestShapePath:
+        bestShapeIndex >= 0 ? topKPathSignature(unique[bestShapeIndex]) : null,
+      referenceTemporal: bestReference ? rawMetrics(bestReference).temporalScore : null,
+      referenceShape:
+        bestReference ? normalizedShapeScores([active, bestReference])[1] : null,
+      exactPivots: bestReference
+        ? bestReference.filter((candidate, index) => candidate.index === gt[index].index).length
+        : 0,
+      tolerantPivots: bestReference
+        ? bestReference.filter(
+            (candidate, index) =>
+              Math.abs(candidate.index - gt[index].index) <=
+              EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES,
+          ).length
+        : 0,
+      executionTimeMs: performance.now() - started,
+      approximateBytes: unique.reduce((sum, chain) => sum + 96 + chain.length * 8, 0),
+    };
+  });
+
+  const firstTemporal = withStability.find((row) => row.temporalWinner === "BOTTOM:262");
+  const firstShape = withStability.find((row) => row.shapeWinner === "BOTTOM:262");
+  const convergence = withStability.find(
+    (row) => row.temporalWinner === "BOTTOM:262" && row.shapeWinner === "BOTTOM:262",
+  );
+  const triggerVerdict = convergence
+    ? "TEMPORAL_AND_SHAPE_CONVERGE"
+    : firstTemporal
+      ? "TEMPORAL_TRIGGER_IDENTIFIED"
+      : firstShape
+        ? "SHAPE_TRIGGER_IDENTIFIED"
+        : "ALTERNATIVE_NEVER_BECOMES_BETTER";
+  const depth = revisionRows.find((row) => row.exactGroundTruth || row.tolerantGroundTruth);
+  const depthVerdicts = [
+    "ONE_PIVOT_SUFFICIENT",
+    "THREE_PIVOTS_REQUIRED",
+    "ONE_CYCLE_REQUIRED",
+    "TWO_CYCLES_REQUIRED",
+  ];
+  const depthVerdict = depth
+    ? depthVerdicts[depth.level - 1]
+    : "LOCAL_BACKTRACKING_INSUFFICIENT";
+  const fmt = (value: unknown) =>
+    typeof value === "number" ? value.toPrecision(8) : value === null ? "—" : String(value);
+  const table = (headers: string[], rows: string[][]) => [
+    `| ${headers.join(" | ")} |`,
+    `| ${headers.map(() => "---").join(" | ")} |`,
+    ...rows.map((row) => `| ${row.join(" | ")} |`),
+  ].join("\n");
+  const stageSections = withStability.flatMap((row) => [
+    `## ${4 + row.cycles}. Comparaison après ${row.cycles} cycle${row.cycles > 1 ? "s" : ""}`,
+    "",
+    table(
+      ["Métrique", "Actif B260", "Alternative B262", "Écart absolu", "Écart relatif", "Meilleur", "Stable au stade suivant"],
+      [
+        ["Temporal", fmt(row.activeTemporal), fmt(row.alternativeTemporal), fmt(row.temporalAbsoluteGap), fmt(row.temporalRelativeGap), row.temporalWinner, fmt(row.temporalStableNext)],
+        ["Shape", fmt(row.activeShape), fmt(row.alternativeShape), fmt(row.shapeAbsoluteGap), fmt(row.shapeRelativeGap), row.shapeWinner, fmt(row.shapeStableNext)],
+      ],
+    ),
+    "",
+    `Durées actif (concentrique/excentrique/total): ${JSON.stringify(row.activeDurations)}.`,
+    "",
+    `Durées alternative: ${JSON.stringify(row.alternativeDurations)}.`,
+    "",
+    `Composantes Temporal actif/alternative: ${JSON.stringify(row.activeTemporalFeatures)} / ${JSON.stringify(row.alternativeTemporalFeatures)}.`,
+    "",
+    `Composantes Shape actif/alternative: ${JSON.stringify(row.activeShapeFeatures)} / ${JSON.stringify(row.alternativeShapeFeatures)}.`,
+    "",
+  ]);
+  const revisionTable = table(
+    ["Niveau", "Candidats", "Variantes", "États", "GT exacte", "GT ±2", "Temporal meilleur", "Shape meilleur", "Pivots exacts", "Pivots ±2", "Temps ms"],
+    revisionRows.map((row) => [
+      `${row.level} ${row.label}`, String(row.candidatesReexamined), String(row.variants),
+      String(row.states), String(row.exactGroundTruth), String(row.tolerantGroundTruth),
+      fmt(row.bestTemporal), fmt(row.bestShape), String(row.exactPivots),
+      String(row.tolerantPivots), fmt(row.executionTimeMs),
+    ]),
+  );
+  const outputDirectory = path.resolve(__dirname, "output", "delayed-context-path");
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  const reportPath = path.join(outputDirectory, "delayed_context_trigger_and_depth_report.md");
+  const report = [
+    "# Delayed Context Path – Déclenchement et profondeur de révision",
+    "",
+    "## 1. Question exacte",
+    "",
+    "À quel moment l'alternative Ground Truth BOTTOM:262 devient-elle meilleure que le chemin actif BOTTOM:260, et quelle profondeur locale minimale permet de la récupérer ?",
+    "",
+    "## 2. Objectif",
+    "",
+    "Caractériser un signal relatif et une profondeur de révision, sans implémenter de backtracking permanent ni de règle de seuil.",
+    "",
+    "## 3. Données et pool contrôlé",
+    "",
+    `${DATASET_NAME}; ${realCandidates.length} candidats RAW + ${injected.addedCount} injections Ground Truth individuelles = ${injected.pool.length}; parasites conservés; tolérance existante ±${EXISTING_GROUND_TRUTH_TOLERANCE_SAMPLES} samples.`,
+    "",
+    "## 4. Cas BOTTOM:260 / BOTTOM:262",
+    "",
+    `Actif: ${topKPathSignature(active)}.`,
+    "",
+    `Alternative GT: ${topKPathSignature(gt)}. Les deux chaînes ne diffèrent qu'au pivot ${ambiguousPosition + 1}. B260 est déjà dans la tolérance ±2 de B262, mais seule B262 est la GT exacte.`,
+    "",
+    ...stageSections,
+    "## 10. Stabilité des écarts",
+    "",
+    `Premier avantage Temporal B262: ${firstTemporal?.cycles ?? "jamais"} cycle(s). Premier avantage Shape B262: ${firstShape?.cycles ?? "jamais"} cycle(s). Première convergence: ${convergence?.cycles ?? "jamais"} cycle(s). Aucun seuil minimal d'écart n'est déduit de ce cas unique.`,
+    "",
+    "## 11. Test de révision d'un pivot",
+    "",
+    revisionTable,
+    "",
+    "## 12. Test de révision de trois pivots",
+    "",
+    "Le niveau 2 révise T199-B260-T291; ses mesures figurent dans le tableau commun.",
+    "",
+    "## 13. Test de révision d'un cycle",
+    "",
+    "Le niveau 3 révise le segment initial B169-T199-B260 qui se termine au pivot ambigu.",
+    "",
+    "## 14. Test de révision de deux cycles",
+    "",
+    "Le niveau 4 révise B169-T199-B260-T291-B353. Il est mesuré pour comparaison même si un niveau inférieur récupère déjà la GT.",
+    "",
+    "## 15. Cas supplémentaires",
+    "",
+    "Les traces existantes contiennent aussi des évictions B228/B262 et des variantes T195/T199. Elles modifient plusieurs durées et ne constituent pas un remplacement local isolé aussi contrôlé que B260/B262. Elles ne sont pas utilisées pour prétendre à une généralisation; un seul cas principal exploitable est conclu ici.",
+    "",
+    "## 16. Complexité",
+    "",
+    revisionTable,
+    "",
+    `Comparaison exhaustive précédente: arrêt à 300000 états. Cette expérience locale a exploré ${revisionRows.reduce((sum, row) => sum + row.states, 0)} états de génération au total. La mémoire approximative cumulée des variantes matérialisées est ${(revisionRows.reduce((sum, row) => sum + row.approximateBytes, 0) / 1024).toFixed(3)} KiB.`,
+    "",
+    "## 17. Signal de révision observable",
+    "",
+    "Le signal descriptif recherché est le basculement relatif B260→B262 dans Temporal et/ou Shape, accompagné de sa persistance au stade suivant. Les données permettent de discuter convergence et persistance, mais pas de figer un seuil d'écart à partir d'un seul cas.",
+    "",
+    "## 18. Profondeur minimale observée",
+    "",
+    `La première profondeur contenant une chaîne GT exacte ou équivalente ±2 est le niveau ${depth?.level ?? "aucun"}: **${depthVerdict}**. Comme B260 est lui-même à ±2, le rapport distingue explicitement récupération tolérante et récupération exacte.`,
+    "",
+    "## 19. Limites",
+    "",
+    "Un cycle ne permet pas Temporal ou Shape inter-cycles. Le score Shape est la normalisation robuste existante appliquée uniquement à la paire contrôlée à chaque stade; ses composantes brutes sont fournies. Un seul dataset et un seul remplacement strictement isolé sont exploitables. Les niveaux locaux ne constituent pas un moteur de backtracking.",
+    "",
+    "## 20. Verdict final",
+    "",
+    `Déclenchement: **${triggerVerdict}**. Profondeur: **${depthVerdict}**.`,
+    "",
+    "## 21. Prochaine décision appuyée uniquement par les résultats",
+    "",
+    "Tester le même signal relatif sur d'autres évictions annotées et distinguer explicitement l'objectif « GT exacte » de l'objectif « équivalente dans la tolérance » avant de définir une règle de déclenchement permanente.",
+    "",
+    "## Validation finale",
+    "",
+    "Aucune modification de DP V1, DP V2, `current_filters` ou du pipeline de production. Aucun moteur de backtracking complet, aucun score combiné, aucune modification de Temporal/Shape, aucun NMS et aucun gyroscope. Le code ajouté est un mode diagnostique opt-in du runner Ground Truth.",
+    "",
+    "Commande (depuis `RepMotion/tools/calibration-runner`):",
+    "",
+    "```powershell",
+    "$env:GROUND_TRUTH_VALIDATION_MODE='DELAYED_CONTEXT_TRIGGER_AND_DEPTH'; npx tsx ../ground-truth/groundTruthValidationRunner.ts",
+    "```",
+    "",
+  ];
+  fs.writeFileSync(reportPath, `${report.join("\n")}\n`, "utf8");
+  console.table(withStability.map((row) => ({
+    cycles: row.cycles,
+    temporal260: row.activeTemporal,
+    temporal262: row.alternativeTemporal,
+    temporalWinner: row.temporalWinner,
+    shape260: row.activeShape,
+    shape262: row.alternativeShape,
+    shapeWinner: row.shapeWinner,
+  })));
+  console.table(revisionRows.map((row) => ({
+    level: row.level,
+    variants: row.variants,
+    states: row.states,
+    exactGt: row.exactGroundTruth,
+    tolerantGt: row.tolerantGroundTruth,
+  })));
+  console.log(JSON.stringify({ triggerVerdict, depthVerdict, reportPath }, null, 2));
+}
+
 function runDpV2ExperimentalDiagnostic(
   dataset: CalibrationDataset,
   groundTruth: GroundTruthFile,
@@ -9411,6 +10220,26 @@ function main(): void {
 
   if (RUN_NMS_CHARACTERIZATION) {
     runNmsCharacterizationExperiment(
+      dataset,
+      groundTruth,
+      calibration.axis,
+      eligibleCandidates,
+    );
+    return;
+  }
+
+  if (VALIDATION_MODE === "DELAYED_CONTEXT_METRIC_RELIABILITY") {
+    runDelayedContextMetricReliability(
+      dataset,
+      groundTruth,
+      calibration.axis,
+      eligibleCandidates,
+    );
+    return;
+  }
+
+  if (VALIDATION_MODE === "DELAYED_CONTEXT_TRIGGER_AND_DEPTH") {
+    runDelayedContextTriggerAndDepth(
       dataset,
       groundTruth,
       calibration.axis,
