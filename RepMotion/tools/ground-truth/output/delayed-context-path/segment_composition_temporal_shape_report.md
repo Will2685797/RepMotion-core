@@ -1,0 +1,826 @@
+# Segment Composition — Temporal / Shape
+
+## 1. Executive summary
+
+Segments uniques=648; compositions examinées=1000001; chemins valides uniques=161012; best GT=9/11; full GT=NO; ranks T/S/C=null/null/null; guard=MAX_COMPOSITIONS. Verdict: **SEGMENT_COMPOSITION_SEARCH_EXPLODES**.
+
+## 2. Hypothèse et conditions
+
+Les seules briques sont les reconstructions valides réellement produites par le replay Dynamic Top-3. Aucun candidat du pool n’est consulté directement. Base de composition: activePath initial neutralisé. Aucun score ne guide la génération.
+
+## 3. Ground Truth leakage audit
+
+| phase | gtRead | detail |
+| --- | --- | --- |
+| segment extraction | NO | diff source activePath/resultingPath from real generatedAudit only |
+| dedup/ordering/compatibility | NO | positions and exact proposed pivots only |
+| composition/validPrefix | NO | base initial, segments generated, structural rules only |
+| generation stopping | NO | fixed guards 1000000/200000; no stop on GT |
+| Temporal/Shape scoring | NO | after complete generation; equal-weight normalized combination |
+| GT count/rank/provenance labels | YES — AFTER | diagnostic only after generation and scoring |
+
+GROUND_TRUTH_USED_FOR_DECISION = NO.
+
+## 4. Source et définition des segments
+
+Zone canonique=min/max des positions réellement différentes entre source activePath et chemin résultant. Clé de déduplication=`start-end + pivots proposés exacts`. Les sources multiples sont conservées comme provenance.
+
+## 5. Segments uniques
+
+| id | positions | replacementPivots | sourceDecisions | sourcePathCount | resultingPathCount |
+| --- | --- | --- | --- | --- | --- |
+| S0001 | 1-1 | TOP:179 | D1,D2,D3,D4,D5 | 3 | 3 |
+| S0002 | 1-1 | TOP:199 | D1,D2,D3,D4,D5 | 3 | 3 |
+| S0003 | 1-2 | TOP:179 \| BOTTOM:243 | D2,D3,D4,D5 | 3 | 3 |
+| S0004 | 1-2 | TOP:199 \| BOTTOM:243 | D2,D3,D4,D5 | 3 | 3 |
+| S0005 | 1-2 | TOP:222 \| BOTTOM:243 | D1,D2,D3,D4,D5 | 3 | 3 |
+| S0006 | 1-3 | TOP:179 \| BOTTOM:228 \| TOP:236 | D2,D3,D4,D5 | 3 | 3 |
+| S0007 | 1-3 | TOP:179 \| BOTTOM:228 \| TOP:265 | D2,D3,D4 | 2 | 2 |
+| S0008 | 1-3 | TOP:179 \| BOTTOM:228 \| TOP:291 | D5 | 1 | 1 |
+| S0009 | 1-3 | TOP:179 \| BOTTOM:228 \| TOP:345 | D5 | 1 | 1 |
+| S0010 | 1-3 | TOP:179 \| BOTTOM:243 \| TOP:265 | D2,D3,D4 | 2 | 2 |
+| S0011 | 1-3 | TOP:179 \| BOTTOM:243 \| TOP:291 | D5 | 1 | 1 |
+| S0012 | 1-3 | TOP:179 \| BOTTOM:243 \| TOP:345 | D5 | 1 | 1 |
+| S0013 | 1-3 | TOP:199 \| BOTTOM:228 \| TOP:236 | D2,D3,D4,D5 | 3 | 3 |
+| S0014 | 1-3 | TOP:199 \| BOTTOM:228 \| TOP:265 | D2,D3,D4 | 2 | 2 |
+| S0015 | 1-3 | TOP:199 \| BOTTOM:228 \| TOP:291 | D5 | 1 | 1 |
+| S0016 | 1-3 | TOP:199 \| BOTTOM:228 \| TOP:345 | D5 | 1 | 1 |
+| S0017 | 1-3 | TOP:199 \| BOTTOM:243 \| TOP:265 | D2,D3,D4 | 2 | 2 |
+| S0018 | 1-3 | TOP:199 \| BOTTOM:243 \| TOP:291 | D5 | 1 | 1 |
+| S0019 | 1-3 | TOP:199 \| BOTTOM:243 \| TOP:345 | D5 | 1 | 1 |
+| S0020 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:236 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0021 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:236 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0022 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:236 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0023 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:236 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0024 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:265 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0025 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:265 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0026 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:265 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0027 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:265 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0028 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:291 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0029 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:291 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0030 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:291 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0031 | 1-4 | TOP:179 \| BOTTOM:228 \| TOP:291 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0032 | 1-4 | TOP:179 \| BOTTOM:243 \| TOP:265 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0033 | 1-4 | TOP:179 \| BOTTOM:243 \| TOP:265 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0034 | 1-4 | TOP:179 \| BOTTOM:243 \| TOP:265 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0035 | 1-4 | TOP:179 \| BOTTOM:243 \| TOP:265 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0036 | 1-4 | TOP:179 \| BOTTOM:243 \| TOP:291 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0037 | 1-4 | TOP:179 \| BOTTOM:243 \| TOP:291 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0038 | 1-4 | TOP:179 \| BOTTOM:243 \| TOP:291 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0039 | 1-4 | TOP:179 \| BOTTOM:243 \| TOP:291 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0040 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:236 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0041 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:236 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0042 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:236 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0043 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:236 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0044 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:265 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0045 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:265 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0046 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:265 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0047 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:265 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0048 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:291 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0049 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:291 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0050 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:291 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0051 | 1-4 | TOP:199 \| BOTTOM:228 \| TOP:291 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0052 | 1-4 | TOP:199 \| BOTTOM:243 \| TOP:265 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0053 | 1-4 | TOP:199 \| BOTTOM:243 \| TOP:265 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0054 | 1-4 | TOP:199 \| BOTTOM:243 \| TOP:265 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0055 | 1-4 | TOP:199 \| BOTTOM:243 \| TOP:265 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0056 | 1-4 | TOP:199 \| BOTTOM:243 \| TOP:291 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0057 | 1-4 | TOP:199 \| BOTTOM:243 \| TOP:291 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0058 | 1-4 | TOP:199 \| BOTTOM:243 \| TOP:291 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0059 | 1-4 | TOP:199 \| BOTTOM:243 \| TOP:291 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0060 | 2-2 | BOTTOM:243 | D2,D3,D4,D5 | 3 | 3 |
+| S0061 | 2-3 | BOTTOM:243 \| TOP:265 | D2,D3,D4 | 2 | 2 |
+| S0062 | 2-3 | BOTTOM:243 \| TOP:291 | D5 | 1 | 1 |
+| S0063 | 2-3 | BOTTOM:243 \| TOP:345 | D5 | 1 | 1 |
+| S0064 | 2-3 | BOTTOM:260 \| TOP:291 | D5 | 1 | 1 |
+| S0065 | 2-3 | BOTTOM:260 \| TOP:317 | D5 | 1 | 1 |
+| S0066 | 2-3 | BOTTOM:260 \| TOP:333 | D5 | 1 | 1 |
+| S0067 | 2-3 | BOTTOM:260 \| TOP:345 | D5 | 1 | 1 |
+| S0068 | 2-3 | BOTTOM:262 \| TOP:291 | D5 | 1 | 1 |
+| S0069 | 2-3 | BOTTOM:262 \| TOP:317 | D5 | 1 | 1 |
+| S0070 | 2-3 | BOTTOM:262 \| TOP:333 | D5 | 1 | 1 |
+| S0071 | 2-3 | BOTTOM:262 \| TOP:345 | D5 | 1 | 1 |
+| S0072 | 2-3 | BOTTOM:299 \| TOP:317 | D5 | 1 | 1 |
+| S0073 | 2-3 | BOTTOM:299 \| TOP:333 | D5 | 1 | 1 |
+| S0074 | 2-3 | BOTTOM:299 \| TOP:345 | D5 | 1 | 1 |
+| S0075 | 2-4 | BOTTOM:243 \| TOP:265 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0076 | 2-4 | BOTTOM:243 \| TOP:265 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0077 | 2-4 | BOTTOM:243 \| TOP:265 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0078 | 2-4 | BOTTOM:243 \| TOP:265 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0079 | 2-4 | BOTTOM:243 \| TOP:291 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0080 | 2-4 | BOTTOM:243 \| TOP:291 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0081 | 2-4 | BOTTOM:243 \| TOP:291 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0082 | 2-4 | BOTTOM:243 \| TOP:291 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0083 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:299 \| TOP:345 | D3,D4,D5 | 3 | 3 |
+| S0084 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:299 \| TOP:365 | D3,D4,D5 | 3 | 3 |
+| S0085 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:299 \| TOP:379 | D5 | 1 | 1 |
+| S0086 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:299 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0087 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:299 \| TOP:436 | D5 | 1 | 1 |
+| S0088 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:321 \| TOP:345 | D3,D4,D5 | 3 | 3 |
+| S0089 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:321 \| TOP:365 | D3,D4,D5 | 3 | 3 |
+| S0090 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:321 \| TOP:379 | D5 | 1 | 1 |
+| S0091 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:321 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0092 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:321 \| TOP:436 | D5 | 1 | 1 |
+| S0093 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:346 \| TOP:365 | D4,D5 | 2 | 2 |
+| S0094 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:346 \| TOP:379 | D5 | 1 | 1 |
+| S0095 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:346 \| TOP:383 | D4 | 1 | 1 |
+| S0096 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:346 \| TOP:436 | D5 | 1 | 1 |
+| S0097 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:353 \| TOP:365 | D4,D5 | 2 | 2 |
+| S0098 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:353 \| TOP:379 | D5 | 1 | 1 |
+| S0099 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:353 \| TOP:383 | D4 | 1 | 1 |
+| S0100 | 2-5 | BOTTOM:243 \| TOP:265 \| BOTTOM:353 \| TOP:436 | D5 | 1 | 1 |
+| S0101 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:299 \| TOP:345 | D3,D4,D5 | 3 | 3 |
+| S0102 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:299 \| TOP:365 | D3,D4,D5 | 3 | 3 |
+| S0103 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:299 \| TOP:379 | D5 | 1 | 1 |
+| S0104 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:299 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0105 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:299 \| TOP:436 | D5 | 1 | 1 |
+| S0106 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:321 \| TOP:345 | D3,D4,D5 | 3 | 3 |
+| S0107 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:321 \| TOP:365 | D3,D4,D5 | 3 | 3 |
+| S0108 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:321 \| TOP:379 | D5 | 1 | 1 |
+| S0109 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:321 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0110 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:321 \| TOP:436 | D5 | 1 | 1 |
+| S0111 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:346 \| TOP:365 | D4,D5 | 2 | 2 |
+| S0112 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:346 \| TOP:379 | D5 | 1 | 1 |
+| S0113 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:346 \| TOP:383 | D4 | 1 | 1 |
+| S0114 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:346 \| TOP:436 | D5 | 1 | 1 |
+| S0115 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:353 \| TOP:365 | D4,D5 | 2 | 2 |
+| S0116 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:353 \| TOP:379 | D5 | 1 | 1 |
+| S0117 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:353 \| TOP:383 | D4 | 1 | 1 |
+| S0118 | 2-5 | BOTTOM:243 \| TOP:291 \| BOTTOM:353 \| TOP:436 | D5 | 1 | 1 |
+| S0119 | 2-5 | BOTTOM:243 \| TOP:345 \| BOTTOM:353 \| TOP:365 | D5 | 1 | 1 |
+| S0120 | 2-5 | BOTTOM:243 \| TOP:345 \| BOTTOM:353 \| TOP:379 | D5 | 1 | 1 |
+| S0121 | 2-5 | BOTTOM:243 \| TOP:345 \| BOTTOM:353 \| TOP:436 | D5 | 1 | 1 |
+| S0122 | 3-3 | TOP:236 | D2,D3,D4,D5 | 3 | 3 |
+| S0123 | 3-3 | TOP:265 | D2,D3,D4 | 2 | 2 |
+| S0124 | 3-3 | TOP:291 | D5 | 1 | 1 |
+| S0125 | 3-3 | TOP:317 | D5 | 1 | 1 |
+| S0126 | 3-3 | TOP:333 | D5 | 1 | 1 |
+| S0127 | 3-3 | TOP:345 | D5 | 1 | 1 |
+| S0128 | 3-4 | TOP:236 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0129 | 3-4 | TOP:236 \| BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0130 | 3-4 | TOP:236 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0131 | 3-4 | TOP:236 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0132 | 3-4 | TOP:265 \| BOTTOM:321 | D3,D4 | 2 | 2 |
+| S0133 | 3-4 | TOP:265 \| BOTTOM:346 | D4 | 1 | 1 |
+| S0134 | 3-4 | TOP:265 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0135 | 3-4 | TOP:291 \| BOTTOM:299 | D5 | 1 | 1 |
+| S0136 | 3-4 | TOP:291 \| BOTTOM:321 | D5 | 1 | 1 |
+| S0137 | 3-4 | TOP:291 \| BOTTOM:346 | D5 | 1 | 1 |
+| S0138 | 3-4 | TOP:317 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0139 | 3-4 | TOP:317 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0140 | 3-4 | TOP:317 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0141 | 3-4 | TOP:317 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0142 | 3-4 | TOP:333 \| BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0143 | 3-4 | TOP:333 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0144 | 3-4 | TOP:333 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0145 | 3-4 | TOP:333 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0146 | 3-4 | TOP:345 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0147 | 3-4 | TOP:345 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0148 | 3-4 | TOP:345 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0149 | 3-4 | TOP:365 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0150 | 3-4 | TOP:365 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0151 | 3-4 | TOP:379 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0152 | 3-4 | TOP:379 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0153 | 3-4 | TOP:383 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0154 | 3-4 | TOP:383 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0155 | 3-5 | TOP:236 \| BOTTOM:299 \| TOP:345 | D3,D4,D5 | 3 | 3 |
+| S0156 | 3-5 | TOP:236 \| BOTTOM:299 \| TOP:365 | D3,D4,D5 | 3 | 3 |
+| S0157 | 3-5 | TOP:236 \| BOTTOM:299 \| TOP:379 | D5 | 1 | 1 |
+| S0158 | 3-5 | TOP:236 \| BOTTOM:299 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0159 | 3-5 | TOP:236 \| BOTTOM:299 \| TOP:436 | D5 | 1 | 1 |
+| S0160 | 3-5 | TOP:236 \| BOTTOM:321 \| TOP:345 | D3,D4,D5 | 3 | 3 |
+| S0161 | 3-5 | TOP:236 \| BOTTOM:321 \| TOP:365 | D3,D4,D5 | 3 | 3 |
+| S0162 | 3-5 | TOP:236 \| BOTTOM:321 \| TOP:379 | D5 | 1 | 1 |
+| S0163 | 3-5 | TOP:236 \| BOTTOM:321 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0164 | 3-5 | TOP:236 \| BOTTOM:321 \| TOP:436 | D5 | 1 | 1 |
+| S0165 | 3-5 | TOP:236 \| BOTTOM:346 \| TOP:365 | D4,D5 | 2 | 2 |
+| S0166 | 3-5 | TOP:236 \| BOTTOM:346 \| TOP:379 | D5 | 1 | 1 |
+| S0167 | 3-5 | TOP:236 \| BOTTOM:346 \| TOP:383 | D4 | 1 | 1 |
+| S0168 | 3-5 | TOP:236 \| BOTTOM:346 \| TOP:436 | D5 | 1 | 1 |
+| S0169 | 3-5 | TOP:236 \| BOTTOM:353 \| TOP:365 | D4,D5 | 2 | 2 |
+| S0170 | 3-5 | TOP:236 \| BOTTOM:353 \| TOP:379 | D5 | 1 | 1 |
+| S0171 | 3-5 | TOP:236 \| BOTTOM:353 \| TOP:383 | D4 | 1 | 1 |
+| S0172 | 3-5 | TOP:236 \| BOTTOM:353 \| TOP:436 | D5 | 1 | 1 |
+| S0173 | 3-5 | TOP:265 \| BOTTOM:299 \| TOP:345 | D3,D4 | 2 | 2 |
+| S0174 | 3-5 | TOP:265 \| BOTTOM:299 \| TOP:365 | D3,D4 | 2 | 2 |
+| S0175 | 3-5 | TOP:265 \| BOTTOM:299 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0176 | 3-5 | TOP:265 \| BOTTOM:321 \| TOP:345 | D3,D4 | 2 | 2 |
+| S0177 | 3-5 | TOP:265 \| BOTTOM:321 \| TOP:365 | D3,D4 | 2 | 2 |
+| S0178 | 3-5 | TOP:265 \| BOTTOM:321 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0179 | 3-5 | TOP:265 \| BOTTOM:346 \| TOP:365 | D4 | 1 | 1 |
+| S0180 | 3-5 | TOP:265 \| BOTTOM:346 \| TOP:383 | D4 | 1 | 1 |
+| S0181 | 3-5 | TOP:265 \| BOTTOM:353 \| TOP:365 | D4 | 1 | 1 |
+| S0182 | 3-5 | TOP:265 \| BOTTOM:353 \| TOP:383 | D4 | 1 | 1 |
+| S0183 | 3-5 | TOP:291 \| BOTTOM:299 \| TOP:345 | D5 | 1 | 1 |
+| S0184 | 3-5 | TOP:291 \| BOTTOM:299 \| TOP:365 | D5 | 1 | 1 |
+| S0185 | 3-5 | TOP:291 \| BOTTOM:299 \| TOP:379 | D5 | 1 | 1 |
+| S0186 | 3-5 | TOP:291 \| BOTTOM:299 \| TOP:436 | D5 | 1 | 1 |
+| S0187 | 3-5 | TOP:291 \| BOTTOM:321 \| TOP:345 | D5 | 1 | 1 |
+| S0188 | 3-5 | TOP:291 \| BOTTOM:321 \| TOP:365 | D5 | 1 | 1 |
+| S0189 | 3-5 | TOP:291 \| BOTTOM:321 \| TOP:379 | D5 | 1 | 1 |
+| S0190 | 3-5 | TOP:291 \| BOTTOM:321 \| TOP:436 | D5 | 1 | 1 |
+| S0191 | 3-5 | TOP:291 \| BOTTOM:346 \| TOP:365 | D5 | 1 | 1 |
+| S0192 | 3-5 | TOP:291 \| BOTTOM:346 \| TOP:379 | D5 | 1 | 1 |
+| S0193 | 3-5 | TOP:291 \| BOTTOM:346 \| TOP:436 | D5 | 1 | 1 |
+| S0194 | 3-5 | TOP:291 \| BOTTOM:353 \| TOP:365 | D5 | 1 | 1 |
+| S0195 | 3-5 | TOP:291 \| BOTTOM:353 \| TOP:379 | D5 | 1 | 1 |
+| S0196 | 3-5 | TOP:291 \| BOTTOM:353 \| TOP:436 | D5 | 1 | 1 |
+| S0197 | 3-5 | TOP:345 \| BOTTOM:353 \| TOP:365 | D5 | 1 | 1 |
+| S0198 | 3-5 | TOP:345 \| BOTTOM:353 \| TOP:379 | D5 | 1 | 1 |
+| S0199 | 3-5 | TOP:345 \| BOTTOM:353 \| TOP:436 | D5 | 1 | 1 |
+| S0200 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:345 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0201 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:345 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0202 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:345 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0203 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:345 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0204 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0205 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0206 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0207 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0208 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0209 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0210 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0211 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0212 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0213 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0214 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0215 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0216 | 3-6 | TOP:236 \| BOTTOM:299 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0217 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:345 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0218 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:345 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0219 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:345 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0220 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:345 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0221 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0222 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0223 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0224 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0225 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0226 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0227 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0228 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0229 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0230 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0231 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0232 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0233 | 3-6 | TOP:236 \| BOTTOM:321 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0234 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0235 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0236 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0237 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0238 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0239 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0240 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0241 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0242 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0243 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0244 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0245 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0246 | 3-6 | TOP:236 \| BOTTOM:346 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0247 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0248 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0249 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0250 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0251 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0252 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0253 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0254 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0255 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0256 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0257 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0258 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0259 | 3-6 | TOP:236 \| BOTTOM:353 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0260 | 3-6 | TOP:265 \| BOTTOM:299 \| TOP:345 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0261 | 3-6 | TOP:265 \| BOTTOM:299 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0262 | 3-6 | TOP:265 \| BOTTOM:299 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0263 | 3-6 | TOP:265 \| BOTTOM:299 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0264 | 3-6 | TOP:265 \| BOTTOM:321 \| TOP:345 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0265 | 3-6 | TOP:265 \| BOTTOM:321 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0266 | 3-6 | TOP:265 \| BOTTOM:321 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0267 | 3-6 | TOP:265 \| BOTTOM:321 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0268 | 3-6 | TOP:265 \| BOTTOM:346 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0269 | 3-6 | TOP:265 \| BOTTOM:346 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0270 | 3-6 | TOP:265 \| BOTTOM:346 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0271 | 3-6 | TOP:265 \| BOTTOM:353 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0272 | 3-6 | TOP:265 \| BOTTOM:353 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0273 | 3-6 | TOP:265 \| BOTTOM:353 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0274 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:345 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0275 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:345 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0276 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:345 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0277 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0278 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0279 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0280 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0281 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0282 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0283 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0284 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0285 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0286 | 3-6 | TOP:291 \| BOTTOM:299 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0287 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:345 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0288 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:345 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0289 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:345 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0290 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0291 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0292 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0293 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0294 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0295 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0296 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0297 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0298 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0299 | 3-6 | TOP:291 \| BOTTOM:321 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0300 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0301 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0302 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0303 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0304 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0305 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0306 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0307 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0308 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0309 | 3-6 | TOP:291 \| BOTTOM:346 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0310 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0311 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0312 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0313 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0314 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0315 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0316 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0317 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0318 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0319 | 3-6 | TOP:291 \| BOTTOM:353 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0320 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0321 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0322 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0323 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0324 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0325 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0326 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0327 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0328 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0329 | 3-6 | TOP:345 \| BOTTOM:353 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0330 | 4-4 | BOTTOM:299 | D5 | 1 | 1 |
+| S0331 | 4-4 | BOTTOM:321 | D3,D4,D5 | 3 | 3 |
+| S0332 | 4-4 | BOTTOM:346 | D4,D5 | 2 | 2 |
+| S0333 | 4-4 | BOTTOM:353 | D4 | 1 | 1 |
+| S0334 | 4-5 | BOTTOM:299 \| TOP:317 | D5 | 1 | 1 |
+| S0335 | 4-5 | BOTTOM:299 \| TOP:333 | D5 | 1 | 1 |
+| S0336 | 4-5 | BOTTOM:299 \| TOP:345 | D5 | 1 | 1 |
+| S0337 | 4-5 | BOTTOM:299 \| TOP:365 | D5 | 1 | 1 |
+| S0338 | 4-5 | BOTTOM:299 \| TOP:379 | D5 | 1 | 1 |
+| S0339 | 4-5 | BOTTOM:299 \| TOP:436 | D5 | 1 | 1 |
+| S0340 | 4-5 | BOTTOM:321 \| TOP:333 | D5 | 1 | 1 |
+| S0341 | 4-5 | BOTTOM:321 \| TOP:345 | D3,D4,D5 | 3 | 3 |
+| S0342 | 4-5 | BOTTOM:321 \| TOP:365 | D3,D4,D5 | 3 | 3 |
+| S0343 | 4-5 | BOTTOM:321 \| TOP:379 | D5 | 1 | 1 |
+| S0344 | 4-5 | BOTTOM:321 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0345 | 4-5 | BOTTOM:321 \| TOP:436 | D5 | 1 | 1 |
+| S0346 | 4-5 | BOTTOM:346 \| TOP:365 | D3,D4,D5 | 3 | 3 |
+| S0347 | 4-5 | BOTTOM:346 \| TOP:379 | D3,D4,D5 | 3 | 3 |
+| S0348 | 4-5 | BOTTOM:346 \| TOP:383 | D3,D4 | 2 | 2 |
+| S0349 | 4-5 | BOTTOM:346 \| TOP:436 | D5 | 1 | 1 |
+| S0350 | 4-5 | BOTTOM:353 \| TOP:365 | D4 | 1 | 1 |
+| S0351 | 4-5 | BOTTOM:353 \| TOP:383 | D4 | 1 | 1 |
+| S0352 | 4-5 | BOTTOM:391 \| TOP:411 | D5 | 1 | 1 |
+| S0353 | 4-5 | BOTTOM:391 \| TOP:421 | D5 | 1 | 1 |
+| S0354 | 4-5 | BOTTOM:391 \| TOP:436 | D5 | 1 | 1 |
+| S0355 | 4-6 | BOTTOM:299 \| TOP:345 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0356 | 4-6 | BOTTOM:299 \| TOP:345 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0357 | 4-6 | BOTTOM:299 \| TOP:345 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0358 | 4-6 | BOTTOM:299 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0359 | 4-6 | BOTTOM:299 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0360 | 4-6 | BOTTOM:299 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0361 | 4-6 | BOTTOM:299 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0362 | 4-6 | BOTTOM:299 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0363 | 4-6 | BOTTOM:299 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0364 | 4-6 | BOTTOM:299 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0365 | 4-6 | BOTTOM:299 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0366 | 4-6 | BOTTOM:299 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0367 | 4-6 | BOTTOM:299 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0368 | 4-6 | BOTTOM:321 \| TOP:345 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0369 | 4-6 | BOTTOM:321 \| TOP:345 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0370 | 4-6 | BOTTOM:321 \| TOP:345 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0371 | 4-6 | BOTTOM:321 \| TOP:345 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0372 | 4-6 | BOTTOM:321 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0373 | 4-6 | BOTTOM:321 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0374 | 4-6 | BOTTOM:321 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0375 | 4-6 | BOTTOM:321 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0376 | 4-6 | BOTTOM:321 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0377 | 4-6 | BOTTOM:321 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0378 | 4-6 | BOTTOM:321 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0379 | 4-6 | BOTTOM:321 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0380 | 4-6 | BOTTOM:321 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0381 | 4-6 | BOTTOM:321 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0382 | 4-6 | BOTTOM:321 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0383 | 4-6 | BOTTOM:321 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0384 | 4-6 | BOTTOM:321 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0385 | 4-6 | BOTTOM:346 \| TOP:365 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0386 | 4-6 | BOTTOM:346 \| TOP:365 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0387 | 4-6 | BOTTOM:346 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0388 | 4-6 | BOTTOM:346 \| TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0389 | 4-6 | BOTTOM:346 \| TOP:379 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0390 | 4-6 | BOTTOM:346 \| TOP:379 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0391 | 4-6 | BOTTOM:346 \| TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0392 | 4-6 | BOTTOM:346 \| TOP:383 \| BOTTOM:426 | D5 | 1 | 1 |
+| S0393 | 4-6 | BOTTOM:346 \| TOP:383 \| BOTTOM:438 | D5 | 1 | 1 |
+| S0394 | 4-6 | BOTTOM:346 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0395 | 4-6 | BOTTOM:346 \| TOP:383 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0396 | 4-6 | BOTTOM:346 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0397 | 4-6 | BOTTOM:346 \| TOP:436 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0398 | 4-6 | BOTTOM:353 \| TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0399 | 4-6 | BOTTOM:353 \| TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0400 | 4-6 | BOTTOM:353 \| TOP:436 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0401 | 4-7 | BOTTOM:299 \| TOP:345 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0402 | 4-7 | BOTTOM:299 \| TOP:345 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0403 | 4-7 | BOTTOM:299 \| TOP:345 \| BOTTOM:445 \| TOP:474 | D5 | 1 | 1 |
+| S0404 | 4-7 | BOTTOM:299 \| TOP:345 \| BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0405 | 4-7 | BOTTOM:299 \| TOP:365 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0406 | 4-7 | BOTTOM:299 \| TOP:365 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0407 | 4-7 | BOTTOM:299 \| TOP:365 \| BOTTOM:445 \| TOP:474 | D5 | 1 | 1 |
+| S0408 | 4-7 | BOTTOM:299 \| TOP:365 \| BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0409 | 4-7 | BOTTOM:299 \| TOP:379 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0410 | 4-7 | BOTTOM:299 \| TOP:379 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0411 | 4-7 | BOTTOM:299 \| TOP:379 \| BOTTOM:445 \| TOP:474 | D5 | 1 | 1 |
+| S0412 | 4-7 | BOTTOM:299 \| TOP:379 \| BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0413 | 4-7 | BOTTOM:299 \| TOP:383 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0414 | 4-7 | BOTTOM:299 \| TOP:383 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0415 | 4-7 | BOTTOM:299 \| TOP:383 \| BOTTOM:445 \| TOP:474 | D5 | 1 | 1 |
+| S0416 | 4-7 | BOTTOM:299 \| TOP:383 \| BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0417 | 4-7 | BOTTOM:299 \| TOP:436 \| BOTTOM:445 \| TOP:474 | D5 | 1 | 1 |
+| S0418 | 4-7 | BOTTOM:299 \| TOP:436 \| BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0419 | 4-7 | BOTTOM:321 \| TOP:345 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0420 | 4-7 | BOTTOM:321 \| TOP:345 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0421 | 4-7 | BOTTOM:321 \| TOP:345 \| BOTTOM:445 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0422 | 4-7 | BOTTOM:321 \| TOP:345 \| BOTTOM:450 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0423 | 4-7 | BOTTOM:321 \| TOP:365 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0424 | 4-7 | BOTTOM:321 \| TOP:365 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0425 | 4-7 | BOTTOM:321 \| TOP:365 \| BOTTOM:445 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0426 | 4-7 | BOTTOM:321 \| TOP:365 \| BOTTOM:450 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0427 | 4-7 | BOTTOM:321 \| TOP:379 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0428 | 4-7 | BOTTOM:321 \| TOP:379 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0429 | 4-7 | BOTTOM:321 \| TOP:379 \| BOTTOM:445 \| TOP:474 | D5 | 1 | 1 |
+| S0430 | 4-7 | BOTTOM:321 \| TOP:379 \| BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0431 | 4-7 | BOTTOM:321 \| TOP:383 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0432 | 4-7 | BOTTOM:321 \| TOP:383 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0433 | 4-7 | BOTTOM:321 \| TOP:383 \| BOTTOM:445 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0434 | 4-7 | BOTTOM:321 \| TOP:383 \| BOTTOM:450 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0435 | 4-7 | BOTTOM:321 \| TOP:436 \| BOTTOM:445 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0436 | 4-7 | BOTTOM:321 \| TOP:436 \| BOTTOM:450 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0437 | 4-7 | BOTTOM:346 \| TOP:365 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0438 | 4-7 | BOTTOM:346 \| TOP:365 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0439 | 4-7 | BOTTOM:346 \| TOP:365 \| BOTTOM:445 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0440 | 4-7 | BOTTOM:346 \| TOP:365 \| BOTTOM:450 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0441 | 4-7 | BOTTOM:346 \| TOP:379 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0442 | 4-7 | BOTTOM:346 \| TOP:379 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0443 | 4-7 | BOTTOM:346 \| TOP:379 \| BOTTOM:445 \| TOP:474 | D5 | 1 | 1 |
+| S0444 | 4-7 | BOTTOM:346 \| TOP:379 \| BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0445 | 4-7 | BOTTOM:346 \| TOP:383 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0446 | 4-7 | BOTTOM:346 \| TOP:383 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0447 | 4-7 | BOTTOM:346 \| TOP:383 \| BOTTOM:445 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0448 | 4-7 | BOTTOM:346 \| TOP:383 \| BOTTOM:450 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0449 | 4-7 | BOTTOM:346 \| TOP:436 \| BOTTOM:445 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0450 | 4-7 | BOTTOM:346 \| TOP:436 \| BOTTOM:450 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0451 | 4-7 | BOTTOM:353 \| TOP:365 \| BOTTOM:445 \| TOP:474 | D4 | 1 | 1 |
+| S0452 | 4-7 | BOTTOM:353 \| TOP:365 \| BOTTOM:450 \| TOP:474 | D4 | 1 | 1 |
+| S0453 | 4-7 | BOTTOM:353 \| TOP:383 \| BOTTOM:445 \| TOP:474 | D4 | 1 | 1 |
+| S0454 | 4-7 | BOTTOM:353 \| TOP:383 \| BOTTOM:450 \| TOP:474 | D4 | 1 | 1 |
+| S0455 | 4-7 | BOTTOM:353 \| TOP:436 \| BOTTOM:445 \| TOP:474 | D4 | 1 | 1 |
+| S0456 | 4-7 | BOTTOM:353 \| TOP:436 \| BOTTOM:450 \| TOP:474 | D4 | 1 | 1 |
+| S0457 | 5-5 | TOP:345 | D3,D4 | 2 | 2 |
+| S0458 | 5-5 | TOP:365 | D3,D4,D5 | 3 | 3 |
+| S0459 | 5-5 | TOP:379 | D5 | 1 | 1 |
+| S0460 | 5-5 | TOP:383 | D3,D4 | 2 | 2 |
+| S0461 | 5-5 | TOP:411 | D4,D5 | 2 | 2 |
+| S0462 | 5-5 | TOP:421 | D4,D5 | 2 | 2 |
+| S0463 | 5-5 | TOP:436 | D5 | 1 | 1 |
+| S0464 | 5-6 | TOP:317 \| BOTTOM:346 | D4 | 1 | 1 |
+| S0465 | 5-6 | TOP:317 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0466 | 5-6 | TOP:317 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0467 | 5-6 | TOP:317 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0468 | 5-6 | TOP:317 \| BOTTOM:426 | D4 | 1 | 1 |
+| S0469 | 5-6 | TOP:317 \| BOTTOM:438 | D4 | 1 | 1 |
+| S0470 | 5-6 | TOP:333 \| BOTTOM:346 | D4 | 1 | 1 |
+| S0471 | 5-6 | TOP:333 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0472 | 5-6 | TOP:333 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0473 | 5-6 | TOP:333 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0474 | 5-6 | TOP:333 \| BOTTOM:426 | D4 | 1 | 1 |
+| S0475 | 5-6 | TOP:333 \| BOTTOM:438 | D4 | 1 | 1 |
+| S0476 | 5-6 | TOP:345 \| BOTTOM:353 | D4 | 1 | 1 |
+| S0477 | 5-6 | TOP:345 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0478 | 5-6 | TOP:345 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0479 | 5-6 | TOP:345 \| BOTTOM:426 | D4 | 1 | 1 |
+| S0480 | 5-6 | TOP:345 \| BOTTOM:438 | D4 | 1 | 1 |
+| S0481 | 5-6 | TOP:345 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0482 | 5-6 | TOP:365 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0483 | 5-6 | TOP:365 \| BOTTOM:405 | D4,D5 | 2 | 2 |
+| S0484 | 5-6 | TOP:365 \| BOTTOM:426 | D4,D5 | 2 | 2 |
+| S0485 | 5-6 | TOP:365 \| BOTTOM:438 | D4,D5 | 2 | 2 |
+| S0486 | 5-6 | TOP:365 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0487 | 5-6 | TOP:365 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0488 | 5-6 | TOP:379 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0489 | 5-6 | TOP:379 \| BOTTOM:405 | D4,D5 | 2 | 2 |
+| S0490 | 5-6 | TOP:379 \| BOTTOM:426 | D4,D5 | 2 | 2 |
+| S0491 | 5-6 | TOP:379 \| BOTTOM:438 | D4,D5 | 2 | 2 |
+| S0492 | 5-6 | TOP:379 \| BOTTOM:450 | D5 | 1 | 1 |
+| S0493 | 5-6 | TOP:383 \| BOTTOM:391 | D4 | 1 | 1 |
+| S0494 | 5-6 | TOP:383 \| BOTTOM:405 | D4 | 1 | 1 |
+| S0495 | 5-6 | TOP:383 \| BOTTOM:426 | D4 | 1 | 1 |
+| S0496 | 5-6 | TOP:383 \| BOTTOM:438 | D4 | 1 | 1 |
+| S0497 | 5-6 | TOP:383 \| BOTTOM:445 | D4 | 1 | 1 |
+| S0498 | 5-6 | TOP:411 \| BOTTOM:426 | D3,D4,D5 | 3 | 2 |
+| S0499 | 5-6 | TOP:411 \| BOTTOM:438 | D3,D4,D5 | 3 | 2 |
+| S0500 | 5-6 | TOP:411 \| BOTTOM:445 | D3,D4 | 2 | 1 |
+| S0501 | 5-6 | TOP:411 \| BOTTOM:450 | D3,D5 | 2 | 2 |
+| S0502 | 5-6 | TOP:421 \| BOTTOM:438 | D3,D4,D5 | 3 | 2 |
+| S0503 | 5-6 | TOP:421 \| BOTTOM:445 | D3,D4 | 2 | 1 |
+| S0504 | 5-6 | TOP:421 \| BOTTOM:450 | D3,D5 | 2 | 2 |
+| S0505 | 5-6 | TOP:436 \| BOTTOM:445 | D3 | 1 | 1 |
+| S0506 | 5-6 | TOP:436 \| BOTTOM:450 | D3,D5 | 2 | 2 |
+| S0507 | 5-7 | TOP:345 \| BOTTOM:445 \| TOP:474 | D4 | 1 | 1 |
+| S0508 | 5-7 | TOP:345 \| BOTTOM:450 \| TOP:474 | D4 | 1 | 1 |
+| S0509 | 5-7 | TOP:365 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0510 | 5-7 | TOP:365 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0511 | 5-7 | TOP:365 \| BOTTOM:445 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0512 | 5-7 | TOP:365 \| BOTTOM:450 \| TOP:474 | D4,D5 | 2 | 2 |
+| S0513 | 5-7 | TOP:379 \| BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0514 | 5-7 | TOP:379 \| BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0515 | 5-7 | TOP:379 \| BOTTOM:445 \| TOP:474 | D5 | 1 | 1 |
+| S0516 | 5-7 | TOP:379 \| BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0517 | 5-7 | TOP:383 \| BOTTOM:445 \| TOP:474 | D4 | 1 | 1 |
+| S0518 | 5-7 | TOP:383 \| BOTTOM:450 \| TOP:474 | D4 | 1 | 1 |
+| S0519 | 5-7 | TOP:436 \| BOTTOM:445 \| TOP:474 | D5 | 1 | 1 |
+| S0520 | 5-7 | TOP:436 \| BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0521 | 6-6 | BOTTOM:405 | D5 | 1 | 1 |
+| S0522 | 6-6 | BOTTOM:426 | D5 | 1 | 1 |
+| S0523 | 6-6 | BOTTOM:438 | D5 | 1 | 1 |
+| S0524 | 6-6 | BOTTOM:445 | D4 | 1 | 1 |
+| S0525 | 6-6 | BOTTOM:450 | D5 | 1 | 1 |
+| S0526 | 6-7 | BOTTOM:405 \| TOP:421 | D5 | 1 | 1 |
+| S0527 | 6-7 | BOTTOM:405 \| TOP:436 | D5 | 1 | 1 |
+| S0528 | 6-7 | BOTTOM:426 \| TOP:436 | D5 | 1 | 1 |
+| S0529 | 6-7 | BOTTOM:426 \| TOP:474 | D5 | 1 | 1 |
+| S0530 | 6-7 | BOTTOM:438 \| TOP:474 | D5 | 1 | 1 |
+| S0531 | 6-7 | BOTTOM:445 \| TOP:474 | D4 | 1 | 1 |
+| S0532 | 6-7 | BOTTOM:450 \| TOP:474 | D5 | 1 | 1 |
+| S0533 | 6-9 | BOTTOM:426 \| TOP:467 \| BOTTOM:500 \| TOP:524 | D5 | 1 | 1 |
+| S0534 | 6-9 | BOTTOM:426 \| TOP:467 \| BOTTOM:500 \| TOP:535 | D5 | 1 | 1 |
+| S0535 | 6-9 | BOTTOM:426 \| TOP:467 \| BOTTOM:500 \| TOP:555 | D5 | 1 | 1 |
+| S0536 | 6-9 | BOTTOM:426 \| TOP:467 \| BOTTOM:511 \| TOP:524 | D5 | 1 | 1 |
+| S0537 | 6-9 | BOTTOM:426 \| TOP:467 \| BOTTOM:511 \| TOP:535 | D5 | 1 | 1 |
+| S0538 | 6-9 | BOTTOM:426 \| TOP:467 \| BOTTOM:511 \| TOP:555 | D5 | 1 | 1 |
+| S0539 | 6-9 | BOTTOM:426 \| TOP:474 \| BOTTOM:500 \| TOP:524 | D5 | 1 | 1 |
+| S0540 | 6-9 | BOTTOM:426 \| TOP:474 \| BOTTOM:500 \| TOP:535 | D5 | 1 | 1 |
+| S0541 | 6-9 | BOTTOM:426 \| TOP:474 \| BOTTOM:500 \| TOP:555 | D5 | 1 | 1 |
+| S0542 | 6-9 | BOTTOM:426 \| TOP:474 \| BOTTOM:511 \| TOP:524 | D5 | 1 | 1 |
+| S0543 | 6-9 | BOTTOM:426 \| TOP:474 \| BOTTOM:511 \| TOP:535 | D5 | 1 | 1 |
+| S0544 | 6-9 | BOTTOM:426 \| TOP:474 \| BOTTOM:511 \| TOP:555 | D5 | 1 | 1 |
+| S0545 | 6-9 | BOTTOM:438 \| TOP:467 \| BOTTOM:500 \| TOP:524 | D5 | 1 | 1 |
+| S0546 | 6-9 | BOTTOM:438 \| TOP:467 \| BOTTOM:500 \| TOP:535 | D5 | 1 | 1 |
+| S0547 | 6-9 | BOTTOM:438 \| TOP:467 \| BOTTOM:500 \| TOP:555 | D5 | 1 | 1 |
+| S0548 | 6-9 | BOTTOM:438 \| TOP:467 \| BOTTOM:511 \| TOP:524 | D5 | 1 | 1 |
+| S0549 | 6-9 | BOTTOM:438 \| TOP:467 \| BOTTOM:511 \| TOP:535 | D5 | 1 | 1 |
+| S0550 | 6-9 | BOTTOM:438 \| TOP:467 \| BOTTOM:511 \| TOP:555 | D5 | 1 | 1 |
+| S0551 | 6-9 | BOTTOM:438 \| TOP:474 \| BOTTOM:500 \| TOP:524 | D5 | 1 | 1 |
+| S0552 | 6-9 | BOTTOM:438 \| TOP:474 \| BOTTOM:500 \| TOP:535 | D5 | 1 | 1 |
+| S0553 | 6-9 | BOTTOM:438 \| TOP:474 \| BOTTOM:500 \| TOP:555 | D5 | 1 | 1 |
+| S0554 | 6-9 | BOTTOM:438 \| TOP:474 \| BOTTOM:511 \| TOP:524 | D5 | 1 | 1 |
+| S0555 | 6-9 | BOTTOM:438 \| TOP:474 \| BOTTOM:511 \| TOP:535 | D5 | 1 | 1 |
+| S0556 | 6-9 | BOTTOM:438 \| TOP:474 \| BOTTOM:511 \| TOP:555 | D5 | 1 | 1 |
+| S0557 | 6-9 | BOTTOM:450 \| TOP:467 \| BOTTOM:500 \| TOP:524 | D5 | 1 | 1 |
+| S0558 | 6-9 | BOTTOM:450 \| TOP:467 \| BOTTOM:500 \| TOP:535 | D5 | 1 | 1 |
+| S0559 | 6-9 | BOTTOM:450 \| TOP:467 \| BOTTOM:500 \| TOP:555 | D5 | 1 | 1 |
+| S0560 | 6-9 | BOTTOM:450 \| TOP:467 \| BOTTOM:511 \| TOP:524 | D5 | 1 | 1 |
+| S0561 | 6-9 | BOTTOM:450 \| TOP:467 \| BOTTOM:511 \| TOP:535 | D5 | 1 | 1 |
+| S0562 | 6-9 | BOTTOM:450 \| TOP:467 \| BOTTOM:511 \| TOP:555 | D5 | 1 | 1 |
+| S0563 | 6-9 | BOTTOM:450 \| TOP:474 \| BOTTOM:500 \| TOP:524 | D5 | 1 | 1 |
+| S0564 | 6-9 | BOTTOM:450 \| TOP:474 \| BOTTOM:500 \| TOP:535 | D5 | 1 | 1 |
+| S0565 | 6-9 | BOTTOM:450 \| TOP:474 \| BOTTOM:500 \| TOP:555 | D5 | 1 | 1 |
+| S0566 | 6-9 | BOTTOM:450 \| TOP:474 \| BOTTOM:511 \| TOP:524 | D5 | 1 | 1 |
+| S0567 | 6-9 | BOTTOM:450 \| TOP:474 \| BOTTOM:511 \| TOP:535 | D5 | 1 | 1 |
+| S0568 | 6-9 | BOTTOM:450 \| TOP:474 \| BOTTOM:511 \| TOP:555 | D5 | 1 | 1 |
+| S0569 | 7-7 | TOP:474 | D4,D5 | 2 | 2 |
+| S0570 | 7-9 | TOP:474 \| BOTTOM:500 \| TOP:524 | D5 | 1 | 1 |
+| S0571 | 7-9 | TOP:474 \| BOTTOM:500 \| TOP:535 | D5 | 1 | 1 |
+| S0572 | 7-9 | TOP:474 \| BOTTOM:500 \| TOP:555 | D5 | 1 | 1 |
+| S0573 | 7-9 | TOP:474 \| BOTTOM:511 \| TOP:524 | D5 | 1 | 1 |
+| S0574 | 7-9 | TOP:474 \| BOTTOM:511 \| TOP:535 | D5 | 1 | 1 |
+| S0575 | 7-9 | TOP:474 \| BOTTOM:511 \| TOP:555 | D5 | 1 | 1 |
+| S0576 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:509 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0577 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:509 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0578 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:509 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0579 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:524 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0580 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:524 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0581 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:524 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0582 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:535 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0583 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:535 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0584 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:535 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0585 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:555 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0586 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:555 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0587 | 7-10 | TOP:474 \| BOTTOM:500 \| TOP:555 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0588 | 7-10 | TOP:474 \| BOTTOM:511 \| TOP:524 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0589 | 7-10 | TOP:474 \| BOTTOM:511 \| TOP:524 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0590 | 7-10 | TOP:474 \| BOTTOM:511 \| TOP:524 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0591 | 7-10 | TOP:474 \| BOTTOM:511 \| TOP:535 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0592 | 7-10 | TOP:474 \| BOTTOM:511 \| TOP:535 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0593 | 7-10 | TOP:474 \| BOTTOM:511 \| TOP:535 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0594 | 7-10 | TOP:474 \| BOTTOM:511 \| TOP:555 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0595 | 7-10 | TOP:474 \| BOTTOM:511 \| TOP:555 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0596 | 7-10 | TOP:474 \| BOTTOM:511 \| TOP:555 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0597 | 7-10 | TOP:474 \| BOTTOM:529 \| TOP:555 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0598 | 7-10 | TOP:474 \| BOTTOM:529 \| TOP:555 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0599 | 7-10 | TOP:474 \| BOTTOM:529 \| TOP:555 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0600 | 7-10 | TOP:474 \| BOTTOM:530 \| TOP:555 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0601 | 7-10 | TOP:474 \| BOTTOM:530 \| TOP:555 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0602 | 7-10 | TOP:474 \| BOTTOM:530 \| TOP:555 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0603 | 8-9 | BOTTOM:511 \| TOP:524 | D5 | 1 | 1 |
+| S0604 | 8-9 | BOTTOM:511 \| TOP:535 | D5 | 1 | 1 |
+| S0605 | 8-9 | BOTTOM:511 \| TOP:555 | D5 | 1 | 1 |
+| S0606 | 8-10 | BOTTOM:511 \| TOP:524 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0607 | 8-10 | BOTTOM:511 \| TOP:524 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0608 | 8-10 | BOTTOM:511 \| TOP:524 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0609 | 8-10 | BOTTOM:511 \| TOP:535 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0610 | 8-10 | BOTTOM:511 \| TOP:535 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0611 | 8-10 | BOTTOM:511 \| TOP:535 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0612 | 8-10 | BOTTOM:511 \| TOP:555 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0613 | 8-10 | BOTTOM:511 \| TOP:555 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0614 | 8-10 | BOTTOM:511 \| TOP:555 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0615 | 8-10 | BOTTOM:529 \| TOP:555 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0616 | 8-10 | BOTTOM:529 \| TOP:555 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0617 | 8-10 | BOTTOM:529 \| TOP:555 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0618 | 8-10 | BOTTOM:530 \| TOP:555 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0619 | 8-10 | BOTTOM:530 \| TOP:555 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0620 | 8-10 | BOTTOM:530 \| TOP:555 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0621 | 9-9 | TOP:524 | D5 | 1 | 1 |
+| S0622 | 9-9 | TOP:535 | D5 | 1 | 1 |
+| S0623 | 9-9 | TOP:555 | D5 | 1 | 1 |
+| S0624 | 9-10 | TOP:524 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0625 | 9-10 | TOP:524 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0626 | 9-10 | TOP:524 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0627 | 9-10 | TOP:535 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0628 | 9-10 | TOP:535 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0629 | 9-10 | TOP:535 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0630 | 9-10 | TOP:555 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0631 | 9-10 | TOP:555 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0632 | 9-10 | TOP:555 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0633 | 9-10 | TOP:558 \| BOTTOM:585 | D5 | 1 | 1 |
+| S0634 | 9-10 | TOP:558 \| BOTTOM:595 | D5 | 1 | 1 |
+| S0635 | 9-10 | TOP:558 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0636 | 9-10 | TOP:558 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0637 | 9-10 | TOP:558 \| BOTTOM:641 | D5 | 1 | 1 |
+| S0638 | 9-10 | TOP:583 \| BOTTOM:595 | D5 | 1 | 1 |
+| S0639 | 9-10 | TOP:583 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0640 | 9-10 | TOP:583 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0641 | 9-10 | TOP:583 \| BOTTOM:641 | D5 | 1 | 1 |
+| S0642 | 9-10 | TOP:594 \| BOTTOM:609 | D5 | 1 | 1 |
+| S0643 | 9-10 | TOP:594 \| BOTTOM:611 | D5 | 1 | 1 |
+| S0644 | 9-10 | TOP:594 \| BOTTOM:641 | D5 | 1 | 1 |
+| S0645 | 9-10 | TOP:605 \| BOTTOM:641 | D5 | 1 | 1 |
+| S0646 | 10-10 | BOTTOM:585 | D5 | 1 | 1 |
+| S0647 | 10-10 | BOTTOM:609 | D5 | 1 | 1 |
+| S0648 | 10-10 | BOTTOM:611 | D5 | 1 | 1 |
+
+## 6. Compatibilité et algorithme
+
+Ordre croissant `(start,end,replacements)`. Les chevauchements exigent les mêmes pivots sur toutes les positions communes. Chaque ajout est appliqué au chemin complet puis validé par `validPrefix`. Les états sont dédupliqués par séquence complète; aucune permutation générale, beam, pruning Temporal/Shape ou arrêt GT.
+
+## 7. Coût de recherche
+
+| maxCompositions | maxUniquePaths | compositionsExamined | uniquePaths | structurallyRejected | incompatibleOverlap | duplicatePaths | elapsedMs | guard |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1000000 | 200000 | 1000001 | 161012 | 1442 | 703125 | 113029 | 13082.0888 | MAX_COMPOSITIONS |
+
+## 8. Chemins composés et meilleur GT
+
+Baseline locale=7/11. Composition=9/11. Chemins uniques=161012.
+
+## 9. GT complète et provenance
+
+GT 11/11 non générée.
+
+Aucune provenance GT complète.
+
+## 10. Scoring
+
+Temporal est classé par sa valeur brute actuelle (higher better). Shape utilise la moyenne de trois composantes min-max sur toute la population: mean correlation higher, min correlation higher, std lower. Le combiné vaut `0.5*TemporalMinMax + 0.5*ShapeScore`; poids égaux fixés avant observation.
+
+## 11. Top 20 TEMPORAL
+
+| rank | path | temporalScore | shapeRaw | shapeScore | combinedScore | diagnosticGtCount | segmentCount | provenance |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:265\|BOTTOM:321\|TOP:345\|BOTTOM:405\|TOP:436\|BOTTOM:500\|TOP:524\|BOTTOM:585 | -0.10080192517980861 | [0.5614904583442423,0.27993145111148393,0.14153565521959652] | 0.6503051771192302 | 0.8251525885596152 | 1 | 3 | S0088 -> S0527 -> S0624 |
+| 2 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:265\|BOTTOM:321\|TOP:345\|BOTTOM:405\|TOP:436\|BOTTOM:500\|TOP:535\|BOTTOM:585 | -0.12195705825830983 | [0.5614904583442423,0.27993145111148393,0.14153565521959652] | 0.6503051771192302 | 0.8099588851025836 | 1 | 3 | S0088 -> S0527 -> S0627 |
+| 3 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:609 | -0.12966434842385285 | [0.6259734797010987,0.4818619089493881,0.08485141729136497] | 0.8846728989462783 | 0.9216073385668603 | 4 | 3 | S0004 -> S0306 -> S0613 |
+| 4 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:609 | -0.13128632138931015 | [0.6259734797010987,0.4818619089493881,0.08485141729136497] | 0.8846728989462783 | 0.9204424309219387 | 3 | 3 | S0004 -> S0303 -> S0613 |
+| 5 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:529\|TOP:555\|BOTTOM:611 | -0.13399950834278568 | [0.5423562998145621,0.36963207125398445,0.1007252860099962] | 0.7238698730912864 | 0.8380922959819209 | 6 | 3 | S0060 -> S0307 -> S0599 |
+| 6 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.13400120586846692 | [0.6075665922508696,0.46368266141454584,0.07441915390491695] | 0.8691141464226048 | 0.9107132134776645 | 5 | 3 | S0004 -> S0306 -> S0614 |
+| 7 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:529\|TOP:555\|BOTTOM:609 | -0.13416264359008934 | [0.5751136458132837,0.33301009541762044,0.13559264475751404] | 0.6978160076842421 | 0.8249481988738203 | 5 | 3 | S0060 -> S0307 -> S0598 |
+| 8 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.135534199422273 | [0.6075665922508696,0.46368266141454584,0.07441915390491695] | 0.8691141464226048 | 0.9096122112116121 | 4 | 3 | S0004 -> S0303 -> S0614 |
+| 9 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:265\|BOTTOM:321\|TOP:345\|BOTTOM:405\|TOP:421\|BOTTOM:500\|TOP:524\|BOTTOM:585 | -0.13565033930955214 | [0.5614904583442423,0.27993145111148393,0.14153565521959652] | 0.6503051771192302 | 0.8001243144159167 | 1 | 3 | S0088 -> S0526 -> S0624 |
+| 10 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:529\|TOP:555\|BOTTOM:611 | -0.13576183714361303 | [0.5423562998145621,0.36963207125398445,0.1007252860099962] | 0.7238698730912864 | 0.8368265841996223 | 7 | 3 | S0004 -> S0307 -> S0599 |
+| 11 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:529\|TOP:555\|BOTTOM:609 | -0.13597931402889324 | [0.5751136458132837,0.33301009541762044,0.13559264475751404] | 0.6978160076842421 | 0.8236434587039563 | 6 | 3 | S0004 -> S0307 -> S0598 |
+| 12 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:265\|BOTTOM:321\|TOP:345\|BOTTOM:405\|TOP:436\|BOTTOM:500\|TOP:524\|BOTTOM:564 | -0.1374280697384924 | [0.4879330768372725,0.28983568365303214,0.18295180511135575] | 0.530196478913436 | 0.7387931920181587 | 1 | 3 | S0088 -> S0527 -> S0621 |
+| 13 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:530\|TOP:555\|BOTTOM:611 | -0.13791723989881113 | [0.5409582885892806,0.3112601745990246,0.1557440536179271] | 0.6278377300331508 | 0.7872624935599477 | 5 | 3 | S0060 -> S0307 -> S0602 |
+| 14 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:609 | -0.13837414209311275 | [0.6259734797010987,0.4818619089493881,0.08485141729136497] | 0.8846728989462783 | 0.915351928984155 | 2 | 3 | S0060 -> S0303 -> S0613 |
+| 15 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:530\|TOP:555\|BOTTOM:609 | -0.1384385822039959 | [0.5752039328994267,0.2745015174201747,0.16964505565058466] | 0.6282262705838805 | 0.7870823336506766 | 4 | 3 | S0060 -> S0307 -> S0601 |
+| 16 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:474\|BOTTOM:529\|TOP:555\|BOTTOM:611 | -0.13901036964052094 | [0.5423562998145621,0.36963207125398445,0.1007252860099962] | 0.7238698730912864 | 0.8344934748192465 | 5 | 3 | S0060 -> S0304 -> S0599 |
+| 17 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:609 | -0.13908827174145133 | [0.6259734797010987,0.4818619089493881,0.08485141729136497] | 0.8846728989462783 | 0.9148390381379253 | 3 | 3 | S0060 -> S0306 -> S0613 |
+| 18 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:530\|TOP:555\|BOTTOM:611 | -0.13991566368533753 | [0.5409582885892806,0.3112601745990246,0.1557440536179271] | 0.6278377300331508 | 0.7858272173893234 | 6 | 3 | S0004 -> S0307 -> S0602 |
+| 19 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:474\|BOTTOM:529\|TOP:555\|BOTTOM:609 | -0.14002449287995608 | [0.5751136458132837,0.33301009541762044,0.13559264475751404] | 0.6978160076842421 | 0.8207381946403535 | 4 | 3 | S0060 -> S0304 -> S0598 |
+| 20 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:530\|TOP:555\|BOTTOM:609 | -0.1404138644946832 | [0.5752039328994267,0.2745015174201747,0.16964505565058466] | 0.6282262705838805 | 0.7856636777974015 | 5 | 3 | S0004 -> S0307 -> S0601 |
+
+## 12. Top 20 SHAPE
+
+| rank | path | temporalScore | shapeRaw | shapeScore | combinedScore | diagnosticGtCount | segmentCount | provenance |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:524\|BOTTOM:611 | -0.23994104029743699 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8747245518193502 | 2 | 3 | S0010 -> S0386 -> S0608 |
+| 2 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.21316346352082935 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8939563174306536 | 2 | 3 | S0010 -> S0386 -> S0611 |
+| 3 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.2683797182239531 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8542997765403604 | 2 | 3 | S0010 -> S0386 -> S0614 |
+| 4 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:524\|BOTTOM:611 | -0.28405560248408074 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.843041292086903 | 3 | 3 | S0010 -> S0386 -> S0590 |
+| 5 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.2525917611669163 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8656387521368192 | 3 | 3 | S0010 -> S0386 -> S0593 |
+| 6 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.2842910656358166 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8428721814843246 | 3 | 3 | S0010 -> S0386 -> S0596 |
+| 7 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:524\|BOTTOM:611 | -0.26299088875402066 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8581700559965493 | 2 | 3 | S0010 -> S0390 -> S0608 |
+| 8 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.22546077286399066 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8851243393577173 | 2 | 3 | S0010 -> S0390 -> S0611 |
+| 9 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.2507177048655977 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.866984707068814 | 2 | 3 | S0010 -> S0390 -> S0614 |
+| 10 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:524\|BOTTOM:611 | -0.289347280392708 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8392407872810261 | 3 | 3 | S0010 -> S0390 -> S0590 |
+| 11 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.25100019258416945 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8667818232292132 | 3 | 3 | S0010 -> S0390 -> S0593 |
+| 12 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.2632617250297977 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8579755402710139 | 3 | 3 | S0010 -> S0390 -> S0596 |
+| 13 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:524\|BOTTOM:611 | -0.2782212554633148 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8472315440777552 | 3 | 3 | S0010 -> S0393 -> S0608 |
+| 14 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.2394162180510996 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8751014813120135 | 3 | 3 | S0010 -> S0393 -> S0611 |
+| 15 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.2546709260518752 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8641454873777124 | 3 | 3 | S0010 -> S0393 -> S0614 |
+| 16 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:524\|BOTTOM:611 | -0.2995278714856607 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8319290449483433 | 4 | 3 | S0010 -> S0393 -> S0590 |
+| 17 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.2602611314032614 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8601305789364515 | 4 | 3 | S0010 -> S0393 -> S0593 |
+| 18 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.2655049132940723 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8563644732472702 | 4 | 3 | S0010 -> S0393 -> S0596 |
+| 19 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:524\|BOTTOM:611 | -0.3163301123955374 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8198616065233066 | 3 | 3 | S0003 -> S0301 -> S0608 |
+| 20 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.2731201577605258 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.8508951733971228 | 3 | 3 | S0003 -> S0301 -> S0611 |
+
+## 13. Top 20 TEMPORAL + SHAPE
+
+| rank | path | temporalScore | shapeRaw | shapeScore | combinedScore | diagnosticGtCount | segmentCount | provenance |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.15084501846884255 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9387136805968266 | 5 | 3 | S0004 -> S0307 -> S0614 |
+| 2 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.15322483941589626 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9370044834191869 | 6 | 3 | S0004 -> S0307 -> S0596 |
+| 3 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.1548909847934595 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9358078509664832 | 4 | 3 | S0060 -> S0307 -> S0614 |
+| 4 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.158852219962912 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9329628755997535 | 4 | 3 | S0004 -> S0304 -> S0614 |
+| 5 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.16147988120495194 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9310756785044225 | 5 | 3 | S0060 -> S0307 -> S0596 |
+| 6 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.16217986711791102 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9305729457470281 | 5 | 3 | S0004 -> S0304 -> S0596 |
+| 7 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.16228279413777796 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9304990231386583 | 3 | 3 | S0060 -> S0304 -> S0614 |
+| 8 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:474\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.1691760319351251 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9255482714434052 | 4 | 3 | S0060 -> S0304 -> S0596 |
+| 9 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.17430535701503147 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9218643691058674 | 2 | 3 | S0061 -> S0386 -> S0611 |
+| 10 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:609 | -0.12966434842385285 | [0.6259734797010987,0.4818619089493881,0.08485141729136497] | 0.8846728989462783 | 0.9216073385668603 | 4 | 3 | S0004 -> S0306 -> S0613 |
+| 11 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.17567853763615293 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9208781451443901 | 2 | 3 | S0061 -> S0390 -> S0611 |
+| 12 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:609 | -0.13128632138931015 | [0.6259734797010987,0.4818619089493881,0.08485141729136497] | 0.8846728989462783 | 0.9204424309219387 | 3 | 3 | S0004 -> S0303 -> S0613 |
+| 13 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:379\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.1816955583961932 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9165566961237852 | 3 | 3 | S0017 -> S0390 -> S0611 |
+| 14 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:609 | -0.13837414209311275 | [0.6259734797010987,0.4818619089493881,0.08485141729136497] | 0.8846728989462783 | 0.915351928984155 | 2 | 3 | S0060 -> S0303 -> S0613 |
+| 15 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:609 | -0.13908827174145133 | [0.6259734797010987,0.4818619089493881,0.08485141729136497] | 0.8846728989462783 | 0.9148390381379253 | 3 | 3 | S0060 -> S0306 -> S0613 |
+| 16 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.18879105686777975 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9114606799816479 | 3 | 3 | S0017 -> S0386 -> S0611 |
+| 17 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.13400120586846692 | [0.6075665922508696,0.46368266141454584,0.07441915390491695] | 0.8691141464226048 | 0.9107132134776645 | 5 | 3 | S0004 -> S0306 -> S0614 |
+| 18 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:379\|BOTTOM:426\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 | -0.135534199422273 | [0.6075665922508696,0.46368266141454584,0.07441915390491695] | 0.8691141464226048 | 0.9096122112116121 | 4 | 3 | S0004 -> S0303 -> S0614 |
+| 19 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:426\|TOP:474\|BOTTOM:511\|TOP:555\|BOTTOM:609 | -0.1467074554842703 | [0.6259734797010987,0.4818619089493881,0.08485141729136497] | 0.8846728989462783 | 0.9093669090833144 | 5 | 3 | S0004 -> S0306 -> S0595 |
+| 20 | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:535\|BOTTOM:611 | -0.19312591742032778 | [0.6081187956247235,0.5502204874656682,0.043726264037842195] | 0.9493096714286887 | 0.9083473653303715 | 3 | 3 | S0061 -> S0393 -> S0611 |
+
+## 14. GT ranks et chemins gagnants
+
+| gtGenerated | temporalGtRank | shapeGtRank | combinedGtRank | gtTemporal | gtShape | gtCombined | temporalWinner | shapeWinner | combinedWinner |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| false |  |  |  |  |  |  | BOTTOM:169\|TOP:195\|BOTTOM:243\|TOP:265\|BOTTOM:321\|TOP:345\|BOTTOM:405\|TOP:436\|BOTTOM:500\|TOP:524\|BOTTOM:585 | BOTTOM:169\|TOP:179\|BOTTOM:243\|TOP:265\|BOTTOM:346\|TOP:365\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:524\|BOTTOM:611 | BOTTOM:169\|TOP:199\|BOTTOM:243\|TOP:291\|BOTTOM:346\|TOP:383\|BOTTOM:438\|TOP:467\|BOTTOM:511\|TOP:555\|BOTTOM:611 |
+
+## 15. Comparaison reconstructeur actuel
+
+| system | bestGt | paths | states | elapsedMs | guard |
+| --- | --- | --- | --- | --- | --- |
+| Current local reconstruction | 7/11 | 2649 | 50026 | 326.22390000000007 | NONE |
+| Segment composition | 9/11 | 161012 | 1000001 | 13082.4038 | MAX_COMPOSITIONS |
+
+## 16. Réponses Q1–Q14
+
+| question | answer |
+| --- | --- |
+| Q1 Segments uniques | 648 |
+| Q2 Compositions explorées | 1000001 |
+| Q3 Chemins uniques valides | 161012 |
+| Q4 GT 11/11 générée | NON |
+| Q5 Segments composant GT | SANS OBJET |
+| Q6 Minimum segments pour 11/11 | SANS OBJET |
+| Q7 Quatre pivots coexistent | NON |
+| Q8 Best GT count | 9/11 |
+| Q9 Rang GT Temporal | NON_GÉNÉRÉE |
+| Q10 Rang GT Shape | NON_GÉNÉRÉE |
+| Q11 Rang GT combiné | NON_GÉNÉRÉE |
+| Q12 Chemins devant GT | SANS OBJET |
+| Q13 Temporal/Shape même gagnant | NON |
+| Q14 Recherche raisonnable | NON — GARDE ATTEINTE |
+
+## 17. Verdict
+
+**SEGMENT_COMPOSITION_SEARCH_EXPLODES**
+
+## 18. Prochaine expérience
+
+Réduire structurellement l’espace de composition sans score progressif avant toute conclusion de ranking.
+
+## Validation
+
+Expérience réellement exécutée. Aucun changement à la promotion, reconstruction locale, sélection, DP V1/V2, RAW detector ou production; aucun ML/MHT et aucun score pendant la génération.
+
+```powershell
+$env:GROUND_TRUTH_VALIDATION_MODE='SEGMENT_COMPOSITION_TEMPORAL_SHAPE'; npx tsx ../ground-truth/groundTruthValidationRunner.ts
+```

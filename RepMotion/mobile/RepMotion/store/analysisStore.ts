@@ -2,9 +2,40 @@ import { create } from "zustand";
 
 import {
   calculateCalibration,
+  createCalibrationDataset,
   CalibrationResult,
   MotionSample,
 } from "../analytics/calibration";
+
+const DATASET_WRITER_URL = "http://10.0.0.121:4000/datasets/calibration";
+
+const CALIBRATION_EXPECTED_REPS = 5;
+const CALIBRATION_PERFORMED_REPS = 5;
+const CALIBRATION_SAMPLING_RATE_HZ = 20;
+
+// Envoie le dataset de calibration au serveur local pour l'écrire en fichier JSON.
+async function saveCalibrationDataset(dataset: unknown) {
+  try {
+    const response = await fetch(DATASET_WRITER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(dataset),
+    });
+
+    if (!response.ok) {
+      console.warn("[CALIBRATION DATASET SAVE FAILED]", response.status);
+      return;
+    }
+
+    const savedDataset = await response.json();
+
+    console.log("[CALIBRATION DATASET SAVED]", savedDataset);
+  } catch (error) {
+    console.warn("[CALIBRATION DATASET SAVE ERROR]", error);
+  }
+}
 
 type AnalysisState = {
   isRunning: boolean;
@@ -63,6 +94,26 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
     }
 
     const result = calculateCalibration(samples);
+
+    const exerciseId = get().activeExerciseId;
+
+    if (!exerciseId) {
+      console.warn(
+        "[CALIBRATION DATASET] No active exercise id. Dataset not saved.",
+      );
+    } else {
+      const dataset = createCalibrationDataset(
+        samples,
+        exerciseId,
+        CALIBRATION_EXPECTED_REPS,
+        CALIBRATION_SAMPLING_RATE_HZ,
+        CALIBRATION_PERFORMED_REPS,
+        "manual calibration capture",
+      );
+
+      // Sauvegarde le dataset sans bloquer le résultat de calibration.
+      void saveCalibrationDataset(dataset);
+    }
 
     set({
       isCalibrating: false,

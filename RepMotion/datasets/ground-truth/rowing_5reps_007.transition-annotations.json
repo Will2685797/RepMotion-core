@@ -1,0 +1,88 @@
+{
+  "dataset": "rowing_5reps_007.json",
+  "video": "rowing_5reps_007.mov",
+  "exercise": "rowing",
+  "performedReps": 5,
+  "videoFps": 60,
+  "annotationMethod": "manual_transition_review",
+
+  "sync": {
+    "videoTimeSeconds": 14.47,
+    "imuSampleIndex": 157,
+    "description": "Petit rebond de la barre avant la première répétition utilisé comme point de synchronisation."
+  },
+
+  "events": [
+    {
+      "type": "BOTTOM",
+      "rep": 1,
+      "arrivalTimeSeconds": 15.04,
+      "departureTimeSeconds": 15.10
+    },
+    {
+      "type": "TOP",
+      "rep": 1,
+      "arrivalTimeSeconds": 16.55,
+      "departureTimeSeconds": 16.60
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 2,
+      "arrivalTimeSeconds": 19.68,
+      "departureTimeSeconds": 19.845
+    },
+    {
+      "type": "TOP",
+      "rep": 2,
+      "arrivalTimeSeconds": 21.11,
+      "departureTimeSeconds": 21.13
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 3,
+      "arrivalTimeSeconds": 24.21,
+      "departureTimeSeconds": 24.37
+    },
+    {
+      "type": "TOP",
+      "rep": 3,
+      "arrivalTimeSeconds": 25.79,
+      "departureTimeSeconds": 25.82
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 4,
+      "arrivalTimeSeconds": 28.66,
+      "departureTimeSeconds": 28.86
+    },
+    {
+      "type": "TOP",
+      "rep": 4,
+      "arrivalTimeSeconds": 30.285,
+      "departureTimeSeconds": 30.335
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 5,
+      "arrivalTimeSeconds": 32.895,
+      "departureTimeSeconds": 33.06
+    },
+    {
+      "type": "TOP",
+      "rep": 5,
+      "arrivalTimeSeconds": 34.50,
+      "departureTimeSeconds": 34.51
+    },
+
+    {
+      "type": "BOTTOM",
+      "rep": 6,
+      "arrivalTimeSeconds": 37.07,
+      "departureTimeSeconds": null
+    }
+  ]
+}

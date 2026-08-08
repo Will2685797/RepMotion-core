@@ -111,7 +111,8 @@
     "deadlift": "Soulevé de terre",
     "incline_bench_press": "Développé incliné",
     "overhead_press": "Développé militaire",
-    "decline_bench_press": "Développé couché décliné"
+    "decline_bench_press": "Développé couché décliné",
+    "rowing": "Tirage barre"
   },
   "setModal": {
     "title": "Nouvelle série",
