@@ -1,5 +1,9 @@
-import type { Candidate, DelayedContextPath } from "../types";
+import type {
+  Candidate,
+  DelayedContextPath,
+} from "../types";
 import type { CandidateKey, Position } from "../promotion/types";
+import type { SequenceFeatures } from "../scoring/scoreSequence";
 
 
 // {
@@ -60,4 +64,51 @@ export type DState = {
 export type DUnique = {
   state: DState;
   provenances: Set<string>;
+};
+
+export type ExtractedSegments = {
+  aSegments: DSegment[];
+  cOnlySegments: DSegment[];
+  segments: DSegment[];
+};
+
+export type DCompositionContext = {
+  started: number;
+  maxCompositions: number;
+  maxUniquePaths: number;
+  examined: number;
+  structurallyRejected: number;
+  incompatibleOverlaps: number;
+  duplicates: number;
+  guard: string | null;
+};
+
+export type DComposedPath = {
+  pathSignature: string;
+  entry: DUnique;
+  feature: SequenceFeatures;
+};
+
+export type DScoredPath = {
+  path: string;
+  temporal: number;
+  shapeRaw: string;
+  shape: number;
+  combined: number;
+  segmentIds: string;
+  provenanceCount: number;
+};
+
+export type DCompositionResult = {
+  uniquePaths: Map<string, DUnique>;
+  composed: DComposedPath[];
+  rows: DScoredPath[];
+  temporalRanking: DScoredPath[];
+  shapeRanking: DScoredPath[];
+  combinedRanking: DScoredPath[];
+  temporalWinner: DScoredPath | undefined;
+  shapeWinner: DScoredPath | undefined;
+  combinedWinner: DScoredPath | undefined;
+  context: DCompositionContext;
+  elapsedMs: number;
 };

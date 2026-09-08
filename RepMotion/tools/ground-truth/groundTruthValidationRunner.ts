@@ -1,6 +1,11 @@
+import { buildInjectedCandidatePool } from "./historical007Injection";
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";
+import { historical007Input } from "./historical007Input";
+import { assertOracleInput, auditInjectedCandidates } from "./auditInjectedCandidates";
+import { deepStrictEqual } from "node:assert";
+import { delayedContextPath } from "../../mobile/RepMotion/analytics/delayed-context-path/delayedContextPath";
 import {
   calculateCalibration,
   type CalibrationDataset,
@@ -5532,72 +5537,6 @@ function topKPathSignature(chain: DpCandidate[]): string {
     .join("|");
 }
 
-function buildInjectedCandidatePool(
-  dataset: CalibrationDataset,
-  groundTruth: GroundTruthFile,
-  axis: keyof CalibrationDataset["samples"][number],
-  realCandidates: DpCandidate[],
-): {
-  pool: DpCandidate[];
-  groundTruthChain: DpCandidate[];
-  addedCount: number;
-} {
-  const offset =
-    groundTruth.sync.videoTimeSeconds -
-    groundTruth.sync.imuSampleIndex / dataset.samplingRateHz;
-  const realByIdentity = new Map(
-    realCandidates.map((candidate) => [
-      `${candidate.type}:${candidate.index}`,
-      candidate,
-    ]),
-  );
-  const projected = groundTruth.events.map(
-    (event, index): DpCandidate => {
-      const sampleIndex = Math.round(
-        (event.videoTimeSeconds - offset) *
-          dataset.samplingRateHz,
-      );
-      return {
-        candidateId: `TOP_K_GT_${index + 1}_${event.type}_${sampleIndex}`,
-        type: event.type,
-        index: sampleIndex,
-        value: dataset.samples[sampleIndex][axis],
-      };
-    },
-  );
-  const groundTruthChain = projected.map(
-    (candidate) =>
-      realByIdentity.get(`${candidate.type}:${candidate.index}`) ??
-      candidate,
-  );
-  const additions = groundTruthChain.filter(
-    (candidate) =>
-      !realByIdentity.has(`${candidate.type}:${candidate.index}`),
-  );
-  const pool = [...realCandidates, ...additions].sort(
-    (left, right) =>
-      left.index - right.index ||
-      left.type.localeCompare(right.type) ||
-      left.candidateId.localeCompare(right.candidateId),
-  );
-  const identities = new Set(
-    pool.map((candidate) => `${candidate.type}:${candidate.index}`),
-  );
-  if (
-    realCandidates.length !== 46 ||
-    pool.length !== 55 ||
-    additions.length !== 9 ||
-    identities.size !== pool.length
-  ) {
-    fail(
-      "INJECTED_POPULATION_MISMATCH",
-      `real=${realCandidates.length}, pool=${pool.length}, added=${additions.length}, identities=${identities.size}`,
-    );
-  }
-  return { pool, groundTruthChain, addedCount: additions.length };
-}
-
-type NmsRepresentativeRule = "MOST_EXTREME" | "BEST_PROMINENCE" | "GROUP_CENTER";
 
 function runNmsCharacterizationExperiment(
   dataset: CalibrationDataset,
@@ -10943,6 +10882,44 @@ function runDelayedContextPromisingAlternatives(
     const missingPositions = bestDiagnostic ? bestDiagnostic.path.split("|").map((pivot, position) => pivot === keyOf(gt[position]) ? null : `${position}:${keyOf(gt[position])} (got ${pivot})`).filter(Boolean) : [];
     const gtEntry = uniquePaths.get(gtSignature), top20 = (ranking: typeof rows) => ranking.slice(0, 20).map((row, index) => ({ rank: index + 1, ...row }));
     const temporalWinner = temporalRanking[0], shapeWinner = shapeRanking[0], combinedWinner = combinedRanking[0];
+    // Fixture 007 regression only: historical populations are not production invariants.
+    const preparedHistorical = historical007Input(dataset.samples);
+    deepStrictEqual(preparedHistorical.input.candidatePool, realCandidates);
+    deepStrictEqual(preparedHistorical.input.selectedDpV1Chain.map(({ type, index }) => ({ type, index })),
+      selectedDpV1Chain.map(({ type, index }) => ({ type, index })));
+    deepStrictEqual(preparedHistorical.input.values, values);
+    const controlledHistorical = buildInjectedCandidatePool(dataset, groundTruthForInjectionAndEvaluation, axis, preparedHistorical.input.candidatePool);
+    const controlledPool = controlledHistorical.pool.map(candidate => ({ ...candidate, candidateId: `EXPERIMENTAL_${candidate.type}_${candidate.index}` }));
+    deepStrictEqual(controlledPool, injected.pool);
+    console.log("HISTORICAL_INPUT_PARITY: PASS 46 + 9 = 55; bootstrap=" + topKPathSignature(preparedHistorical.input.selectedDpV1Chain));
+    const auditedInput = { ...preparedHistorical.input, candidatePool: controlledPool };
+    assertOracleInput(auditedInput, controlledHistorical.groundTruthChain);
+    const production = delayedContextPath(auditedInput);
+    const population = production.extractedSegments;
+    deepStrictEqual([population.aSegments.length, population.cOnlySegments.length, population.segments.length], [648, 351, 999]);
+    const segmentSnapshot = (segment: DSegment) => ({
+      id: segment.id, signature: segment.signature, sources: [...segment.sources],
+    });
+    deepStrictEqual(population.segments.map(segmentSnapshot), segments.map(segmentSnapshot));
+    const diagnostic = production.composition.context;
+    deepStrictEqual(
+      [diagnostic.examined, diagnostic.structurallyRejected, diagnostic.incompatibleOverlaps, diagnostic.duplicates, production.composition.uniquePaths.size, diagnostic.guard],
+      [865082, 2093, 585322, 68082, 200001, "MAX_UNIQUE_PATHS"],
+    );
+    deepStrictEqual(
+      [examined, structurallyRejected, incompatibleOverlaps, duplicates, uniquePaths.size, guard],
+      [diagnostic.examined, diagnostic.structurallyRejected, diagnostic.incompatibleOverlaps, diagnostic.duplicates, production.composition.uniquePaths.size, diagnostic.guard],
+    );
+    // Compare every scored path and ranking in order, excluding GT-only diagnostic labels.
+    const withoutGtCount = ({ gtCount: _gtCount, ...row }: typeof rows[number]) => row;
+    deepStrictEqual(production.composition.rows, rows.map(withoutGtCount));
+    deepStrictEqual(production.composition.temporalRanking, temporalRanking.map(withoutGtCount));
+    deepStrictEqual(production.composition.shapeRanking, shapeRanking.map(withoutGtCount));
+    deepStrictEqual(production.composition.combinedRanking, combinedRanking.map(withoutGtCount));
+    deepStrictEqual(production.composition.combinedWinner?.path,
+      "BOTTOM:169|TOP:199|BOTTOM:243|TOP:291|BOTTOM:346|TOP:383|BOTTOM:438|TOP:467|BOTTOM:511|TOP:555|BOTTOM:611");
+    console.log("007_PRODUCTION_PARITY: PASS (segments, D counters, all scored paths/rankings, winner)");
+    if (process.env.ORACLE_AUDIT === "1") auditInjectedCandidates("007", auditedInput, controlledHistorical.groundTruthChain, production, 0);
     const aPreserved = aSegments.every((segment) => unionMap.has(segment.signature)), cPreserved = cOnlySegments.every((segment) => unionMap.has(segment.signature));
     const leakageRows = ["segment source", "ordering/compatibility", "composition", "validPrefix", "deduplication", "Temporal/Shape scoring", "normalization/ranking", "tie-break/guards"].map((phase) =>
       ({ phase, gtRead: "NO", detail: "GT read only after generation and scoring for count/rank labels" }));
@@ -15690,3 +15667,5 @@ try {
 
   process.exitCode = 1;
 }
+
+type NmsRepresentativeRule = "MOST_EXTREME" | "BEST_PROMINENCE" | "GROUP_CENTER";

@@ -72,6 +72,19 @@ Elle ne représente pas un point précis mais une période pendant laquelle le c
 
 # Méthode d'annotation
 
+## Format V2 — `rowing_5reps_009.v2.json`
+
+Ce fichier conserve les fenêtres vidéo validées et leur conversion IMU, sans modifier les formats historiques 007 ni nécessiter de candidat RepMotion.
+
+- Racine : `annotationVersion` (2), `dataset` (nom du JSON calibration), `video` (nom de la vidéo), `exercise`, `performedReps`, `samplingRateHz`, `videoFps`, `annotationMethod`, `notes`, `sync` et `events`.
+- `sync` : `method`, `videoStartTimeSeconds`, `imuStartSample`, `offsetSeconds` (temps vidéo moins temps IMU), `videoTopArrivalTimeSeconds`, `timeResolutionSeconds`, `baseline`, `firstOutsideBaselineThresholdSample` et `notes`. `baseline` contient `startSampleInclusive`, `endSampleInclusive`, `mean`, `median`, `std` (population, arrondi à deux décimales) et `mad` (non normalisée).
+- Chaque événement : `type` (`BOTTOM` ou `TOP`), `rep` (ordinal par type, comme pour 007), `referenceTimeSeconds`, `referenceSampleFloat`, `arrivalTimeSeconds`, `departureTimeSeconds`, `arrivalSampleFloat`, `departureSampleFloat`, `arrivalSampleRounded`, `departureSampleRounded`, `confidence` et `notes`. B6 clôt la cinquième répétition ; ce n'est pas une sixième répétition complète.
+- Tous les temps d'événement sont en secondes vidéo. Les indices IMU commencent à zéro et sont calculés par `(videoTimeSeconds - offsetSeconds) * samplingRateHz`. Les champs `Rounded` arrondissent au plus proche, avec les demi-entiers vers l'entier pair ; les champs `Float` conservent les fractions.
+- Aucune convention historique explicite ne définit comment déduire un point de référence d'une fenêtre. Pour 009, `referenceTimeSeconds` et `referenceSampleFloat` restent donc `null` : aucun milieu ou autre point n'est déduit. `confidence` reste `null` faute d'évaluation fournie. Pour B6, les trois champs de départ restent `null` (départ non annoté).
+- À 20 Hz, la résolution IMU est de 0,05 s : un indice fractionnaire ne garantit pas une précision supérieure. L'ancre 18,01 s ↔ sample 124 donne un offset de 11,81 s. Le contrôle vidéo à 18,58 s se convertit en 135,4, soit 11,4 samples plus tard ; cette cohérence arithmétique n'ajoute pas de mesure indépendante de l'arrivée IMU.
+
+## Revue manuelle
+
 Les annotations sont réalisées manuellement en observant la vidéo image par image.
 
 Pour chaque Bottom :

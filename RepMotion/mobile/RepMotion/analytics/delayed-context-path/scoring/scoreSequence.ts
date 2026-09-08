@@ -13,18 +13,23 @@ type PartialTemporalFeatures = {
   status: "AVAILABLE" | "PARTIAL_TEMPORAL_FEATURE_UNAVAILABLE";
 };
 
+// Calcule la moyenne d'une liste de valeurs numériques.
 function mean(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
-
+// Milieu d'une suite 
 function median(values: number[]): number {
   const sorted = [...values].sort((left, right) => left - right);
-  const midpoint = Math.floor(sorted.length / 2);
+  const midpoint = Math.floor(sorted.length / 2); // Trouver la position centrale
 
   return sorted.length % 2 === 0
-    ? (sorted[midpoint - 1] + sorted[midpoint]) / 2
-    : sorted[midpoint];
+    ? (sorted[midpoint - 1] + sorted[midpoint]) / 2 //Quand la suite est pair on fait la moyenne des 2 chiffres du milieu
+    : sorted[midpoint]; // Sinon on retourne le chiffre du milieu donc le midpoint directement 
 }
+
+// Calcule l'écart-type : mesure à quel point les valeurs sont dispersées autour de leur moyenne.
+// Les écarts sont mis au carré pour empêcher les valeurs positives et négatives de s'annuler.
+// Plus l'écart-type est faible, plus les valeurs sont proches les unes des autres.
 
 function populationStd(values: number[]): number {
   if (values.length === 0) return 0;
@@ -34,11 +39,16 @@ function populationStd(values: number[]): number {
   );
 }
 
+// Mesure la régularité entre les reps tout en étant peu influencée par une rep anormale.
+// Plus le MAD est faible, plus les valeurs sont régulières.
+
 function medianAbsoluteDeviation(values: number[]): number {
   if (values.length === 0) return 0;
   const center = median(values);
   return median(values.map((value) => Math.abs(value - center)));
 }
+
+// mettre toutes les reps sur la même échelle pour comparer leur forme, même si elles n'ont pas exactement la même durée.
 
 function resampleSignal(segment: number[], length: number): number[] {
   if (segment.length === 0 || length <= 0) return [];
@@ -80,8 +90,10 @@ function calculatePartialTemporalFeatures(
   path: DelayedContextPath,
 ): PartialTemporalFeatures {
   const completedRepCount = Math.floor((path.length - 1) / 2);
+
   if (completedRepCount < 2) {
     return {
+      // CV (coefficient de variation) Un CV sert ici à comparer la variation des durées.
       partialFullRepDurationCV: null,
       partialBottomToTopDurationCV: null,
       partialTopToBottomDurationCV: null,
@@ -134,7 +146,7 @@ export function scoreSequence(
   path: DelayedContextPath,
   cycles: number,
   values: number[],
-): SequenceFeatures {
+): SequenceFeatures { /*Features = caractéristique | comme temporal ou shape*/
   const prefix = path.slice(0, cycles * 2 + 1);
   const amplitudes: number[] = [];
   const drifts: number[] = [];
