@@ -23,7 +23,7 @@ require.extensions['.ts']=(m,filename)=>{
  if(name.endsWith('/analytics/calibration.ts')){
  s=replace(s,'): CalibrationResult {','): CalibrationResult {\n globalThis.__oracleTrace.emit("calibrationCall",{parameters,expectedReps});');
  s=replace(s,'const pooledCandidates = [','globalThis.__oracleTrace.emit("dpCall",{bottoms,tops,expectedReps});\n  const pooledCandidates = [');
- } else if(name.endsWith('/composition/composeGlobalPaths.ts')){
+ } else if(name.endsWith('/composition/system-d/composeGlobalPaths.ts')){
  s=replace(s,'): DCompositionResult {','): DCompositionResult {\n globalThis.__oracleTrace.emit("compositionStart",{});');
  } else if(name.endsWith('/delayedContextPath.ts')){
  s=replace(s,'): DelayedContextPathResult {','): DelayedContextPathResult {\n globalThis.__oracleTrace.emit("delayedInput",{input});');
@@ -31,9 +31,9 @@ require.extensions['.ts']=(m,filename)=>{
  } else if(name.endsWith('/promotion/promoteCandidates.ts')){
  s=replace(s,'const prefix = candidatePath.slice(0, prefixLength);','const prefix = candidatePath.slice(0, prefixLength);\n      if(globalThis.__oracleTrace.relevant(position,candidate)) globalThis.__oracleTrace.emit("promotionVisit",{cycle,position,candidate,activePath,prefixValid:validatePath(prefix),context});');
  s=replace(s,'scored.forEach((entry, rankIndex) => {','if(position>=9) globalThis.__oracleTrace.emit("ranking",{cycle,position,activePath,activeFeatures,criteria,weights,confidence,scored,dynamicTopN});\n    scored.forEach((entry, rankIndex) => {');
- } else if(name.endsWith('/reconstruction/buildConditionalAlternatives.ts')){
+ } else if(name.endsWith('/reconstruction/system-c/buildConditionalAlternatives.ts')){
  s=replace(s,'if (validatePath(repaired.slice(0, prefixLength))) {','if(globalThis.__oracleTrace.relevant(position,candidate)||globalThis.__oracleTrace.relevant(neighborPosition,neighbor)) globalThis.__oracleTrace.emit("repairTrial",{position,candidate,neighborPosition,neighbor,prefixLength,repaired,valid:validatePath(repaired.slice(0,prefixLength))});\n      if (validatePath(repaired.slice(0, prefixLength))) {');
- } else if(name.endsWith('/reconstruction/reconstructLocalPaths.ts')){
+ } else if(name.endsWith('/reconstruction/shared/reconstructLocalPaths.ts')){
  s=replace(s,'const segmentRows: LocalReconstructionCandidate[] = [];','const segmentRows: LocalReconstructionCandidate[] = [];\n  globalThis.__oracleTrace.emit("reconstructionStart",{cycle,active,promising,conditional,context});');
  s=replace(s,'context.limit = "MAX_SEGMENTS";','globalThis.__oracleTrace.emit("segmentGuard",{cycle,start,length,chosen,context});\n            context.limit = "MAX_SEGMENTS";');
  s=replace(s,'const fullValid = validatePath(chain);','const fullValid = validatePath(chain);\n          if(globalThis.__oracleTrace.pathRelevant(chain)) globalThis.__oracleTrace.emit("regularTrial",{cycle,start,length,chosen,chain,prefixValid,fullValid,order:context.segmentsReconstructed});');

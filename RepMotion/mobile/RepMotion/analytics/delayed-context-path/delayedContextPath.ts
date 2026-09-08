@@ -1,11 +1,11 @@
 import {
   composeGlobalPaths,
-} from "./composition/composeGlobalPaths";
-import { extractSegments } from "./composition/extractSegments";
+} from "./composition/system-d/composeGlobalPaths";
+import { extractSegments } from "./composition/system-d/extractSegments";
 import type {
   DCompositionResult,
   ExtractedSegments,
-} from "./composition/types";
+} from "./composition/system-d/types";
 import { createExecutionContext } from "./execution/createExecutionContext";
 import type { DelayedExecutionContext } from "./execution/types";
 import { promoteCandidates } from "./promotion/promoteCandidates";
@@ -13,9 +13,9 @@ import type { PromisingAlternatives } from "./promotion/types";
 import type {
   ConditionalAlternatives,
   GeneratedReconstructionSegment,
-} from "./reconstruction/types";
-import { reconstructLocalPaths } from "./reconstruction/reconstructLocalPaths";
-import { selectLocalReconstruction } from "./reconstruction/selectLocalReconstruction";
+} from "./reconstruction/shared/types";
+import { reconstructLocalPaths } from "./reconstruction/shared/reconstructLocalPaths";
+import { selectLocalReconstruction } from "./reconstruction/shared/selectLocalReconstruction";
 import { scoreSequence } from "./scoring/scoreSequence";
 import type { Candidate, DelayedContextPath } from "./types";
 

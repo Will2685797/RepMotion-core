@@ -1,4 +1,4 @@
-import type { GeneratedReconstructionSegment } from "../reconstruction/types";
+import type { GeneratedReconstructionSegment } from "../../reconstruction/shared/types";
 import type {
   DSegment,
   ExtractedSegments,

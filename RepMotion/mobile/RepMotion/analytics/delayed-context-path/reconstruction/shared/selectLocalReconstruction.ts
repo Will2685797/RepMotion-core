@@ -3,9 +3,9 @@ import {
   criteriaAtCycle,
   directions,
   type CriterionName,
-} from "../config";
-import type { DelayedExecutionContext } from "../execution/types";
-import type { DelayedContextPath, FeatureValue } from "../types";
+} from "../../config";
+import type { DelayedExecutionContext } from "../../execution/types";
+import type { DelayedContextPath, FeatureValue } from "../../types";
 import type { LocalReconstructionCandidate } from "./types";
 
 type Contender = {

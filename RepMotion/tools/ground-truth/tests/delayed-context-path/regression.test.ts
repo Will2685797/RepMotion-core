@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { validatePath } from '../../../../mobile/RepMotion/analytics/delayed-context-path/validation/validatePath';
-import { buildConditionalAlternatives } from '../../../../mobile/RepMotion/analytics/delayed-context-path/reconstruction/buildConditionalAlternatives';
+import { buildConditionalAlternatives } from '../../../../mobile/RepMotion/analytics/delayed-context-path/reconstruction/system-c/buildConditionalAlternatives';
 import { createExecutionContext } from '../../../../mobile/RepMotion/analytics/delayed-context-path/execution/createExecutionContext';
 
 // Intentional current-state characterizations are separate from lasting protocol/quality tests.

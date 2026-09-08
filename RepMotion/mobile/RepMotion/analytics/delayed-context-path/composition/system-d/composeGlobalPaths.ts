@@ -1,6 +1,6 @@
-import { scoreSequence } from "../scoring/scoreSequence";
-import type { DelayedContextPath } from "../types";
-import { validatePath } from "../validation/validatePath";
+import { scoreSequence } from "../../scoring/scoreSequence";
+import type { DelayedContextPath } from "../../types";
+import { validatePath } from "../../validation/validatePath";
 import type {
   DCompositionContext,
   DCompositionResult,

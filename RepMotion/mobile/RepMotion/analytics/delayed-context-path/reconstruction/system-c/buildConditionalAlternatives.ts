@@ -1,14 +1,14 @@
 import type {
   Candidate,
   DelayedContextPath,
-} from "../types";
-import { validatePath } from "../validation/validatePath";
+} from "../../types";
+import { validatePath } from "../../validation/validatePath";
 import type {
   ConditionalAlternative,
   ConditionalAlternatives,
   ConditionalRepair,
-} from "./types";
-import type { DelayedExecutionContext } from "../execution/types";
+} from "../shared/types";
+import type { DelayedExecutionContext } from "../../execution/types";
 
 export function buildConditionalAlternatives(
   activePath: DelayedContextPath,

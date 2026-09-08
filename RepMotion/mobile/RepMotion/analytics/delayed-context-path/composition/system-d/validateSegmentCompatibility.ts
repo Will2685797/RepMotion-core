@@ -1,4 +1,4 @@
-import type { CandidateKey, Position } from "../promotion/types";
+import type { CandidateKey, Position } from "../../promotion/types";
 import type { DSegment } from "./types";
 
 function candidateKey(

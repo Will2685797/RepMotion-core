@@ -2,8 +2,8 @@ import type {
   Candidate,
   DelayedContextPath,
   FeatureValue,
-} from "../types";
-import type { CandidateKey, Position } from "../promotion/types";
+} from "../../types";
+import type { CandidateKey, Position } from "../../promotion/types";
 
 export type ConditionalRepairKey = string;
 

@@ -1,15 +1,15 @@
-import { criteriaAtCycle, type CriterionName } from "../config";
-import type { DelayedExecutionContext } from "../execution/types";
-import type { PromisingAlternatives } from "../promotion/types";
-import { calculateConfidence } from "../scoring/calculateConfidence";
-import { normalizeFeatures } from "../scoring/normalizeFeatures";
+import { criteriaAtCycle, type CriterionName } from "../../config";
+import type { DelayedExecutionContext } from "../../execution/types";
+import type { PromisingAlternatives } from "../../promotion/types";
+import { calculateConfidence } from "../../scoring/calculateConfidence";
+import { normalizeFeatures } from "../../scoring/normalizeFeatures";
 import {
   scoreSequence,
   type SequenceFeatures,
-} from "../scoring/scoreSequence";
-import { calculateWeights } from "../scoring/weights";
-import type { Candidate, DelayedContextPath } from "../types";
-import { validatePath } from "../validation/validatePath";
+} from "../../scoring/scoreSequence";
+import { calculateWeights } from "../../scoring/weights";
+import type { Candidate, DelayedContextPath } from "../../types";
+import { validatePath } from "../../validation/validatePath";
 import type {
   ConditionalAlternatives,
   LocalReconstructionCandidate,

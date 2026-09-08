@@ -8,8 +8,8 @@ import {
   type CriterionName,
 } from "../config";
 import type { DelayedExecutionContext } from "../execution/types";
-import { buildConditionalAlternatives } from "../reconstruction/buildConditionalAlternatives";
-import type { ConditionalAlternatives } from "../reconstruction/types";
+import { buildConditionalAlternatives } from "../reconstruction/system-c/buildConditionalAlternatives";
+import type { ConditionalAlternatives } from "../reconstruction/shared/types";
 import { validatePath } from "../validation/validatePath";
 import {
   scoreSequence,

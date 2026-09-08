@@ -1,9 +1,9 @@
 import type {
   Candidate,
   DelayedContextPath,
-} from "../types";
-import type { CandidateKey, Position } from "../promotion/types";
-import type { SequenceFeatures } from "../scoring/scoreSequence";
+} from "../../types";
+import type { CandidateKey, Position } from "../../promotion/types";
+import type { SequenceFeatures } from "../../scoring/scoreSequence";
 
 
 // {
