@@ -229,6 +229,19 @@ sont considérés.
 
 Le moteur ne recommence pas uniquement avec le nouveau cycle.
 
+Important : promotion et reconstruction ne sont pas deux grandes phases séparées.
+
+À chaque cycle, l'ordre réel est :
+
+```text
+promotion des candidats
+↓
+reconstruction locale
+↓
+sélection éventuelle d'un nouvel activePath
+↓
+cycle suivant
+
 ---
 
 # 4. Activation progressive des critères
@@ -1122,7 +1135,8 @@ Possible Repairs
 
 # 28. État après la phase de promotion progressive
 
-Après D1 → D5, Delayed Context Path possède donc trois choses importantes :
+Au fil des cycles D1 → D5, Delayed Context Path maintient et fait évoluer
+plusieurs structures importantes :
 
 ```text
 1. activePath
@@ -1262,6 +1276,15 @@ ProgressiveReconstructionState
 ---
 
 # 31. Reconstruction progressive C
+
+System A utilise déjà les reconstructions construites à partir des
+`PromisingAlternatives` ainsi que des couples `Conditional + repair`.
+
+System C repart séparément du même activePath initial et utilise le même socle,
+mais active en plus la reconstruction progressive décrite ci-dessous.
+
+C n'est donc pas simplement "le système des Conditional" et ne continue pas
+à partir du résultat final de A.
 
 C part généralement d'une paire conditionnelle réparée.
 
@@ -1480,9 +1503,11 @@ C'est le rôle de D.
 D reçoit :
 
 ```text
-activePath
+activePath initial
+
 +
-bibliothèque de segments
+
+bibliothèque de segments produits par A et C
 ```
 
 À ce stade :
