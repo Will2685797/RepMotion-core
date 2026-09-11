@@ -1,0 +1,1725 @@
+[
+  {
+    "dataset": "007",
+    "pool": 55,
+    "cycles": 5,
+    "examined": 925,
+    "uniqueExamined": 55,
+    "directValid": 137,
+    "invalid": 788,
+    "oneNeighborSaved": 97,
+    "zero": 691,
+    "zeroUniqueCandidates": 55,
+    "zeroCandidatePositionPairs": 257,
+    "zeroLogicalPositions": 11,
+    "observedLogicalPositions": 11,
+    "zeroPositionCycles": 35,
+    "observedPositionCycles": 35,
+    "noValidPrefix": 364,
+    "nonadjacentSingle": 4,
+    "atLeastTwoChanges": 323,
+    "feasibleV2Window": 73,
+    "oracle": {
+      "options": 11,
+      "exposedOptions": 11,
+      "examined": 26,
+      "zero": 4,
+      "zeroUniqueCandidates": 3,
+      "zeroLogicalPositions": 3,
+      "rows": [
+        {
+          "dataset": "007",
+          "cycle": 2,
+          "position": 2,
+          "logical": "B2",
+          "candidate": "BOTTOM:262",
+          "originalIndex": 262,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 0,
+              "logical": "B1",
+              "type": "BOTTOM",
+              "index": 169
+            },
+            {
+              "position": 1,
+              "logical": "T1",
+              "type": "TOP",
+              "index": 195
+            },
+            {
+              "position": 3,
+              "logical": "T2",
+              "type": "TOP",
+              "index": 291
+            },
+            {
+              "position": 4,
+              "logical": "B3",
+              "type": "BOTTOM",
+              "index": 299
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                2,
+                4
+              ],
+              "gap": 37
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 1,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 1,
+            "end": 4,
+            "additional": 2,
+            "chain": [
+              "BOTTOM:169",
+              "TOP:179",
+              "BOTTOM:262",
+              "TOP:291",
+              "BOTTOM:321",
+              "TOP:333",
+              "BOTTOM:391",
+              "TOP:467",
+              "BOTTOM:500",
+              "TOP:509",
+              "BOTTOM:564"
+            ]
+          },
+          "interpretation": "REQUIRES_NONADJACENT_SINGLE_CHANGE"
+        },
+        {
+          "dataset": "007",
+          "cycle": 3,
+          "position": 2,
+          "logical": "B2",
+          "candidate": "BOTTOM:262",
+          "originalIndex": 262,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 0,
+              "logical": "B1",
+              "type": "BOTTOM",
+              "index": 169
+            },
+            {
+              "position": 1,
+              "logical": "T1",
+              "type": "TOP",
+              "index": 195
+            },
+            {
+              "position": 3,
+              "logical": "T2",
+              "type": "TOP",
+              "index": 291
+            },
+            {
+              "position": 4,
+              "logical": "B3",
+              "type": "BOTTOM",
+              "index": 299
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                2,
+                4
+              ],
+              "gap": 37
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 1,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 1,
+            "end": 4,
+            "additional": 2,
+            "chain": [
+              "BOTTOM:169",
+              "TOP:179",
+              "BOTTOM:262",
+              "TOP:291",
+              "BOTTOM:321",
+              "TOP:333",
+              "BOTTOM:391",
+              "TOP:467",
+              "BOTTOM:500",
+              "TOP:509",
+              "BOTTOM:564"
+            ]
+          },
+          "interpretation": "REQUIRES_NONADJACENT_SINGLE_CHANGE"
+        },
+        {
+          "dataset": "007",
+          "cycle": 3,
+          "position": 4,
+          "logical": "B3",
+          "candidate": "BOTTOM:353",
+          "originalIndex": 353,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 2,
+              "logical": "B2",
+              "type": "BOTTOM",
+              "index": 228
+            },
+            {
+              "position": 3,
+              "logical": "T2",
+              "type": "TOP",
+              "index": 291
+            },
+            {
+              "position": 5,
+              "logical": "T3",
+              "type": "TOP",
+              "index": 333
+            },
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 391
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                4,
+                5
+              ],
+              "gap": -20
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                4,
+                5
+              ],
+              "gap": -20
+            },
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                4,
+                6
+              ],
+              "gap": 38
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 2,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 4,
+            "end": 6,
+            "additional": 2,
+            "chain": [
+              "BOTTOM:169",
+              "TOP:195",
+              "BOTTOM:228",
+              "TOP:291",
+              "BOTTOM:353",
+              "TOP:365",
+              "BOTTOM:405",
+              "TOP:467",
+              "BOTTOM:500",
+              "TOP:509",
+              "BOTTOM:564"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "007",
+          "cycle": 5,
+          "position": 8,
+          "logical": "B5",
+          "candidate": "BOTTOM:529",
+          "originalIndex": 529,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 450
+            },
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 467
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 509
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 564
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                8,
+                9
+              ],
+              "gap": -20
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                8,
+                9
+              ],
+              "gap": -20
+            },
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                8,
+                10
+              ],
+              "gap": 35
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 2,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 8,
+            "end": 10,
+            "additional": 2,
+            "chain": [
+              "BOTTOM:169",
+              "TOP:195",
+              "BOTTOM:228",
+              "TOP:265",
+              "BOTTOM:353",
+              "TOP:436",
+              "BOTTOM:450",
+              "TOP:467",
+              "BOTTOM:529",
+              "TOP:555",
+              "BOTTOM:585"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        }
+      ]
+    },
+    "groups": [
+      {
+        "position": 0,
+        "logical": "B1",
+        "examined": 130,
+        "zero": 130,
+        "uniqueCandidates": 26,
+        "oracleZero": 0,
+        "repairableMulti": 80,
+        "feasibleV2Window": 6
+      },
+      {
+        "position": 1,
+        "logical": "T1",
+        "examined": 135,
+        "zero": 98,
+        "uniqueCandidates": 24,
+        "oracleZero": 0,
+        "repairableMulti": 58,
+        "feasibleV2Window": 14
+      },
+      {
+        "position": 2,
+        "logical": "B2",
+        "examined": 130,
+        "zero": 96,
+        "uniqueCandidates": 25,
+        "oracleZero": 2,
+        "repairableMulti": 49,
+        "feasibleV2Window": 11
+      },
+      {
+        "position": 3,
+        "logical": "T2",
+        "examined": 108,
+        "zero": 69,
+        "uniqueCandidates": 25,
+        "oracleZero": 0,
+        "repairableMulti": 27,
+        "feasibleV2Window": 6
+      },
+      {
+        "position": 4,
+        "logical": "B3",
+        "examined": 104,
+        "zero": 72,
+        "uniqueCandidates": 24,
+        "oracleZero": 1,
+        "repairableMulti": 29,
+        "feasibleV2Window": 3
+      },
+      {
+        "position": 5,
+        "logical": "T3",
+        "examined": 81,
+        "zero": 47,
+        "uniqueCandidates": 19,
+        "oracleZero": 0,
+        "repairableMulti": 11,
+        "feasibleV2Window": 0
+      },
+      {
+        "position": 6,
+        "logical": "B4",
+        "examined": 78,
+        "zero": 52,
+        "uniqueCandidates": 22,
+        "oracleZero": 0,
+        "repairableMulti": 19,
+        "feasibleV2Window": 6
+      },
+      {
+        "position": 7,
+        "logical": "T4",
+        "examined": 54,
+        "zero": 44,
+        "uniqueCandidates": 26,
+        "oracleZero": 0,
+        "repairableMulti": 18,
+        "feasibleV2Window": 18
+      },
+      {
+        "position": 8,
+        "logical": "B5",
+        "examined": 52,
+        "zero": 42,
+        "uniqueCandidates": 25,
+        "oracleZero": 1,
+        "repairableMulti": 19,
+        "feasibleV2Window": 9
+      },
+      {
+        "position": 9,
+        "logical": "T5",
+        "examined": 27,
+        "zero": 20,
+        "uniqueCandidates": 20,
+        "oracleZero": 0,
+        "repairableMulti": 5,
+        "feasibleV2Window": 0
+      },
+      {
+        "position": 10,
+        "logical": "B6",
+        "examined": 26,
+        "zero": 21,
+        "uniqueCandidates": 21,
+        "oracleZero": 0,
+        "repairableMulti": 8,
+        "feasibleV2Window": 0
+      }
+    ]
+  },
+  {
+    "dataset": "009",
+    "pool": 54,
+    "cycles": 5,
+    "examined": 905,
+    "uniqueExamined": 54,
+    "directValid": 141,
+    "invalid": 764,
+    "oneNeighborSaved": 98,
+    "zero": 666,
+    "zeroUniqueCandidates": 54,
+    "zeroCandidatePositionPairs": 243,
+    "zeroLogicalPositions": 11,
+    "observedLogicalPositions": 11,
+    "zeroPositionCycles": 35,
+    "observedPositionCycles": 35,
+    "noValidPrefix": 422,
+    "nonadjacentSingle": 10,
+    "atLeastTwoChanges": 234,
+    "feasibleV2Window": 61,
+    "oracle": {
+      "options": 19,
+      "exposedOptions": 19,
+      "examined": 56,
+      "zero": 8,
+      "zeroUniqueCandidates": 5,
+      "zeroLogicalPositions": 3,
+      "rows": [
+        {
+          "dataset": "009",
+          "cycle": 4,
+          "position": 7,
+          "logical": "T4",
+          "candidate": "TOP:275",
+          "originalIndex": 449,
+          "type": "TOP",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 5,
+              "logical": "T3",
+              "type": "TOP",
+              "index": 431
+            },
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 461
+            },
+            {
+              "position": 8,
+              "logical": "B5",
+              "type": "BOTTOM",
+              "index": 532
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 554
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                6,
+                7
+              ],
+              "gap": -12
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                6,
+                7
+              ],
+              "gap": -12
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 2,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 7,
+            "additional": 2,
+            "chain": [
+              "BOTTOM:25",
+              "TOP:45",
+              "BOTTOM:98",
+              "TOP:166",
+              "BOTTOM:174",
+              "TOP:186",
+              "BOTTOM:249",
+              "TOP:275",
+              "BOTTOM:358",
+              "TOP:380",
+              "BOTTOM:425"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "009",
+          "cycle": 4,
+          "position": 8,
+          "logical": "B5",
+          "candidate": "BOTTOM:327",
+          "originalIndex": 501,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 461
+            },
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 507
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 554
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 599
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -6
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -6
+            },
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                6,
+                8
+              ],
+              "gap": 40
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 3,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 8,
+            "additional": 3,
+            "chain": [
+              "BOTTOM:25",
+              "TOP:45",
+              "BOTTOM:98",
+              "TOP:166",
+              "BOTTOM:174",
+              "TOP:186",
+              "BOTTOM:249",
+              "TOP:257",
+              "BOTTOM:327",
+              "TOP:380",
+              "BOTTOM:425"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "009",
+          "cycle": 4,
+          "position": 8,
+          "logical": "B5",
+          "candidate": "BOTTOM:328",
+          "originalIndex": 502,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 461
+            },
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 507
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 554
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 599
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -5
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -5
+            },
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                6,
+                8
+              ],
+              "gap": 41
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 3,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 8,
+            "additional": 3,
+            "chain": [
+              "BOTTOM:25",
+              "TOP:45",
+              "BOTTOM:98",
+              "TOP:166",
+              "BOTTOM:174",
+              "TOP:186",
+              "BOTTOM:249",
+              "TOP:257",
+              "BOTTOM:328",
+              "TOP:380",
+              "BOTTOM:425"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "009",
+          "cycle": 5,
+          "position": 7,
+          "logical": "T4",
+          "candidate": "TOP:275",
+          "originalIndex": 449,
+          "type": "TOP",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 5,
+              "logical": "T3",
+              "type": "TOP",
+              "index": 431
+            },
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 461
+            },
+            {
+              "position": 8,
+              "logical": "B5",
+              "type": "BOTTOM",
+              "index": 532
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 554
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                6,
+                7
+              ],
+              "gap": -12
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                6,
+                7
+              ],
+              "gap": -12
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 2,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 7,
+            "additional": 2,
+            "chain": [
+              "BOTTOM:25",
+              "TOP:45",
+              "BOTTOM:98",
+              "TOP:166",
+              "BOTTOM:174",
+              "TOP:186",
+              "BOTTOM:249",
+              "TOP:275",
+              "BOTTOM:358",
+              "TOP:380",
+              "BOTTOM:425"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "009",
+          "cycle": 5,
+          "position": 8,
+          "logical": "B5",
+          "candidate": "BOTTOM:327",
+          "originalIndex": 501,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 461
+            },
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 507
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 554
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 599
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -6
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -6
+            },
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                6,
+                8
+              ],
+              "gap": 40
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 3,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 8,
+            "additional": 3,
+            "chain": [
+              "BOTTOM:25",
+              "TOP:45",
+              "BOTTOM:98",
+              "TOP:166",
+              "BOTTOM:174",
+              "TOP:186",
+              "BOTTOM:249",
+              "TOP:257",
+              "BOTTOM:327",
+              "TOP:380",
+              "BOTTOM:425"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "009",
+          "cycle": 5,
+          "position": 8,
+          "logical": "B5",
+          "candidate": "BOTTOM:328",
+          "originalIndex": 502,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 461
+            },
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 507
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 554
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 599
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -5
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -5
+            },
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                6,
+                8
+              ],
+              "gap": 41
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 3,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 8,
+            "additional": 3,
+            "chain": [
+              "BOTTOM:25",
+              "TOP:45",
+              "BOTTOM:98",
+              "TOP:166",
+              "BOTTOM:174",
+              "TOP:186",
+              "BOTTOM:249",
+              "TOP:257",
+              "BOTTOM:328",
+              "TOP:380",
+              "BOTTOM:425"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "009",
+          "cycle": 5,
+          "position": 9,
+          "logical": "T5",
+          "candidate": "TOP:353",
+          "originalIndex": 527,
+          "type": "TOP",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 507
+            },
+            {
+              "position": 8,
+              "logical": "B5",
+              "type": "BOTTOM",
+              "index": 532
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 599
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                8,
+                9
+              ],
+              "gap": -5
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                8,
+                9
+              ],
+              "gap": -5
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 4,
+          "feasibleV2WindowIgnoringBeamBudget": false,
+          "windowProof": null,
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "009",
+          "cycle": 5,
+          "position": 9,
+          "logical": "T5",
+          "candidate": "TOP:354",
+          "originalIndex": 528,
+          "type": "TOP",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 507
+            },
+            {
+              "position": 8,
+              "logical": "B5",
+              "type": "BOTTOM",
+              "index": 532
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 599
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                8,
+                9
+              ],
+              "gap": -4
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                8,
+                9
+              ],
+              "gap": -4
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 4,
+          "feasibleV2WindowIgnoringBeamBudget": false,
+          "windowProof": null,
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        }
+      ]
+    },
+    "groups": [
+      {
+        "position": 0,
+        "logical": "B1",
+        "examined": 125,
+        "zero": 113,
+        "uniqueCandidates": 23,
+        "oracleZero": 0,
+        "repairableMulti": 66,
+        "feasibleV2Window": 8
+      },
+      {
+        "position": 1,
+        "logical": "T1",
+        "examined": 135,
+        "zero": 77,
+        "uniqueCandidates": 19,
+        "oracleZero": 0,
+        "repairableMulti": 37,
+        "feasibleV2Window": 4
+      },
+      {
+        "position": 2,
+        "logical": "B2",
+        "examined": 125,
+        "zero": 83,
+        "uniqueCandidates": 20,
+        "oracleZero": 0,
+        "repairableMulti": 25,
+        "feasibleV2Window": 7
+      },
+      {
+        "position": 3,
+        "logical": "T2",
+        "examined": 108,
+        "zero": 67,
+        "uniqueCandidates": 20,
+        "oracleZero": 0,
+        "repairableMulti": 20,
+        "feasibleV2Window": 9
+      },
+      {
+        "position": 4,
+        "logical": "B3",
+        "examined": 100,
+        "zero": 78,
+        "uniqueCandidates": 23,
+        "oracleZero": 0,
+        "repairableMulti": 18,
+        "feasibleV2Window": 12
+      },
+      {
+        "position": 5,
+        "logical": "T3",
+        "examined": 81,
+        "zero": 50,
+        "uniqueCandidates": 19,
+        "oracleZero": 0,
+        "repairableMulti": 11,
+        "feasibleV2Window": 6
+      },
+      {
+        "position": 6,
+        "logical": "B4",
+        "examined": 75,
+        "zero": 59,
+        "uniqueCandidates": 22,
+        "oracleZero": 0,
+        "repairableMulti": 13,
+        "feasibleV2Window": 3
+      },
+      {
+        "position": 7,
+        "logical": "T4",
+        "examined": 54,
+        "zero": 44,
+        "uniqueCandidates": 23,
+        "oracleZero": 2,
+        "repairableMulti": 18,
+        "feasibleV2Window": 6
+      },
+      {
+        "position": 8,
+        "logical": "B5",
+        "examined": 50,
+        "zero": 45,
+        "uniqueCandidates": 24,
+        "oracleZero": 4,
+        "repairableMulti": 12,
+        "feasibleV2Window": 6
+      },
+      {
+        "position": 9,
+        "logical": "T5",
+        "examined": 27,
+        "zero": 26,
+        "uniqueCandidates": 26,
+        "oracleZero": 2,
+        "repairableMulti": 8,
+        "feasibleV2Window": 0
+      },
+      {
+        "position": 10,
+        "logical": "B6",
+        "examined": 25,
+        "zero": 24,
+        "uniqueCandidates": 24,
+        "oracleZero": 0,
+        "repairableMulti": 6,
+        "feasibleV2Window": 0
+      }
+    ]
+  },
+  {
+    "dataset": "010",
+    "pool": 81,
+    "cycles": 4,
+    "examined": 1002,
+    "uniqueExamined": 81,
+    "directValid": 220,
+    "invalid": 782,
+    "oneNeighborSaved": 96,
+    "zero": 686,
+    "zeroUniqueCandidates": 81,
+    "zeroCandidatePositionPairs": 298,
+    "zeroLogicalPositions": 9,
+    "observedLogicalPositions": 9,
+    "zeroPositionCycles": 24,
+    "observedPositionCycles": 24,
+    "noValidPrefix": 445,
+    "nonadjacentSingle": 14,
+    "atLeastTwoChanges": 227,
+    "feasibleV2Window": 62,
+    "oracle": {
+      "options": 46,
+      "exposedOptions": 44,
+      "examined": 129,
+      "zero": 5,
+      "zeroUniqueCandidates": 5,
+      "zeroLogicalPositions": 2,
+      "rows": [
+        {
+          "dataset": "010",
+          "cycle": 4,
+          "position": 7,
+          "logical": "T4",
+          "candidate": "TOP:268",
+          "originalIndex": 445,
+          "type": "TOP",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 5,
+              "logical": "T3",
+              "type": "TOP",
+              "index": 432
+            },
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 445
+            },
+            {
+              "position": 8,
+              "logical": "B5",
+              "type": "BOTTOM",
+              "index": 521
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 531
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                6,
+                7
+              ],
+              "gap": 0
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                6,
+                7
+              ],
+              "gap": 0
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 2,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 7,
+            "additional": 2,
+            "chain": [
+              "BOTTOM:0",
+              "TOP:27",
+              "BOTTOM:94",
+              "TOP:124",
+              "BOTTOM:173",
+              "TOP:188",
+              "BOTTOM:221",
+              "TOP:268",
+              "BOTTOM:344",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "010",
+          "cycle": 4,
+          "position": 7,
+          "logical": "T4",
+          "candidate": "TOP:269",
+          "originalIndex": 446,
+          "type": "TOP",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 5,
+              "logical": "T3",
+              "type": "TOP",
+              "index": 432
+            },
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 445
+            },
+            {
+              "position": 8,
+              "logical": "B5",
+              "type": "BOTTOM",
+              "index": 521
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 531
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                6,
+                7
+              ],
+              "gap": 1
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 2,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 7,
+            "additional": 2,
+            "chain": [
+              "BOTTOM:0",
+              "TOP:27",
+              "BOTTOM:94",
+              "TOP:124",
+              "BOTTOM:173",
+              "TOP:188",
+              "BOTTOM:221",
+              "TOP:269",
+              "BOTTOM:344",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "010",
+          "cycle": 4,
+          "position": 8,
+          "logical": "B5",
+          "candidate": "BOTTOM:310",
+          "originalIndex": 487,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 445
+            },
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 501
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 531
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 589
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -14
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -14
+            },
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                6,
+                8
+              ],
+              "gap": 42
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 3,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 8,
+            "additional": 3,
+            "chain": [
+              "BOTTOM:0",
+              "TOP:27",
+              "BOTTOM:94",
+              "TOP:124",
+              "BOTTOM:173",
+              "TOP:188",
+              "BOTTOM:221",
+              "TOP:255",
+              "BOTTOM:310",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "010",
+          "cycle": 4,
+          "position": 8,
+          "logical": "B5",
+          "candidate": "BOTTOM:311",
+          "originalIndex": 488,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 445
+            },
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 501
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 531
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 589
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -13
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -13
+            },
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                6,
+                8
+              ],
+              "gap": 43
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 3,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 8,
+            "additional": 3,
+            "chain": [
+              "BOTTOM:0",
+              "TOP:27",
+              "BOTTOM:94",
+              "TOP:124",
+              "BOTTOM:173",
+              "TOP:188",
+              "BOTTOM:221",
+              "TOP:255",
+              "BOTTOM:311",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        },
+        {
+          "dataset": "010",
+          "cycle": 4,
+          "position": 8,
+          "logical": "B5",
+          "candidate": "BOTTOM:312",
+          "originalIndex": 489,
+          "type": "BOTTOM",
+          "oracleCorrectPosition": true,
+          "neighbors": [
+            {
+              "position": 6,
+              "logical": "B4",
+              "type": "BOTTOM",
+              "index": 445
+            },
+            {
+              "position": 7,
+              "logical": "T4",
+              "type": "TOP",
+              "index": 501
+            },
+            {
+              "position": 9,
+              "logical": "T5",
+              "type": "TOP",
+              "index": 531
+            },
+            {
+              "position": 10,
+              "logical": "B6",
+              "type": "BOTTOM",
+              "index": 589
+            }
+          ],
+          "structuralReasons": [
+            {
+              "rule": "ORDER",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -12
+            },
+            {
+              "rule": "MIN_PHASE_8",
+              "positions": [
+                7,
+                8
+              ],
+              "gap": -12
+            },
+            {
+              "rule": "MIN_REP_45",
+              "positions": [
+                6,
+                8
+              ],
+              "gap": 44
+            }
+          ],
+          "prefixFeasible": true,
+          "minAdditionalInPrefix": 3,
+          "feasibleV2WindowIgnoringBeamBudget": true,
+          "windowProof": {
+            "start": 5,
+            "end": 8,
+            "additional": 3,
+            "chain": [
+              "BOTTOM:0",
+              "TOP:27",
+              "BOTTOM:94",
+              "TOP:124",
+              "BOTTOM:173",
+              "TOP:188",
+              "BOTTOM:221",
+              "TOP:255",
+              "BOTTOM:312",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          },
+          "interpretation": "REQUIRES_AT_LEAST_TWO_OTHER_CHANGES"
+        }
+      ]
+    },
+    "groups": [
+      {
+        "position": 0,
+        "logical": "B1",
+        "examined": 212,
+        "zero": 130,
+        "uniqueCandidates": 35,
+        "oracleZero": 0,
+        "repairableMulti": 81,
+        "feasibleV2Window": 12
+      },
+      {
+        "position": 1,
+        "logical": "T1",
+        "examined": 104,
+        "zero": 62,
+        "uniqueCandidates": 22,
+        "oracleZero": 0,
+        "repairableMulti": 37,
+        "feasibleV2Window": 13
+      },
+      {
+        "position": 2,
+        "logical": "B2",
+        "examined": 212,
+        "zero": 148,
+        "uniqueCandidates": 45,
+        "oracleZero": 0,
+        "repairableMulti": 39,
+        "feasibleV2Window": 15
+      },
+      {
+        "position": 3,
+        "logical": "T2",
+        "examined": 78,
+        "zero": 42,
+        "uniqueCandidates": 18,
+        "oracleZero": 0,
+        "repairableMulti": 15,
+        "feasibleV2Window": 0
+      },
+      {
+        "position": 4,
+        "logical": "B3",
+        "examined": 159,
+        "zero": 125,
+        "uniqueCandidates": 47,
+        "oracleZero": 0,
+        "repairableMulti": 20,
+        "feasibleV2Window": 6
+      },
+      {
+        "position": 5,
+        "logical": "T3",
+        "examined": 52,
+        "zero": 28,
+        "uniqueCandidates": 17,
+        "oracleZero": 0,
+        "repairableMulti": 7,
+        "feasibleV2Window": 4
+      },
+      {
+        "position": 6,
+        "logical": "B4",
+        "examined": 106,
+        "zero": 85,
+        "uniqueCandidates": 48,
+        "oracleZero": 0,
+        "repairableMulti": 11,
+        "feasibleV2Window": 2
+      },
+      {
+        "position": 7,
+        "logical": "T4",
+        "examined": 26,
+        "zero": 20,
+        "uniqueCandidates": 20,
+        "oracleZero": 2,
+        "repairableMulti": 8,
+        "feasibleV2Window": 5
+      },
+      {
+        "position": 8,
+        "logical": "B5",
+        "examined": 53,
+        "zero": 46,
+        "uniqueCandidates": 46,
+        "oracleZero": 3,
+        "repairableMulti": 9,
+        "feasibleV2Window": 5
+      },
+      {
+        "position": 9,
+        "logical": "T5",
+        "examined": 0,
+        "zero": 0,
+        "uniqueCandidates": 0,
+        "oracleZero": 0,
+        "repairableMulti": 0,
+        "feasibleV2Window": 0
+      },
+      {
+        "position": 10,
+        "logical": "B6",
+        "examined": 0,
+        "zero": 0,
+        "uniqueCandidates": 0,
+        "oracleZero": 0,
+        "repairableMulti": 0,
+        "feasibleV2Window": 0
+      }
+    ]
+  }
+]

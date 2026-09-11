@@ -1,0 +1,386 @@
+{
+  "B262OrderedComposition": [
+    {
+      "id": "S0021",
+      "index": 20,
+      "start": 1,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0022",
+      "index": 21,
+      "start": 1,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0023",
+      "index": 22,
+      "start": 1,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0024",
+      "index": 23,
+      "start": 1,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0043",
+      "index": 42,
+      "start": 1,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0044",
+      "index": 43,
+      "start": 1,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0045",
+      "index": 44,
+      "start": 1,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0046",
+      "index": 45,
+      "start": 1,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0150",
+      "index": 149,
+      "start": 2,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0151",
+      "index": 150,
+      "start": 2,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0152",
+      "index": 151,
+      "start": 2,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    },
+    {
+      "id": "S0153",
+      "index": 152,
+      "start": 2,
+      "end": 3,
+      "compatibleEarlierModifiersOfSlot4": [],
+      "baseBottomAtSlot4": 299,
+      "bottomAtSlot2": 262,
+      "gap": 37,
+      "minimum": 45
+    }
+  ],
+  "DQueuedContinuations": {
+    "007": {
+      "queueLength": 200001,
+      "guard": "MAX_UNIQUE_PATHS",
+      "proofs": [
+        {
+          "position": 2,
+          "candidate": "BOTTOM:262",
+          "matchingSegments": 12,
+          "pendingLegalContinuation": null
+        }
+      ]
+    },
+    "009": {
+      "queueLength": 92738,
+      "guard": "MAX_COMPOSITIONS",
+      "proofs": [
+        {
+          "position": 9,
+          "candidate": "TOP:353",
+          "matchingSegments": 0,
+          "pendingLegalContinuation": null
+        },
+        {
+          "position": 9,
+          "candidate": "TOP:354",
+          "matchingSegments": 0,
+          "pendingLegalContinuation": null
+        }
+      ]
+    },
+    "010": {
+      "queueLength": 60679,
+      "guard": "MAX_COMPOSITIONS",
+      "proofs": [
+        {
+          "position": 7,
+          "candidate": "TOP:268",
+          "matchingSegments": 7,
+          "pendingLegalContinuation": {
+            "cursor": 1223,
+            "predecessor": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:324",
+              "BOTTOM:344",
+              "TOP:354",
+              "BOTTOM:412"
+            ],
+            "predecessorSegments": [
+              "S2253"
+            ],
+            "nextIndex": 2252,
+            "segment": "S2323",
+            "segmentIndex": 2322,
+            "path": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:268",
+              "BOTTOM:310",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          }
+        },
+        {
+          "position": 7,
+          "candidate": "TOP:269",
+          "matchingSegments": 9,
+          "pendingLegalContinuation": {
+            "cursor": 1223,
+            "predecessor": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:324",
+              "BOTTOM:344",
+              "TOP:354",
+              "BOTTOM:412"
+            ],
+            "predecessorSegments": [
+              "S2253"
+            ],
+            "nextIndex": 2252,
+            "segment": "S2319",
+            "segmentIndex": 2318,
+            "path": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:269",
+              "BOTTOM:344",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          }
+        },
+        {
+          "position": 8,
+          "candidate": "BOTTOM:310",
+          "matchingSegments": 5,
+          "pendingLegalContinuation": {
+            "cursor": 1223,
+            "predecessor": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:324",
+              "BOTTOM:344",
+              "TOP:354",
+              "BOTTOM:412"
+            ],
+            "predecessorSegments": [
+              "S2253"
+            ],
+            "nextIndex": 2252,
+            "segment": "S2323",
+            "segmentIndex": 2322,
+            "path": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:268",
+              "BOTTOM:310",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          }
+        },
+        {
+          "position": 8,
+          "candidate": "BOTTOM:311",
+          "matchingSegments": 5,
+          "pendingLegalContinuation": {
+            "cursor": 1223,
+            "predecessor": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:324",
+              "BOTTOM:344",
+              "TOP:354",
+              "BOTTOM:412"
+            ],
+            "predecessorSegments": [
+              "S2253"
+            ],
+            "nextIndex": 2252,
+            "segment": "S2324",
+            "segmentIndex": 2323,
+            "path": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:268",
+              "BOTTOM:311",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          }
+        },
+        {
+          "position": 8,
+          "candidate": "BOTTOM:312",
+          "matchingSegments": 5,
+          "pendingLegalContinuation": {
+            "cursor": 1223,
+            "predecessor": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:324",
+              "BOTTOM:344",
+              "TOP:354",
+              "BOTTOM:412"
+            ],
+            "predecessorSegments": [
+              "S2253"
+            ],
+            "nextIndex": 2252,
+            "segment": "S2325",
+            "segmentIndex": 2324,
+            "path": [
+              "BOTTOM:40",
+              "TOP:114",
+              "BOTTOM:156",
+              "TOP:188",
+              "BOTTOM:208",
+              "TOP:226",
+              "BOTTOM:259",
+              "TOP:268",
+              "BOTTOM:312",
+              "TOP:354",
+              "BOTTOM:412"
+            ]
+          }
+        },
+        {
+          "position": 9,
+          "candidate": "TOP:340",
+          "matchingSegments": 0,
+          "pendingLegalContinuation": null
+        },
+        {
+          "position": 10,
+          "candidate": "BOTTOM:386",
+          "matchingSegments": 0,
+          "pendingLegalContinuation": null
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "neighbors": [
+    {
+      "candidate": "T449",
+      "position": 7,
+      "source": "ORACLE_INJECTED",
+      "legacyClass": "no retained role",
+      "legacyScore": null,
+      "legacyRank": null,
+      "V2IndividualEligible": true,
+      "optionOrdinal": 19,
+      "optionCount": 28,
+      "poolOrdinal": 36,
+      "V2Score": null,
+      "V2Rank": null,
+      "measuredExpansionsInT527": 0,
+      "previousTargetsBudget": 65536
+    },
+    {
+      "candidate": "B501",
+      "position": 8,
+      "source": "ORACLE_INJECTED",
+      "legacyClass": "no retained role",
+      "legacyScore": null,
+      "legacyRank": null,
+      "V2IndividualEligible": true,
+      "optionOrdinal": 20,
+      "optionCount": 26,
+      "poolOrdinal": 41,
+      "V2Score": null,
+      "V2Rank": null,
+      "measuredExpansionsInT527": 0,
+      "previousTargetsBudget": 65536
+    },
+    {
+      "candidate": "B578",
+      "position": 10,
+      "source": "ORACLE_INJECTED",
+      "legacyClass": "Promising",
+      "legacyScore": 0.030864197530864224,
+      "legacyRank": 1,
+      "V2IndividualEligible": true,
+      "optionOrdinal": 25,
+      "optionCount": 26,
+      "poolOrdinal": 52,
+      "V2Score": null,
+      "V2Rank": null,
+      "measuredExpansionsInT527": 0,
+      "previousTargetsBudget": 65536
+    }
+  ],
+  "allowedWindowsT527": [
+    {
+      "start": 7,
+      "end": 9
+    },
+    {
+      "start": 8,
+      "end": 10
+    },
+    {
+      "start": 6,
+      "end": 9
+    },
+    {
+      "start": 7,
+      "end": 10
+    }
+  ],
+  "onlyWindowWithAllWitnessNeighbors": [
+    7,
+    10
+  ],
+  "fixedPrefixBranch": [
+    {
+      "type": "BOTTOM",
+      "index": 199
+    },
+    {
+      "type": "TOP",
+      "index": 219
+    },
+    {
+      "type": "BOTTOM",
+      "index": 272
+    },
+    {
+      "type": "TOP",
+      "index": 340
+    },
+    {
+      "type": "BOTTOM",
+      "index": 348
+    },
+    {
+      "type": "TOP",
+      "index": 431
+    },
+    {
+      "type": "BOTTOM",
+      "index": 461
+    },
+    {
+      "type": "TOP",
+      "index": 449
+    },
+    {
+      "type": "BOTTOM",
+      "index": 501
+    },
+    {
+      "type": "TOP",
+      "index": 527
+    },
+    {
+      "type": "BOTTOM",
+      "index": 578
+    }
+  ],
+  "violations": [
+    {
+      "rule": "ORDER/MIN_PHASE_8",
+      "left": "B461",
+      "right": "T449",
+      "gap": -12
+    },
+    {
+      "rule": "MIN_REP_45",
+      "left": "B461",
+      "right": "B501",
+      "gap": 40
+    }
+  ],
+  "minimumOtherChangesForT527": 4,
+  "maxOtherSlotsInV2Window": 3,
+  "proofReference": "009.legacy-frequency.json rows for TOP:353 and TOP:354 at cycle 5"
+}
