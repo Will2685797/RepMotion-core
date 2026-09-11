@@ -43,6 +43,7 @@ export function promoteCandidates(
   promisingAlternatives: PromisingAlternatives,
   conditionalAlternatives: ConditionalAlternatives,
   context: DelayedExecutionContext,
+  onUnrepaired?: (candidate: Candidate, position: number) => void,
 ): PromotionResult {
   const criteria = criteriaAtCycle[cycle] as CriterionName[];
   const prefixLength = cycle * 2 + 1;
@@ -85,6 +86,7 @@ export function promoteCandidates(
           prefixLength,
           conditionalAlternatives,
           context,
+          onUnrepaired,
         );
         continue;
       }

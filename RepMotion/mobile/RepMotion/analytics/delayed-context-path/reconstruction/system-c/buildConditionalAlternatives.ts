@@ -18,6 +18,7 @@ export function buildConditionalAlternatives(
   prefixLength: number,
   conditionalAlternatives: ConditionalAlternatives,
   context: DelayedExecutionContext,
+  onUnrepaired?: (candidate: Candidate, position: number) => void,
 ): ConditionalAlternatives {
   const candidatePath = [...activePath];
   candidatePath[position] = candidate;
@@ -65,6 +66,9 @@ export function buildConditionalAlternatives(
     if (context.limit) break;
   }
 
+  if (repairs.length === 0 && !context.limit) {
+    onUnrepaired?.(candidate, position);
+  }
   if (repairs.length > 0 && !context.limit) {
     const bucket = conditionalAlternatives.get(position) ?? new Map();
     const candidateKey = `${candidate.type}:${candidate.index}`;

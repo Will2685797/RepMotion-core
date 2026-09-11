@@ -44,6 +44,18 @@ export const characterizationRanks: Record<CriterionName, number> = {
    comme Promising pour une position à chaque cycle. */
 export const dynamicTopN = 3;
 
+// Opt-in experiment. Four positions matches the existing maximum local span;
+// 32 partial hypotheses and independent work budgets bound the additional search.
+// These limits do not alter any legacy execution or structural constant.
+export const multiNeighborConfig = {
+  maxWindowPositions: 4,
+  beamWidth: 32,
+  maxSeedsPerTarget: dynamicTopN,
+  maxStatesPerTarget: 4096,
+  maxStatesPerCycle: 65536,
+  maxSeedsPerCycle: 64,
+} as const;
+
 
 /* Limite de sécurité du nombre d'états/hypothèses que Delayed peut explorer.
    Peut être configurée par variable d'environnement.

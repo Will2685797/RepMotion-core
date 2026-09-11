@@ -3,6 +3,8 @@ require('../calibration-runner/node_modules/tsx/dist/cjs/index.cjs');
 const ts=require('../calibration-runner/node_modules/typescript');
 const id=process.argv[2];assert(['007','009','010'].includes(id));
 const regression=process.argv.includes('--regression');
+const strategy=process.argv.includes('--strategy')?process.argv[process.argv.indexOf('--strategy')+1]:undefined;
+assert(strategy===undefined||['legacy','multi_neighbor'].includes(strategy));
 const start=id==='007'?0:id==='009'?174:177;
 const wanted=id==='007'?[]:id==='009'?[[9,527],[9,528]]:[[9,517],[10,563]];
 const events=[]; let system=null;
@@ -31,7 +33,12 @@ require.extensions['.ts']=(m,filename)=>{
  } else if(name.endsWith('/promotion/promoteCandidates.ts')){
  s=replace(s,'const prefix = candidatePath.slice(0, prefixLength);','const prefix = candidatePath.slice(0, prefixLength);\n      if(globalThis.__oracleTrace.relevant(position,candidate)) globalThis.__oracleTrace.emit("promotionVisit",{cycle,position,candidate,activePath,prefixValid:validatePath(prefix),context});');
  s=replace(s,'scored.forEach((entry, rankIndex) => {','if(position>=9) globalThis.__oracleTrace.emit("ranking",{cycle,position,activePath,activeFeatures,criteria,weights,confidence,scored,dynamicTopN});\n    scored.forEach((entry, rankIndex) => {');
+  } else if(name.endsWith('/reconstruction/system-c/buildMultiNeighborAlternatives.ts')){
+ s=replace(s,'  stats.targets++;','  if(globalThis.__oracleTrace.relevant(position,target)) globalThis.__oracleTrace.emit("fallbackEntry",{cycle,position,target,active,stats});\n  stats.targets++;');
+ s=replace(s,'  if (stats.guard) return search;','  if (stats.guard) { if(globalThis.__oracleTrace.relevant(position,target)) globalThis.__oracleTrace.emit("fallbackBlocked",{cycle,position,target,stats}); return search; }');
+ s=replace(s,'  stats.retained = rows.length;','  if(globalThis.__oracleTrace.relevant(position,target)) globalThis.__oracleTrace.emit("fallbackExit",{cycle,position,target,stats,rows:rows.filter(r=>r.chain[position].index===target.index)});\n  stats.retained = rows.length;');
  } else if(name.endsWith('/reconstruction/system-c/buildConditionalAlternatives.ts')){
+ s=replace(s,'  if (repairs.length === 0 && !context.limit) {','  if(globalThis.__oracleTrace.relevant(position,candidate)) globalThis.__oracleTrace.emit("admissionOutcome",{position,candidate,prefixLength,repairCount:repairs.length,limit:context.limit,hasFallback:Boolean(onUnrepaired)});\n  if (repairs.length === 0 && !context.limit) {');
  s=replace(s,'if (validatePath(repaired.slice(0, prefixLength))) {','if(globalThis.__oracleTrace.relevant(position,candidate)||globalThis.__oracleTrace.relevant(neighborPosition,neighbor)) globalThis.__oracleTrace.emit("repairTrial",{position,candidate,neighborPosition,neighbor,prefixLength,repaired,valid:validatePath(repaired.slice(0,prefixLength))});\n      if (validatePath(repaired.slice(0, prefixLength))) {');
  } else if(name.endsWith('/reconstruction/shared/reconstructLocalPaths.ts')){
  s=replace(s,'const segmentRows: LocalReconstructionCandidate[] = [];','const segmentRows: LocalReconstructionCandidate[] = [];\n  globalThis.__oracleTrace.emit("reconstructionStart",{cycle,active,promising,conditional,context});');
@@ -64,7 +71,7 @@ for(const g of oracle.groups)for(const c of g.candidates)if(!pool.some(n=>n.type
 pool.sort((a,b)=>a.index-b.index||a.type.localeCompare(b.type)||a.candidateId.localeCompare(b.candidateId));
 const executionPool=pool.map(c=>({...c,candidateId:'EXPERIMENTAL_'+c.type+'_'+c.index}));
 events.push({kind:'injectionCompleted'});
-const result=delayedContextPath({...input,candidatePool:executionPool});
+const result=delayedContextPath({...input,candidatePool:executionPool},strategy?{cStrategy:strategy}:undefined);
 assert.deepEqual(input.selectedDpV1Chain,naturalBootstrap,'STRICT bootstrap changed during injection/execution');
 assert.deepEqual(input.values,naturalValues,'STRICT IMU values changed');
 assert.deepEqual(input.candidatePool,natural,'STRICT natural pool mutated');
@@ -77,7 +84,8 @@ if(regression){
  bestRecovery=Math.max(bestRecovery,row.state.path.reduce((n,c,i)=>n+Number(oracle.groups[i].candidates.some(o=>o.type===c.type&&o.index===c.index)),0));
  }
  for(const sys of [result.systemA,result.systemC])for(const row of sys.generatedAudit)assert(validatePath(row.chain),'STRICT invalid reconstruction');
- const summary={id,start,natural,bootstrap:naturalBootstrap,values:naturalValues,pool:executionPool,gt,oracle,events,finalPath:result.finalPath,
+ const auditKey=r=>JSON.stringify([r.cycle,r.start,r.activeBefore.map(c=>[c.type,c.index]),r.chain.map(c=>[c.type,c.index]),r.chosen]);
+ const summary={strategy:strategy??'legacy',multiNeighbor:result.multiNeighbor??[],aAuditKeys:result.systemA.generatedAudit.map(auditKey),cAuditKeys:result.systemC.generatedAudit.map(auditKey),id,start,natural,bootstrap:naturalBootstrap,values:naturalValues,pool:executionPool,gt,oracle,events,finalPath:result.finalPath,
  bestRecovery,completeA:result.systemA.generatedAudit.filter(r=>compatible(r.chain)).length,completeC:result.systemC.generatedAudit.filter(r=>compatible(r.chain)).length,
  trace:id==='007'?null:traceWindowOracle(oracle,result,start),
  diagnostics:{A:result.systemA.context,C:result.systemC.context,D:result.composition.context,a:result.extractedSegments.aSegments.length,c:result.extractedSegments.cOnlySegments.length,union:result.extractedSegments.segments.length,unique:result.composition.uniquePaths.size}};

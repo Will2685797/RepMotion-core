@@ -11,6 +11,7 @@
   },
   "include": [
     "regression.test.ts",
+    "multiNeighbor.test.ts",
     "../../historical007Input.ts",
     "../../historical007Injection.ts",
     "../../windowOracle.ts"

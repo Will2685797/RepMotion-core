@@ -114,6 +114,18 @@ hypothèse uniquement à cause d'un mauvais voisin temporaire.
 
 ## 4. Reconstruction locale progressive
 
+
+A et C sont deux exécutions distinctes qui repartent toutes les deux du même
+activePath initial.
+
+System A utilise déjà les alternatives `promising` ainsi que les couples
+`conditional + repair`.
+
+System C reprend ce même socle de reconstruction, mais ajoute une extension
+progressive supplémentaire afin d'essayer d'élargir certaines réparations locales.
+
+C ne reçoit donc pas le chemin final produit par A.
+
 Les alternatives `promising` et `conditional` sont ensuite utilisées pour
 construire des corrections locales.
 
@@ -218,6 +230,14 @@ Cette population de segments constitue la deuxième mémoire de Delayed Path.
 La stratégie D commence lorsque les segments ont déjà été construits.
 
 D ne retourne pas chercher les RAW.
+
+D repart du chemin initial utilisé au début de Delayed Path.
+
+Il ne repart pas du `finalActivePath` produit par A ou C.
+
+Les segments transmis à D proviennent de l'ensemble des reconstructions locales
+générées par A et C, et pas uniquement des reconstructions choisies comme
+meilleur chemin local.
 
 D ne rescrore pas non plus les 999 segments avant de commencer.
 
