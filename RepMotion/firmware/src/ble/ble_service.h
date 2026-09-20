@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../mpu6050_reader.h"
+#include "../imu_sample.h"
 
 void initBleService();
-void updateMotionDataCharacteristic(const Mpu6050RawData& data);
+void updateMotionDataCharacteristics(const ImuSample& sample);

@@ -246,3 +246,112 @@ Mais cette baseline documente uniquement le comportement stable existant avant c
 ```text
 À implémenter avant Capture IMU V2
 ```
+
+## Commandes
+
+Toutes les commandes ci-dessous sont données depuis :
+
+```text
+RepMotion/
+```
+
+### Tests du parser BLE mobile V1
+
+```powershell
+npm --prefix mobile/RepMotion run test:legacy-payload
+```
+
+Résultat de référence :
+
+```text
+tests 5
+pass 5
+fail 0
+```
+
+---
+
+### Compilation du firmware de production
+
+```powershell
+pio run -d firmware -e esp32-c3-devkitm-1
+```
+
+Cette commande permet de vérifier que les changements de baseline n'empêchent pas le firmware ESP32 de compiler.
+
+---
+
+### Tests firmware
+
+Avec l'ESP32 connecté :
+
+```powershell
+cd firmware
+pio test -e esp32-c3-devkitm-1
+cd ..
+```
+
+Les tests firmware couvrent notamment :
+
+- génération du CSV historique `ax,ay,az`
+- valeurs négatives
+- bornes `int16`
+- exactement trois champs accélération
+- `READ_INTERVAL_MS == 50`
+
+Sans ESP32 / port série disponible, PlatformIO peut compiler les tests mais ne peut pas terminer leur exécution sur le matériel.
+
+---
+
+## Baseline actuelle
+
+Avant Capture IMU V2 :
+
+```text
+Mobile legacy payload
+→ 5 / 5 tests passants
+
+TypeScript
+→ compilation réussie
+
+Firmware production
+→ compilation réussie
+
+Firmware regression tests
+→ compilation réussie
+→ exécution hardware à confirmer avec ESP32 connecté
+```
+
+Ces commandes doivent être relancées après les modifications de Capture IMU V2 afin de détecter toute régression du comportement historique.
+
+## Compilation du firmware sous Windows
+
+Depuis le dossier :
+
+```text
+RepMotion/firmware
+```
+
+Utiliser :
+
+```powershell
+& "$env:USERPROFILE\.platformio\penv\Scripts\platformio.exe" run -e esp32-c3-devkitm-1
+```
+
+Cette commande utilise directement le PlatformIO Core installé par l’extension VS Code.
+
+Résultat attendu :
+
+```text
+[SUCCESS]
+```
+
+Exemple de baseline actuelle :
+
+```text
+RAM   : 11.9 %
+Flash : 76.9 %
+Build : SUCCESS
+```
+
+Cette compilation doit réussir avant et après toute modification importante du firmware IMU.

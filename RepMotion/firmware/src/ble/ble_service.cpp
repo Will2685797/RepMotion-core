@@ -1,4 +1,5 @@
 #include "ble_service.h"
+#include "imu_sample_v2_codec.h"
 #include "legacy_motion_payload.h"
 
 #include <Arduino.h>
@@ -15,7 +16,11 @@ constexpr const char* MOTION_SERVICE_UUID =
 constexpr const char* MOTION_DATA_CHARACTERISTIC_UUID =
     "7b7f0002-7c3a-4f6a-9f8e-1f2b3c4d5e6f";
 
+constexpr const char* MOTION_DATA_V2_CHARACTERISTIC_UUID =
+    "7b7f0003-7c3a-4f6a-9f8e-1f2b3c4d5e6f";
+
 BLECharacteristic* motionDataCharacteristic = nullptr;
+BLECharacteristic* motionDataV2Characteristic = nullptr;
 
 /*
  * Callbacks du serveur BLE.
@@ -61,6 +66,18 @@ void initBleService() {
     motionDataCharacteristic->addDescriptor(new BLE2902());
     motionDataCharacteristic->setValue("0,0,0");
 
+    motionDataV2Characteristic = motionService->createCharacteristic(
+        MOTION_DATA_V2_CHARACTERISTIC_UUID,
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+    );
+
+    motionDataV2Characteristic->addDescriptor(new BLE2902());
+    ImuSampleV2Payload initialV2Payload = {};
+    motionDataV2Characteristic->setValue(
+        initialV2Payload.data(),
+        initialV2Payload.size()
+    );
+
     motionService->start();
 
     BLEAdvertising* advertising = BLEDevice::getAdvertising();
@@ -76,22 +93,28 @@ void initBleService() {
     Serial.println(BLE_DEVICE_NAME);
 }
 
-/*Sert à envoyer les données MPU6050 dans la characteristic BLE.*/
-void updateMotionDataCharacteristic(const Mpu6050RawData& data) {
-    if (motionDataCharacteristic == nullptr) {
-        return;
+/* Envoie le même sample acquis sur les transports BLE V1 et V2. */
+void updateMotionDataCharacteristics(const ImuSample& sample) {
+    if (motionDataCharacteristic != nullptr) {
+        char legacyPayload[32];
+
+        formatLegacyMotionPayload(
+            legacyPayload,
+            sizeof(legacyPayload),
+            sample
+        );
+
+        motionDataCharacteristic->setValue(legacyPayload);
+        motionDataCharacteristic->notify();
     }
 
-    char payload[32];
+    if (motionDataV2Characteristic != nullptr) {
+        ImuSampleV2Payload v2Payload = encodeImuSampleV2(sample);
 
-    formatLegacyMotionPayload(
-        payload,
-        sizeof(payload),
-        data.accelX,
-        data.accelY,
-        data.accelZ
-    );
-
-    motionDataCharacteristic->setValue(payload);
-    motionDataCharacteristic->notify();
+        motionDataV2Characteristic->setValue(
+            v2Payload.data(),
+            v2Payload.size()
+        );
+        motionDataV2Characteristic->notify();
+    }
 }
