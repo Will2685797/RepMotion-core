@@ -2,10 +2,11 @@ import { create } from "zustand";
 
 import {
   calculateCalibration,
-  createCalibrationDataset,
+  createCalibrationDatasetV2,
+  CalibrationDatasetV2,
   CalibrationResult,
-  MotionSample,
 } from "../analytics/calibration";
+import type { ImuSampleV2 } from "../types/imu";
 
 const DATASET_WRITER_URL = "http://10.0.0.121:4000/datasets/calibration";
 
@@ -14,7 +15,7 @@ const CALIBRATION_PERFORMED_REPS = 5;
 const CALIBRATION_SAMPLING_RATE_HZ = 20;
 
 // Envoie le dataset de calibration au serveur local pour l'écrire en fichier JSON.
-async function saveCalibrationDataset(dataset: unknown) {
+async function saveCalibrationDataset(dataset: CalibrationDatasetV2) {
   try {
     const response = await fetch(DATASET_WRITER_URL, {
       method: "POST",
@@ -45,12 +46,12 @@ type AnalysisState = {
   setActiveExerciseId: (exerciseId: string | null) => void;
 
   isCalibrating: boolean;
-  calibrationSamples: MotionSample[];
+  calibrationSamples: ImuSampleV2[];
   calibrationResult: CalibrationResult | null;
   calibrationsByKey: Record<string, CalibrationResult>;
 
   startCalibration: () => void;
-  addCalibrationSample: (sample: MotionSample) => void;
+  addCalibrationSample: (sample: ImuSampleV2) => void;
   finishCalibration: () => CalibrationResult | null;
   resetCalibration: () => void;
   saveCalibration: (exerciseId: string, calibration: CalibrationResult) => void;
@@ -102,7 +103,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
         "[CALIBRATION DATASET] No active exercise id. Dataset not saved.",
       );
     } else {
-      const dataset = createCalibrationDataset(
+      const dataset = createCalibrationDatasetV2(
         samples,
         exerciseId,
         CALIBRATION_EXPECTED_REPS,

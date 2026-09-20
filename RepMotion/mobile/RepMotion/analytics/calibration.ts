@@ -1,11 +1,8 @@
 import { generatePhaseBlockCandidates } from "./raw-generation/phase-blocks/generatePhaseBlockCandidates";
 import type { RawGenerationStrategy } from "./raw-generation/types";
+import type { ImuSample, ImuSampleV2 } from "../types/imu";
 
-export type MotionSample = {
-  ax: number;
-  ay: number;
-  az: number;
-};
+export type MotionSample = Pick<ImuSample, "ax" | "ay" | "az">;
 
 export type CalibrationAxis = "ax" | "ay" | "az";
 
@@ -118,6 +115,18 @@ export type CalibrationDataset = {
   samplingRateHz: number;
   samples: MotionSample[];
   notes?: string;
+};
+
+export type CaptureDiagnostics = {
+  missingSampleCount: number;
+  nonContiguousSampleCount: number;
+};
+
+export type CalibrationDatasetV2 = Omit<CalibrationDataset, "samples"> & {
+  schemaVersion: 2;
+  sensorDataUnit: "raw_counts";
+  samples: ImuSampleV2[];
+  captureDiagnostics: CaptureDiagnostics;
 };
 
 export type MinDistanceStrategy = "current" | "reset_on_opposite";
@@ -1896,6 +1905,57 @@ export function createCalibrationDataset(
     sampleCount: samples.length,
     samplingRateHz,
     samples,
+    notes,
+  };
+}
+
+function calculateCaptureDiagnostics(
+  samples: ImuSampleV2[],
+): CaptureDiagnostics {
+  let missingSampleCount = 0;
+  let nonContiguousSampleCount = 0;
+
+  for (let index = 1; index < samples.length; index += 1) {
+    const previousSampleIndex = samples[index - 1].sampleIndex;
+    const currentSampleIndex = samples[index].sampleIndex;
+    const forwardDelta = (currentSampleIndex - previousSampleIndex) >>> 0;
+
+    if (forwardDelta === 1) {
+      continue;
+    }
+
+    nonContiguousSampleCount += 1;
+
+    // Large unsigned deltas represent a reset or backward jump rather than a
+    // credible number of missing samples in a single calibration capture.
+    if (forwardDelta > 1 && forwardDelta < 0x80000000) {
+      missingSampleCount += forwardDelta - 1;
+    }
+  }
+
+  return { missingSampleCount, nonContiguousSampleCount };
+}
+
+export function createCalibrationDatasetV2(
+  samples: ImuSampleV2[],
+  exercise: string,
+  expectedReps: number,
+  samplingRateHz: number,
+  performedReps?: number,
+  notes?: string,
+): CalibrationDatasetV2 {
+  return {
+    schemaVersion: 2,
+    id: `${exercise}-${expectedReps}reps-${Date.now()}`,
+    exercise,
+    expectedReps,
+    performedReps,
+    createdAt: new Date().toISOString(),
+    sampleCount: samples.length,
+    samplingRateHz,
+    sensorDataUnit: "raw_counts",
+    samples,
+    captureDiagnostics: calculateCaptureDiagnostics(samples),
     notes,
   };
 }

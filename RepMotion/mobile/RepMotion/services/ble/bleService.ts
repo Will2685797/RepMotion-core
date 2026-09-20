@@ -486,12 +486,6 @@ export function startMotionStream(
 
       validSamples += 1;
 
-      const analysisStore = useAnalysisStore.getState();
-
-      if (analysisStore.isCalibrating) {
-        analysisStore.addCalibrationSample(parsedData);
-      }
-
       updateAxisDiagnostics(parsedData);
       const reps = updateRepDetector(parsedData);
 
