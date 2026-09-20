@@ -1,3 +1,6 @@
+import { generatePhaseBlockCandidates } from "./raw-generation/phase-blocks/generatePhaseBlockCandidates";
+import type { RawGenerationStrategy } from "./raw-generation/types";
+
 export type MotionSample = {
   ax: number;
   ay: number;
@@ -128,6 +131,7 @@ export type CalibrationParameters = {
   minimumDistanceSamples?: number;
   peakWindowSize?: number;
   smoothingWindowSize?: number;
+  rawGenerationStrategy?: RawGenerationStrategy;
   rawDetectionStrategy?: RawDetectionStrategy;
   minDistanceStrategy?: MinDistanceStrategy;
   selectionStrategy?: CalibrationSelectionStrategy;
@@ -1688,6 +1692,7 @@ export function calculateCalibration(
       parameters?.minimumDistanceSamples ?? MINIMUM_DISTANCE_SAMPLES,
     peakWindowSize: parameters?.peakWindowSize ?? PEAK_WINDOW_SIZE,
     smoothingWindowSize: parameters?.smoothingWindowSize ?? PEAK_WINDOW_SIZE,
+    rawGenerationStrategy: parameters?.rawGenerationStrategy ?? "legacy",
     rawDetectionStrategy:
       parameters?.rawDetectionStrategy ?? RAW_DETECTION_STRATEGY,
     minDistanceStrategy:
@@ -1732,7 +1737,9 @@ export function calculateCalibration(
   let detectedEvents: DetectedCalibrationEvents;
   const rawDetectionStrategy = resolvedParameters.rawDetectionStrategy;
 
-  if (rawDetectionStrategy === "direction_change") {
+  if (resolvedParameters.rawGenerationStrategy === "phase_blocks") {
+    detectedEvents = generatePhaseBlockCandidates(values);
+  } else if (rawDetectionStrategy === "direction_change") {
     detectedEvents = detectBottomsAndTopsV25(
       values,
       bottomZone,
