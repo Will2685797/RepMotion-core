@@ -1,6 +1,10 @@
 ﻿import { BleManager, Device, Subscription } from "react-native-ble-plx";
 import { useAnalysisStore } from "../../store/analysisStore";
 import { Buffer } from "buffer";
+import {
+  type ImuData,
+  parseLegacyMotionPayload,
+} from "./motionPayload";
 
 // =====================================================
 // CONFIGURATION
@@ -32,15 +36,7 @@ let motionStreamSubscription: Subscription | null = null;
 const MOTION_SERVICE_UUID = "7b7f0001-7c3a-4f6a-9f8e-1f2b3c4d5e6f";
 const MOTION_DATA_CHARACTERISTIC_UUID = "7b7f0002-7c3a-4f6a-9f8e-1f2b3c4d5e6f";
 
-export type ImuData = {
-  ax: number;
-  ay: number;
-  az: number;
-  gx: number;
-  gy: number;
-  gz: number;
-  reps?: number;
-};
+export type { ImuData } from "./motionPayload";
 
 type AxisName = "ax" | "ay" | "az";
 type AxisRange = { min: number; max: number };
@@ -373,49 +369,29 @@ export async function connectToRepMotionDevice(
 // PARSING PAYLOAD IMU
 // =====================================================
 function parseMotionPayload(payload: string): ImuData | null {
-  const parts = payload.split(",");
+  const result = parseLegacyMotionPayload(payload);
 
-  if (parts.length !== 3) {
+  if ("data" in result) {
+    return result.data;
+  }
+
+  if (result.error === "missing_fields") {
     console.log("[BLE] Invalid motion payload missing fields:", {
       payload,
       expectedFields: ["ax", "ay", "az"],
-      receivedParts: parts.length,
+      receivedParts: result.receivedParts,
       reason: "expected compact accel payload: ax,ay,az",
     });
     return null;
   }
 
-  const [rawAx, rawAy, rawAz] = parts;
-  const rawValues = [rawAx, rawAy, rawAz];
-  const axes = ["ax", "ay", "az"] as const;
-  const values: Partial<Pick<ImuData, "ax" | "ay" | "az">> = {};
-
-  for (let index = 0; index < rawValues.length; index += 1) {
-    const rawValue = rawValues[index].trim();
-    const axis = axes[index];
-    const value = Number(rawValue);
-
-    if (rawValue.length === 0 || !Number.isFinite(value)) {
-      console.log("[BLE] Invalid motion payload value:", {
-        payload,
-        axis,
-        rawValue,
-        reason: "value is not a finite number",
-      });
-      return null;
-    }
-
-    values[axis] = value;
-  }
-
-  return {
-    ax: values.ax ?? 0,
-    ay: values.ay ?? 0,
-    az: values.az ?? 0,
-    gx: 0,
-    gy: 0,
-    gz: 0,
-  };
+  console.log("[BLE] Invalid motion payload value:", {
+    payload,
+    axis: result.axis,
+    rawValue: result.rawValue,
+    reason: "value is not a finite number",
+  });
+  return null;
 }
 
 export function startMotionStream(

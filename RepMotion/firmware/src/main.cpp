@@ -2,14 +2,13 @@
 #include <Wire.h>
 
 #include "i2c_scanner.h"
+#include "motion_capture_config.h"
 #include "mpu6050_reader.h"
 
 #include "ble/ble_service.h"
 
 constexpr int I2C_SDA_PIN = 8;
 constexpr int I2C_SCL_PIN = 9;
-constexpr unsigned long READ_INTERVAL_MS = 50;
-
 unsigned long lastReadMs = 0;
 bool mpuReady = false;
 

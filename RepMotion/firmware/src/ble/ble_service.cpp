@@ -1,4 +1,5 @@
 #include "ble_service.h"
+#include "legacy_motion_payload.h"
 
 #include <Arduino.h>
 #include <BLEDevice.h>
@@ -83,10 +84,9 @@ void updateMotionDataCharacteristic(const Mpu6050RawData& data) {
 
     char payload[32];
 
-    snprintf(
+    formatLegacyMotionPayload(
         payload,
         sizeof(payload),
-        "%d,%d,%d",
         data.accelX,
         data.accelY,
         data.accelZ
