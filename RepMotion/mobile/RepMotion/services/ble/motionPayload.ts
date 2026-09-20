@@ -1,12 +1,6 @@
-export type ImuData = {
-  ax: number;
-  ay: number;
-  az: number;
-  gx: number;
-  gy: number;
-  gz: number;
-  reps?: number;
-};
+import type { ImuData } from "../../types/imu";
+
+export type { ImuData } from "../../types/imu";
 
 export type LegacyMotionPayloadParseResult =
   | { data: ImuData }

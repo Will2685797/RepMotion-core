@@ -7,7 +7,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test:legacy-payload": "tsc --project tests/tsconfig.json && node --test tests/.build/tests/legacyMotionPayload.test.js"
+    "test:legacy-payload": "tsc --project tests/tsconfig.json && node --test tests/.build/tests/legacyMotionPayload.test.js",
+    "test:v2-payload": "tsc --project tests/tsconfig.json && node --test tests/.build/tests/imuSampleV2Payload.test.js",
+    "test:ble-payloads": "tsc --project tests/tsconfig.json && node --test tests/.build/tests/legacyMotionPayload.test.js tests/.build/tests/imuSampleV2Payload.test.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",

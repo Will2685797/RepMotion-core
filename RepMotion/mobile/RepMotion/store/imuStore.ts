@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ImuData } from "../services/ble/bleService";
+import type { ImuData } from "../types/imu";
 
 type ImuStore = {
   imuData: ImuData | null;

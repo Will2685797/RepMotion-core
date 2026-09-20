@@ -1,10 +1,12 @@
 ﻿import { BleManager, Device, Subscription } from "react-native-ble-plx";
 import { useAnalysisStore } from "../../store/analysisStore";
+import type { ImuData, ImuSampleV2 } from "../../types/imu";
 import { Buffer } from "buffer";
 import {
-  type ImuData,
-  parseLegacyMotionPayload,
-} from "./motionPayload";
+  decodeImuSampleV2,
+  IMU_SAMPLE_V2_PAYLOAD_SIZE,
+} from "./imuSampleV2Payload";
+import { parseLegacyMotionPayload } from "./motionPayload";
 
 // =====================================================
 // CONFIGURATION
@@ -35,8 +37,10 @@ let motionStreamSubscription: Subscription | null = null;
 
 const MOTION_SERVICE_UUID = "7b7f0001-7c3a-4f6a-9f8e-1f2b3c4d5e6f";
 const MOTION_DATA_CHARACTERISTIC_UUID = "7b7f0002-7c3a-4f6a-9f8e-1f2b3c4d5e6f";
+const MOTION_DATA_V2_CHARACTERISTIC_UUID =
+  "7b7f0003-7c3a-4f6a-9f8e-1f2b3c4d5e6f";
 
-export type { ImuData } from "./motionPayload";
+export type { ImuData, ImuSampleV2 } from "../../types/imu";
 
 type AxisName = "ax" | "ay" | "az";
 type AxisRange = { min: number; max: number };
@@ -56,6 +60,8 @@ let repLockedUntil = 0;
 let receivedSamples = 0;
 let validSamples = 0;
 let invalidSamples = 0;
+let invalidV2Samples = 0;
+let previousV2SampleIndex: number | null = null;
 
 const AXES: AxisName[] = ["ax", "ay", "az"];
 const AXIS_DIAG_INTERVAL = 50;
@@ -394,90 +400,148 @@ function parseMotionPayload(payload: string): ImuData | null {
   return null;
 }
 
-export function startMotionStream(
-  onData: (data: ImuData) => void,
+function startMotionCharacteristicMonitor(
+  characteristicUuid: string,
+  streamLabel: string,
+  onValue: (base64Value: string) => void,
   onError?: (error: unknown) => void,
 ): void {
   if (!connectedRepMotionDevice) {
     const error = new Error("No connected RepMotion device.");
-    console.log("[BLE] Motion stream error:", error.message);
+    console.log(`[BLE] ${streamLabel} error:`, error.message);
     onError?.(error);
     return;
   }
 
-  console.log("[BLE] Starting motion stream...");
+  console.log(`[BLE] Starting ${streamLabel}...`);
 
   motionStreamSubscription?.remove();
 
   motionStreamSubscription =
     connectedRepMotionDevice.monitorCharacteristicForService(
       MOTION_SERVICE_UUID,
-      MOTION_DATA_CHARACTERISTIC_UUID,
+      characteristicUuid,
       (error, characteristic) => {
         if (error) {
-          console.log("[BLE] Motion stream error:", error);
+          console.log(`[BLE] ${streamLabel} error:`, error);
           onError?.(error);
           return;
         }
 
-        if (!characteristic?.value) {
-          return;
+        if (characteristic?.value) {
+          onValue(characteristic.value);
         }
+      },
+    );
+}
 
-        const payload = Buffer.from(characteristic.value, "base64").toString(
-          "utf-8",
-        );
+function updateV2SampleContinuity(sample: ImuSampleV2): void {
+  if (previousV2SampleIndex !== null) {
+    const expectedSampleIndex = (previousV2SampleIndex + 1) >>> 0;
 
-        receivedSamples += 1;
+    if (sample.sampleIndex !== expectedSampleIndex) {
+      console.warn("[BLE V2] Non-contiguous sampleIndex", {
+        previousSampleIndex: previousV2SampleIndex,
+        expectedSampleIndex,
+        receivedSampleIndex: sample.sampleIndex,
+      });
+    }
+  }
 
-        const parsedData = parseMotionPayload(payload);
+  previousV2SampleIndex = sample.sampleIndex;
+}
 
-        if (!parsedData) {
-          invalidSamples += 1;
+export function startMotionStream(
+  onData: (data: ImuData) => void,
+  onError?: (error: unknown) => void,
+): void {
+  startMotionCharacteristicMonitor(
+    MOTION_DATA_CHARACTERISTIC_UUID,
+    "motion stream",
+    (base64Value) => {
+      const payload = Buffer.from(base64Value, "base64").toString("utf-8");
 
-          console.log("[BLE] Invalid motion payload:", {
-            payload,
-            length: payload.length,
-          });
+      receivedSamples += 1;
 
-          if (receivedSamples % 20 === 0) {
-            console.log("[BLE] Motion stream stats:", {
-              receivedSamples,
-              validSamples,
-              invalidSamples,
-            });
-          }
+      const parsedData = parseMotionPayload(payload);
 
-          return;
-        }
+      if (!parsedData) {
+        invalidSamples += 1;
 
-        validSamples += 1;
-
-        const analysisStore = useAnalysisStore.getState();
-
-        if (analysisStore.isCalibrating) {
-          analysisStore.addCalibrationSample(parsedData);
-        }
-
-        updateAxisDiagnostics(parsedData);
-        const reps = updateRepDetector(parsedData);
-
-        const dataWithReps: ImuData = {
-          ...parsedData,
-          reps,
-        };
+        console.log("[BLE] Invalid motion payload:", {
+          payload,
+          length: payload.length,
+        });
 
         if (receivedSamples % 20 === 0) {
           console.log("[BLE] Motion stream stats:", {
             receivedSamples,
             validSamples,
             invalidSamples,
-            repCount,
           });
         }
-        onData(dataWithReps);
-      },
-    );
+
+        return;
+      }
+
+      validSamples += 1;
+
+      const analysisStore = useAnalysisStore.getState();
+
+      if (analysisStore.isCalibrating) {
+        analysisStore.addCalibrationSample(parsedData);
+      }
+
+      updateAxisDiagnostics(parsedData);
+      const reps = updateRepDetector(parsedData);
+
+      const dataWithReps: ImuData = {
+        ...parsedData,
+        reps,
+      };
+
+      if (receivedSamples % 20 === 0) {
+        console.log("[BLE] Motion stream stats:", {
+          receivedSamples,
+          validSamples,
+          invalidSamples,
+          repCount,
+        });
+      }
+      onData(dataWithReps);
+    },
+    onError,
+  );
+}
+
+export function startMotionStreamV2(
+  onData: (sample: ImuSampleV2) => void,
+  onError?: (error: unknown) => void,
+): void {
+  previousV2SampleIndex = null;
+
+  startMotionCharacteristicMonitor(
+    MOTION_DATA_V2_CHARACTERISTIC_UUID,
+    "motion stream V2",
+    (base64Value) => {
+      const bytes = Buffer.from(base64Value, "base64");
+      const sample = decodeImuSampleV2(bytes);
+
+      if (!sample) {
+        invalidV2Samples += 1;
+        console.warn("[BLE V2] Invalid payload size", {
+          receivedBytes: bytes.byteLength,
+          expectedBytes: IMU_SAMPLE_V2_PAYLOAD_SIZE,
+          invalidV2Samples,
+        });
+        return;
+      }
+
+      updateV2SampleContinuity(sample);
+      onData(sample);
+    },
+    onError,
+  );
 }
 
 export function stopMotionStream(): void {
