@@ -1,0 +1,42 @@
+{
+  "annotationVersion": 2,
+  "dataset": "rowing_5reps_020.json",
+  "video": "020.MOV",
+  "exercise": "rowing",
+  "performedReps": 5,
+  "samplingRateHz": 20,
+  "videoFps": 29.98,
+  "annotationMethod": "manual_transition_review",
+  "notes": "Temps vidéo annotés manuellement, puis alignement vidéo ↔ IMU validé par l'utilisateur. Arrival : première frame où la barre a terminé son mouvement vers le pivot et est visiblement arrêtée. Departure : première frame où le mouvement inverse devient clairement visible, sans correspondance imposée avec un pic d'accélération. La fenêtre B1 est volontairement longue : après l'arrivée au premier BOTTOM, l'athlète reste volontairement arrêté avant de repartir. Vérité de transition [arrival, departure] ; aucune référence ponctuelle indépendante annotée pour 020. Références et confiance non renseignées : null. rep est l'ordinal par type ; B6 clôt la cinquième répétition. Indices à partir de zéro ; sampleFloat = (videoTimeSeconds - offsetSeconds) * samplingRateHz. Les fractions expriment la conversion, sans précision IMU supérieure à 50 ms. Arrondi au sample le plus proche, demi-entier vers l'entier pair.",
+  "sync": {
+    "method": "VIDEO_IMU_MANUAL_MOTION_ONSET",
+    "videoStartTimeSeconds": 15.88,
+    "imuStartSample": 113,
+    "offsetSeconds": 10.23,
+    "videoTopArrivalTimeSeconds": 16.48,
+    "timeResolutionSeconds": 0.05,
+    "baseline": {
+      "startSampleInclusive": 93,
+      "endSampleInclusive": 112,
+      "mean": 18450,
+      "median": 18442,
+      "std": 61.77,
+      "mad": 44
+    },
+    "firstOutsideBaselineThresholdSample": 113,
+    "notes": "Geste volontaire isolé avant les cinq répétitions. Vidéo : première frame où la barre commence visiblement à bouger. IMU : premier dépassement de moyenne ± 3 écarts-types après la baseline stable [93,113), soit 93 à 112 inclus ; ancre validée manuellement. std décrit l'écart-type de population, arrondi à deux décimales ; MAD non normalisée. Baseline : min 18288, max 18568 ; seuil calculé avec l'écart-type non arrondi : [18264.6980841977, 18635.3019158023]. Au sample 113, az = 17048, écart à la moyenne = -1402, z-score ≈ -22.698. Offset vidéo moins temps IMU : 15.88 - 113 / 20 = 10.23 s. Contrôle secondaire : arrivée vidéo en haut à 16.48 s, soit 0.60 s / 12 samples après le départ, projetée à 125 dans la première phase dynamique IMU. Cette projection ne constitue pas une mesure indépendante du sommet biomécanique à partir de az seul. Le départ vidéo du haut à 16.51 s ne correspond à aucun champ V2 dédié. Aucun événement BOTTOM/TOP ni candidat RepMotion utilisé pour optimiser l'offset."
+  },
+  "events": [
+    {"type":"BOTTOM","rep":1,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":18.44,"departureTimeSeconds":20.24,"arrivalSampleFloat":164.2,"departureSampleFloat":200.2,"arrivalSampleRounded":164,"departureSampleRounded":200,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées. Pause volontaire longue en bas conservée telle qu'annotée."},
+    {"type":"TOP","rep":1,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":21.58,"departureTimeSeconds":21.61,"arrivalSampleFloat":227,"departureSampleFloat":227.6,"arrivalSampleRounded":227,"departureSampleRounded":228,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées."},
+    {"type":"BOTTOM","rep":2,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":23.85,"departureTimeSeconds":24.31,"arrivalSampleFloat":272.4,"departureSampleFloat":281.6,"arrivalSampleRounded":272,"departureSampleRounded":282,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées."},
+    {"type":"TOP","rep":2,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":25.58,"departureTimeSeconds":25.65,"arrivalSampleFloat":307,"departureSampleFloat":308.4,"arrivalSampleRounded":307,"departureSampleRounded":308,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées."},
+    {"type":"BOTTOM","rep":3,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":27.82,"departureTimeSeconds":27.92,"arrivalSampleFloat":351.8,"departureSampleFloat":353.8,"arrivalSampleRounded":352,"departureSampleRounded":354,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées."},
+    {"type":"TOP","rep":3,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":29.22,"departureTimeSeconds":29.28,"arrivalSampleFloat":379.8,"departureSampleFloat":381,"arrivalSampleRounded":380,"departureSampleRounded":381,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées."},
+    {"type":"BOTTOM","rep":4,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":31.18,"departureTimeSeconds":31.65,"arrivalSampleFloat":419,"departureSampleFloat":428.4,"arrivalSampleRounded":419,"departureSampleRounded":428,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées."},
+    {"type":"TOP","rep":4,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":32.72,"departureTimeSeconds":32.78,"arrivalSampleFloat":449.8,"departureSampleFloat":451,"arrivalSampleRounded":450,"departureSampleRounded":451,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées."},
+    {"type":"BOTTOM","rep":5,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":34.82,"departureTimeSeconds":35.22,"arrivalSampleFloat":491.8,"departureSampleFloat":499.8,"arrivalSampleRounded":492,"departureSampleRounded":500,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées."},
+    {"type":"TOP","rep":5,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":36.25,"departureTimeSeconds":36.32,"arrivalSampleFloat":520.4,"departureSampleFloat":521.8,"arrivalSampleRounded":520,"departureSampleRounded":522,"confidence":null,"notes":"Fenêtre de transition annotée en vidéo ; référence ponctuelle et confiance non renseignées."},
+    {"type":"BOTTOM","rep":6,"referenceTimeSeconds":null,"referenceSampleFloat":null,"arrivalTimeSeconds":37.99,"departureTimeSeconds":null,"arrivalSampleFloat":555.2,"departureSampleFloat":null,"arrivalSampleRounded":555,"departureSampleRounded":null,"confidence":null,"notes":"BOTTOM final clôturant la cinquième répétition ; départ non annoté. Référence ponctuelle et confiance non renseignées."}
+  ]
+}
