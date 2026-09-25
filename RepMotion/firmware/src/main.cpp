@@ -2,16 +2,26 @@
 #include <Wire.h>
 
 #include "i2c_scanner.h"
+#include "imu_sample.h"
+#include "motion_capture_config.h"
 #include "mpu6050_reader.h"
 
 #include "ble/ble_service.h"
 
 constexpr int I2C_SDA_PIN = 8;
 constexpr int I2C_SCL_PIN = 9;
-constexpr unsigned long READ_INTERVAL_MS = 50;
-
 unsigned long lastReadMs = 0;
+uint32_t nextSampleIndex = 0;
 bool mpuReady = false;
+
+void printImuSample(const ImuSample& sample) {
+    Serial.print("sampleIndex=");
+    Serial.print(sample.sampleIndex);
+    Serial.print(" timestampMs=");
+    Serial.print(sample.timestampMs);
+    Serial.print(" | ");
+    printMpu6050Raw(sample.sensorData);
+}
 
 void setup() {
     Serial.begin(115200);
@@ -41,13 +51,24 @@ void loop() {
     if (now - lastReadMs >= READ_INTERVAL_MS) {
         lastReadMs = now;
 
-        Mpu6050RawData data;
+        const uint32_t sampleIndex = nextSampleIndex++;
+        const uint32_t timestampMs = static_cast<uint32_t>(millis());
+        Mpu6050RawData sensorData;
 
-        if (readMpu6050Raw(data)) {
-            printMpu6050Raw(data);
-            updateMotionDataCharacteristic(data);
+        if (readMpu6050Raw(sensorData)) {
+            const ImuSample sample = {
+                sensorData,
+                sampleIndex,
+                timestampMs,
+            };
+
+            printImuSample(sample);
+            updateMotionDataCharacteristics(sample);
         } else {
-            Serial.println("Failed to read MPU6050 data.");
+            Serial.print("Failed to read MPU6050 data at sampleIndex=");
+            Serial.print(sampleIndex);
+            Serial.print(" timestampMs=");
+            Serial.println(timestampMs);
         }
     }
 }

@@ -13,12 +13,14 @@ import {
   stopBleScan,
   connectToRepMotionDevice,
   disconnectRepMotionDevice,
-  startMotionStream,
+  startMotionStreamV2,
   stopMotionStream,
 } from "../services/ble/bleService";
 
 import { Ionicons } from "@expo/vector-icons";
+import { useAnalysisStore } from "../store/analysisStore";
 import { useImuStore } from "../store/imuStore";
+import type { ImuData, ImuSampleV2 } from "../types/imu";
 
 type SettingRowProps = {
   label: string;
@@ -72,16 +74,21 @@ export default function Appareil() {
   const [bleStatus, setBleStatus] = useState("Déconnecté");
   const [deviceName, setDeviceName] = useState("RM-01 Sensor");
 
-  const [imuData, setImuData] = useState({
+  const [imuData, setImuData] = useState<ImuSampleV2>({
     ax: 0,
     ay: 0,
     az: 0,
     gx: 0,
     gy: 0,
     gz: 0,
+    sampleIndex: 0,
+    timestampMs: 0,
   });
 
   const setGlobalImuData = useImuStore((state) => state.setImuData);
+  const addCalibrationSample = useAnalysisStore(
+    (state) => state.addCalibrationSample,
+  );
 
   const handleConnect = async () => {
     console.log("[BLE] Connect button pressed");
@@ -120,10 +127,20 @@ export default function Appareil() {
           setIsConnected(true);
           setBleStatus("Module connecté");
 
-          startMotionStream(
-            (data) => {
-              setImuData(data);
-              setGlobalImuData(data);
+          startMotionStreamV2(
+            (sample) => {
+              const liveData: ImuData = {
+                ax: sample.ax,
+                ay: sample.ay,
+                az: sample.az,
+                gx: sample.gx,
+                gy: sample.gy,
+                gz: sample.gz,
+              };
+
+              setImuData(sample);
+              setGlobalImuData(liveData);
+              addCalibrationSample(sample);
             },
             (error) => {
               console.log("[BLE] Motion stream error from Appareil:", error);
@@ -230,6 +247,10 @@ export default function Appareil() {
             <Text style={styles.imuValue}>GZ: {imuData.gz.toFixed(2)}</Text>
           </View>
         </View>
+
+        <Text style={styles.imuValue}>
+          Sample: {imuData.sampleIndex} · Timestamp: {imuData.timestampMs} ms
+        </Text>
       </View>
 
       <View style={styles.settingsCard}>

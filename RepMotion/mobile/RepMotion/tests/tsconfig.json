@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "types": ["node"],
+    "outDir": ".build"
+  },
+  "include": [
+    "*.test.ts",
+    "../services/ble/imuSampleV2Payload.ts",
+    "../services/ble/motionPayload.ts",
+    "../types/imu.ts"
+  ]
+}

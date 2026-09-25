@@ -1,0 +1,6658 @@
+{
+  "schemaVersion": 2,
+  "id": "rowing-5reps-1789945934829",
+  "exercise": "rowing",
+  "expectedReps": 5,
+  "performedReps": 5,
+  "createdAt": "2026-09-20T23:12:14.829Z",
+  "sampleCount": 664,
+  "samplingRateHz": 20,
+  "sensorDataUnit": "raw_counts",
+  "samples": [
+    {
+      "ax": -500,
+      "ay": -420,
+      "az": 18680,
+      "gx": -326,
+      "gy": 479,
+      "gz": 96,
+      "sampleIndex": 6820,
+      "timestampMs": 342625
+    },
+    {
+      "ax": -504,
+      "ay": -532,
+      "az": 18548,
+      "gx": -340,
+      "gy": 502,
+      "gz": 161,
+      "sampleIndex": 6821,
+      "timestampMs": 342675
+    },
+    {
+      "ax": -440,
+      "ay": -608,
+      "az": 18448,
+      "gx": -351,
+      "gy": 476,
+      "gz": 125,
+      "sampleIndex": 6822,
+      "timestampMs": 342725
+    },
+    {
+      "ax": -480,
+      "ay": -584,
+      "az": 18388,
+      "gx": -351,
+      "gy": 460,
+      "gz": 119,
+      "sampleIndex": 6823,
+      "timestampMs": 342775
+    },
+    {
+      "ax": -428,
+      "ay": -592,
+      "az": 18280,
+      "gx": -308,
+      "gy": 477,
+      "gz": 119,
+      "sampleIndex": 6824,
+      "timestampMs": 342825
+    },
+    {
+      "ax": -480,
+      "ay": -556,
+      "az": 18376,
+      "gx": -329,
+      "gy": 504,
+      "gz": 125,
+      "sampleIndex": 6825,
+      "timestampMs": 342875
+    },
+    {
+      "ax": -444,
+      "ay": -600,
+      "az": 18428,
+      "gx": -329,
+      "gy": 475,
+      "gz": 105,
+      "sampleIndex": 6826,
+      "timestampMs": 342925
+    },
+    {
+      "ax": -520,
+      "ay": -492,
+      "az": 18432,
+      "gx": -350,
+      "gy": 479,
+      "gz": 128,
+      "sampleIndex": 6827,
+      "timestampMs": 342975
+    },
+    {
+      "ax": -488,
+      "ay": -452,
+      "az": 18636,
+      "gx": -347,
+      "gy": 470,
+      "gz": 148,
+      "sampleIndex": 6828,
+      "timestampMs": 343025
+    },
+    {
+      "ax": -480,
+      "ay": -452,
+      "az": 18472,
+      "gx": -351,
+      "gy": 500,
+      "gz": 143,
+      "sampleIndex": 6829,
+      "timestampMs": 343075
+    },
+    {
+      "ax": -388,
+      "ay": -572,
+      "az": 18624,
+      "gx": -355,
+      "gy": 480,
+      "gz": 130,
+      "sampleIndex": 6830,
+      "timestampMs": 343125
+    },
+    {
+      "ax": -448,
+      "ay": -664,
+      "az": 18440,
+      "gx": -318,
+      "gy": 480,
+      "gz": 119,
+      "sampleIndex": 6831,
+      "timestampMs": 343175
+    },
+    {
+      "ax": -508,
+      "ay": -524,
+      "az": 18444,
+      "gx": -352,
+      "gy": 492,
+      "gz": 126,
+      "sampleIndex": 6832,
+      "timestampMs": 343225
+    },
+    {
+      "ax": -404,
+      "ay": -644,
+      "az": 18428,
+      "gx": -322,
+      "gy": 496,
+      "gz": 124,
+      "sampleIndex": 6833,
+      "timestampMs": 343275
+    },
+    {
+      "ax": -548,
+      "ay": -524,
+      "az": 18520,
+      "gx": -328,
+      "gy": 501,
+      "gz": 136,
+      "sampleIndex": 6834,
+      "timestampMs": 343325
+    },
+    {
+      "ax": -336,
+      "ay": -400,
+      "az": 18508,
+      "gx": -339,
+      "gy": 475,
+      "gz": 117,
+      "sampleIndex": 6835,
+      "timestampMs": 343375
+    },
+    {
+      "ax": -404,
+      "ay": -452,
+      "az": 18368,
+      "gx": -319,
+      "gy": 474,
+      "gz": 115,
+      "sampleIndex": 6836,
+      "timestampMs": 343425
+    },
+    {
+      "ax": -472,
+      "ay": -488,
+      "az": 18532,
+      "gx": -347,
+      "gy": 493,
+      "gz": 125,
+      "sampleIndex": 6837,
+      "timestampMs": 343475
+    },
+    {
+      "ax": -432,
+      "ay": -540,
+      "az": 18376,
+      "gx": -362,
+      "gy": 486,
+      "gz": 135,
+      "sampleIndex": 6838,
+      "timestampMs": 343525
+    },
+    {
+      "ax": -392,
+      "ay": -624,
+      "az": 18680,
+      "gx": -332,
+      "gy": 506,
+      "gz": 125,
+      "sampleIndex": 6839,
+      "timestampMs": 343575
+    },
+    {
+      "ax": -436,
+      "ay": -684,
+      "az": 18408,
+      "gx": -303,
+      "gy": 491,
+      "gz": 145,
+      "sampleIndex": 6840,
+      "timestampMs": 343625
+    },
+    {
+      "ax": -448,
+      "ay": -484,
+      "az": 18588,
+      "gx": -335,
+      "gy": 462,
+      "gz": 128,
+      "sampleIndex": 6841,
+      "timestampMs": 343675
+    },
+    {
+      "ax": -468,
+      "ay": -464,
+      "az": 18572,
+      "gx": -322,
+      "gy": 497,
+      "gz": 146,
+      "sampleIndex": 6842,
+      "timestampMs": 343725
+    },
+    {
+      "ax": -484,
+      "ay": -412,
+      "az": 18608,
+      "gx": -325,
+      "gy": 507,
+      "gz": 126,
+      "sampleIndex": 6843,
+      "timestampMs": 343775
+    },
+    {
+      "ax": -516,
+      "ay": -520,
+      "az": 18524,
+      "gx": -326,
+      "gy": 480,
+      "gz": 102,
+      "sampleIndex": 6844,
+      "timestampMs": 343825
+    },
+    {
+      "ax": -492,
+      "ay": -648,
+      "az": 18648,
+      "gx": -343,
+      "gy": 491,
+      "gz": 118,
+      "sampleIndex": 6845,
+      "timestampMs": 343875
+    },
+    {
+      "ax": -412,
+      "ay": -556,
+      "az": 18512,
+      "gx": -346,
+      "gy": 488,
+      "gz": 115,
+      "sampleIndex": 6846,
+      "timestampMs": 343925
+    },
+    {
+      "ax": -476,
+      "ay": -656,
+      "az": 18436,
+      "gx": -347,
+      "gy": 510,
+      "gz": 126,
+      "sampleIndex": 6847,
+      "timestampMs": 343975
+    },
+    {
+      "ax": -508,
+      "ay": -552,
+      "az": 18500,
+      "gx": -328,
+      "gy": 490,
+      "gz": 137,
+      "sampleIndex": 6848,
+      "timestampMs": 344025
+    },
+    {
+      "ax": -388,
+      "ay": -596,
+      "az": 18564,
+      "gx": -322,
+      "gy": 492,
+      "gz": 141,
+      "sampleIndex": 6849,
+      "timestampMs": 344075
+    },
+    {
+      "ax": -500,
+      "ay": -468,
+      "az": 18488,
+      "gx": -333,
+      "gy": 500,
+      "gz": 131,
+      "sampleIndex": 6850,
+      "timestampMs": 344125
+    },
+    {
+      "ax": -460,
+      "ay": -516,
+      "az": 18592,
+      "gx": -342,
+      "gy": 492,
+      "gz": 141,
+      "sampleIndex": 6851,
+      "timestampMs": 344176
+    },
+    {
+      "ax": -472,
+      "ay": -508,
+      "az": 18624,
+      "gx": -331,
+      "gy": 486,
+      "gz": 141,
+      "sampleIndex": 6852,
+      "timestampMs": 344226
+    },
+    {
+      "ax": -420,
+      "ay": -568,
+      "az": 18528,
+      "gx": -336,
+      "gy": 499,
+      "gz": 121,
+      "sampleIndex": 6853,
+      "timestampMs": 344276
+    },
+    {
+      "ax": -500,
+      "ay": -556,
+      "az": 18424,
+      "gx": -345,
+      "gy": 490,
+      "gz": 130,
+      "sampleIndex": 6854,
+      "timestampMs": 344326
+    },
+    {
+      "ax": -444,
+      "ay": -492,
+      "az": 18572,
+      "gx": -340,
+      "gy": 474,
+      "gz": 115,
+      "sampleIndex": 6855,
+      "timestampMs": 344376
+    },
+    {
+      "ax": -408,
+      "ay": -468,
+      "az": 18332,
+      "gx": -346,
+      "gy": 457,
+      "gz": 127,
+      "sampleIndex": 6856,
+      "timestampMs": 344426
+    },
+    {
+      "ax": -416,
+      "ay": -408,
+      "az": 18544,
+      "gx": -343,
+      "gy": 472,
+      "gz": 113,
+      "sampleIndex": 6857,
+      "timestampMs": 344476
+    },
+    {
+      "ax": -436,
+      "ay": -568,
+      "az": 18500,
+      "gx": -316,
+      "gy": 461,
+      "gz": 131,
+      "sampleIndex": 6858,
+      "timestampMs": 344526
+    },
+    {
+      "ax": -544,
+      "ay": -516,
+      "az": 18484,
+      "gx": -332,
+      "gy": 491,
+      "gz": 127,
+      "sampleIndex": 6859,
+      "timestampMs": 344576
+    },
+    {
+      "ax": -436,
+      "ay": -620,
+      "az": 18408,
+      "gx": -355,
+      "gy": 478,
+      "gz": 133,
+      "sampleIndex": 6860,
+      "timestampMs": 344626
+    },
+    {
+      "ax": -440,
+      "ay": -624,
+      "az": 18564,
+      "gx": -332,
+      "gy": 469,
+      "gz": 130,
+      "sampleIndex": 6861,
+      "timestampMs": 344676
+    },
+    {
+      "ax": -500,
+      "ay": -568,
+      "az": 18504,
+      "gx": -340,
+      "gy": 504,
+      "gz": 113,
+      "sampleIndex": 6862,
+      "timestampMs": 344726
+    },
+    {
+      "ax": -520,
+      "ay": -492,
+      "az": 18620,
+      "gx": -338,
+      "gy": 510,
+      "gz": 106,
+      "sampleIndex": 6863,
+      "timestampMs": 344776
+    },
+    {
+      "ax": -516,
+      "ay": -524,
+      "az": 18520,
+      "gx": -316,
+      "gy": 487,
+      "gz": 123,
+      "sampleIndex": 6864,
+      "timestampMs": 344826
+    },
+    {
+      "ax": -448,
+      "ay": -520,
+      "az": 18340,
+      "gx": -359,
+      "gy": 469,
+      "gz": 132,
+      "sampleIndex": 6865,
+      "timestampMs": 344876
+    },
+    {
+      "ax": -464,
+      "ay": -500,
+      "az": 18460,
+      "gx": -354,
+      "gy": 510,
+      "gz": 122,
+      "sampleIndex": 6866,
+      "timestampMs": 344926
+    },
+    {
+      "ax": -376,
+      "ay": -584,
+      "az": 18592,
+      "gx": -339,
+      "gy": 473,
+      "gz": 120,
+      "sampleIndex": 6867,
+      "timestampMs": 344976
+    },
+    {
+      "ax": -456,
+      "ay": -464,
+      "az": 18568,
+      "gx": -309,
+      "gy": 512,
+      "gz": 96,
+      "sampleIndex": 6868,
+      "timestampMs": 345026
+    },
+    {
+      "ax": -504,
+      "ay": -536,
+      "az": 18628,
+      "gx": -332,
+      "gy": 482,
+      "gz": 133,
+      "sampleIndex": 6869,
+      "timestampMs": 345076
+    },
+    {
+      "ax": -444,
+      "ay": -540,
+      "az": 18424,
+      "gx": -340,
+      "gy": 467,
+      "gz": 167,
+      "sampleIndex": 6870,
+      "timestampMs": 345126
+    },
+    {
+      "ax": -412,
+      "ay": -484,
+      "az": 18408,
+      "gx": -352,
+      "gy": 499,
+      "gz": 112,
+      "sampleIndex": 6871,
+      "timestampMs": 345176
+    },
+    {
+      "ax": -452,
+      "ay": -480,
+      "az": 18528,
+      "gx": -352,
+      "gy": 497,
+      "gz": 135,
+      "sampleIndex": 6872,
+      "timestampMs": 345226
+    },
+    {
+      "ax": -440,
+      "ay": -532,
+      "az": 18596,
+      "gx": -333,
+      "gy": 510,
+      "gz": 84,
+      "sampleIndex": 6873,
+      "timestampMs": 345276
+    },
+    {
+      "ax": -432,
+      "ay": -544,
+      "az": 18556,
+      "gx": -333,
+      "gy": 471,
+      "gz": 135,
+      "sampleIndex": 6874,
+      "timestampMs": 345326
+    },
+    {
+      "ax": -412,
+      "ay": -604,
+      "az": 18560,
+      "gx": -339,
+      "gy": 498,
+      "gz": 124,
+      "sampleIndex": 6875,
+      "timestampMs": 345376
+    },
+    {
+      "ax": -496,
+      "ay": -500,
+      "az": 18460,
+      "gx": -339,
+      "gy": 488,
+      "gz": 105,
+      "sampleIndex": 6876,
+      "timestampMs": 345426
+    },
+    {
+      "ax": -432,
+      "ay": -516,
+      "az": 18740,
+      "gx": -332,
+      "gy": 496,
+      "gz": 117,
+      "sampleIndex": 6877,
+      "timestampMs": 345476
+    },
+    {
+      "ax": -500,
+      "ay": -592,
+      "az": 18540,
+      "gx": -334,
+      "gy": 488,
+      "gz": 125,
+      "sampleIndex": 6878,
+      "timestampMs": 345526
+    },
+    {
+      "ax": -432,
+      "ay": -680,
+      "az": 18544,
+      "gx": -330,
+      "gy": 488,
+      "gz": 118,
+      "sampleIndex": 6879,
+      "timestampMs": 345576
+    },
+    {
+      "ax": -368,
+      "ay": -404,
+      "az": 18648,
+      "gx": -364,
+      "gy": 493,
+      "gz": 119,
+      "sampleIndex": 6880,
+      "timestampMs": 345626
+    },
+    {
+      "ax": -480,
+      "ay": -508,
+      "az": 18568,
+      "gx": -352,
+      "gy": 490,
+      "gz": 118,
+      "sampleIndex": 6881,
+      "timestampMs": 345676
+    },
+    {
+      "ax": -428,
+      "ay": -468,
+      "az": 18552,
+      "gx": -352,
+      "gy": 484,
+      "gz": 113,
+      "sampleIndex": 6882,
+      "timestampMs": 345726
+    },
+    {
+      "ax": -480,
+      "ay": -576,
+      "az": 18412,
+      "gx": -398,
+      "gy": 467,
+      "gz": 88,
+      "sampleIndex": 6883,
+      "timestampMs": 345776
+    },
+    {
+      "ax": -428,
+      "ay": -736,
+      "az": 18496,
+      "gx": -358,
+      "gy": 497,
+      "gz": 144,
+      "sampleIndex": 6884,
+      "timestampMs": 345826
+    },
+    {
+      "ax": -500,
+      "ay": -660,
+      "az": 18456,
+      "gx": -385,
+      "gy": 491,
+      "gz": 101,
+      "sampleIndex": 6885,
+      "timestampMs": 345876
+    },
+    {
+      "ax": -456,
+      "ay": -500,
+      "az": 18428,
+      "gx": -393,
+      "gy": 485,
+      "gz": 119,
+      "sampleIndex": 6886,
+      "timestampMs": 345926
+    },
+    {
+      "ax": -548,
+      "ay": -824,
+      "az": 18496,
+      "gx": -349,
+      "gy": 460,
+      "gz": 119,
+      "sampleIndex": 6887,
+      "timestampMs": 345976
+    },
+    {
+      "ax": -512,
+      "ay": -728,
+      "az": 18608,
+      "gx": -357,
+      "gy": 484,
+      "gz": 122,
+      "sampleIndex": 6888,
+      "timestampMs": 346026
+    },
+    {
+      "ax": -404,
+      "ay": -652,
+      "az": 18604,
+      "gx": -368,
+      "gy": 478,
+      "gz": 117,
+      "sampleIndex": 6889,
+      "timestampMs": 346076
+    },
+    {
+      "ax": -428,
+      "ay": -544,
+      "az": 18676,
+      "gx": -359,
+      "gy": 472,
+      "gz": 90,
+      "sampleIndex": 6890,
+      "timestampMs": 346126
+    },
+    {
+      "ax": -392,
+      "ay": -612,
+      "az": 18520,
+      "gx": -313,
+      "gy": 486,
+      "gz": 137,
+      "sampleIndex": 6891,
+      "timestampMs": 346177
+    },
+    {
+      "ax": -468,
+      "ay": -616,
+      "az": 18392,
+      "gx": -318,
+      "gy": 487,
+      "gz": 120,
+      "sampleIndex": 6892,
+      "timestampMs": 346227
+    },
+    {
+      "ax": -424,
+      "ay": -608,
+      "az": 18552,
+      "gx": -323,
+      "gy": 493,
+      "gz": 153,
+      "sampleIndex": 6893,
+      "timestampMs": 346277
+    },
+    {
+      "ax": -500,
+      "ay": -476,
+      "az": 18424,
+      "gx": -348,
+      "gy": 508,
+      "gz": 105,
+      "sampleIndex": 6894,
+      "timestampMs": 346327
+    },
+    {
+      "ax": -484,
+      "ay": -568,
+      "az": 18292,
+      "gx": -326,
+      "gy": 482,
+      "gz": 162,
+      "sampleIndex": 6895,
+      "timestampMs": 346377
+    },
+    {
+      "ax": -432,
+      "ay": -560,
+      "az": 18500,
+      "gx": -357,
+      "gy": 510,
+      "gz": 123,
+      "sampleIndex": 6896,
+      "timestampMs": 346427
+    },
+    {
+      "ax": -484,
+      "ay": -640,
+      "az": 18508,
+      "gx": -318,
+      "gy": 497,
+      "gz": 96,
+      "sampleIndex": 6897,
+      "timestampMs": 346477
+    },
+    {
+      "ax": -500,
+      "ay": -592,
+      "az": 18568,
+      "gx": -348,
+      "gy": 495,
+      "gz": 127,
+      "sampleIndex": 6898,
+      "timestampMs": 346527
+    },
+    {
+      "ax": -480,
+      "ay": -624,
+      "az": 18396,
+      "gx": -318,
+      "gy": 487,
+      "gz": 113,
+      "sampleIndex": 6899,
+      "timestampMs": 346577
+    },
+    {
+      "ax": -520,
+      "ay": -576,
+      "az": 18652,
+      "gx": -327,
+      "gy": 504,
+      "gz": 103,
+      "sampleIndex": 6900,
+      "timestampMs": 346627
+    },
+    {
+      "ax": -420,
+      "ay": -612,
+      "az": 18688,
+      "gx": -332,
+      "gy": 498,
+      "gz": 148,
+      "sampleIndex": 6901,
+      "timestampMs": 346677
+    },
+    {
+      "ax": -412,
+      "ay": -564,
+      "az": 18404,
+      "gx": -322,
+      "gy": 477,
+      "gz": 132,
+      "sampleIndex": 6902,
+      "timestampMs": 346727
+    },
+    {
+      "ax": -380,
+      "ay": -664,
+      "az": 18496,
+      "gx": -328,
+      "gy": 496,
+      "gz": 99,
+      "sampleIndex": 6903,
+      "timestampMs": 346777
+    },
+    {
+      "ax": -432,
+      "ay": -548,
+      "az": 18560,
+      "gx": -324,
+      "gy": 499,
+      "gz": 106,
+      "sampleIndex": 6904,
+      "timestampMs": 346827
+    },
+    {
+      "ax": -476,
+      "ay": -524,
+      "az": 18504,
+      "gx": -358,
+      "gy": 487,
+      "gz": 135,
+      "sampleIndex": 6905,
+      "timestampMs": 346877
+    },
+    {
+      "ax": -480,
+      "ay": -496,
+      "az": 18444,
+      "gx": -377,
+      "gy": 471,
+      "gz": 127,
+      "sampleIndex": 6906,
+      "timestampMs": 346927
+    },
+    {
+      "ax": -444,
+      "ay": -600,
+      "az": 18444,
+      "gx": -373,
+      "gy": 477,
+      "gz": 127,
+      "sampleIndex": 6907,
+      "timestampMs": 346977
+    },
+    {
+      "ax": -384,
+      "ay": -656,
+      "az": 18536,
+      "gx": -321,
+      "gy": 475,
+      "gz": 127,
+      "sampleIndex": 6908,
+      "timestampMs": 347027
+    },
+    {
+      "ax": -484,
+      "ay": -728,
+      "az": 18448,
+      "gx": -364,
+      "gy": 469,
+      "gz": 129,
+      "sampleIndex": 6909,
+      "timestampMs": 347077
+    },
+    {
+      "ax": -472,
+      "ay": -616,
+      "az": 18384,
+      "gx": -356,
+      "gy": 503,
+      "gz": 108,
+      "sampleIndex": 6910,
+      "timestampMs": 347127
+    },
+    {
+      "ax": -500,
+      "ay": -644,
+      "az": 18464,
+      "gx": -313,
+      "gy": 466,
+      "gz": 140,
+      "sampleIndex": 6911,
+      "timestampMs": 347177
+    },
+    {
+      "ax": -480,
+      "ay": -532,
+      "az": 18416,
+      "gx": -331,
+      "gy": 485,
+      "gz": 97,
+      "sampleIndex": 6912,
+      "timestampMs": 347227
+    },
+    {
+      "ax": -512,
+      "ay": -444,
+      "az": 18336,
+      "gx": -366,
+      "gy": 502,
+      "gz": 117,
+      "sampleIndex": 6913,
+      "timestampMs": 347277
+    },
+    {
+      "ax": -428,
+      "ay": -564,
+      "az": 18448,
+      "gx": -368,
+      "gy": 478,
+      "gz": 118,
+      "sampleIndex": 6914,
+      "timestampMs": 347327
+    },
+    {
+      "ax": -436,
+      "ay": -492,
+      "az": 18532,
+      "gx": -339,
+      "gy": 471,
+      "gz": 111,
+      "sampleIndex": 6915,
+      "timestampMs": 347377
+    },
+    {
+      "ax": -492,
+      "ay": -576,
+      "az": 18660,
+      "gx": -335,
+      "gy": 494,
+      "gz": 149,
+      "sampleIndex": 6916,
+      "timestampMs": 347427
+    },
+    {
+      "ax": -440,
+      "ay": -560,
+      "az": 18592,
+      "gx": -371,
+      "gy": 501,
+      "gz": 107,
+      "sampleIndex": 6917,
+      "timestampMs": 347477
+    },
+    {
+      "ax": -420,
+      "ay": -576,
+      "az": 18420,
+      "gx": -379,
+      "gy": 496,
+      "gz": 104,
+      "sampleIndex": 6918,
+      "timestampMs": 347527
+    },
+    {
+      "ax": -472,
+      "ay": -624,
+      "az": 18396,
+      "gx": -332,
+      "gy": 513,
+      "gz": 118,
+      "sampleIndex": 6919,
+      "timestampMs": 347577
+    },
+    {
+      "ax": -464,
+      "ay": -688,
+      "az": 18524,
+      "gx": -340,
+      "gy": 479,
+      "gz": 140,
+      "sampleIndex": 6920,
+      "timestampMs": 347627
+    },
+    {
+      "ax": -440,
+      "ay": -496,
+      "az": 18732,
+      "gx": -400,
+      "gy": 500,
+      "gz": 151,
+      "sampleIndex": 6921,
+      "timestampMs": 347677
+    },
+    {
+      "ax": -468,
+      "ay": -600,
+      "az": 18636,
+      "gx": -332,
+      "gy": 488,
+      "gz": 128,
+      "sampleIndex": 6922,
+      "timestampMs": 347727
+    },
+    {
+      "ax": -472,
+      "ay": -500,
+      "az": 18424,
+      "gx": -338,
+      "gy": 487,
+      "gz": 112,
+      "sampleIndex": 6923,
+      "timestampMs": 347777
+    },
+    {
+      "ax": -452,
+      "ay": -560,
+      "az": 18472,
+      "gx": -385,
+      "gy": 480,
+      "gz": 145,
+      "sampleIndex": 6924,
+      "timestampMs": 347827
+    },
+    {
+      "ax": -488,
+      "ay": -520,
+      "az": 18508,
+      "gx": -340,
+      "gy": 466,
+      "gz": 126,
+      "sampleIndex": 6925,
+      "timestampMs": 347877
+    },
+    {
+      "ax": -436,
+      "ay": -788,
+      "az": 18604,
+      "gx": -310,
+      "gy": 499,
+      "gz": 133,
+      "sampleIndex": 6926,
+      "timestampMs": 347927
+    },
+    {
+      "ax": -476,
+      "ay": -636,
+      "az": 18456,
+      "gx": -362,
+      "gy": 465,
+      "gz": 117,
+      "sampleIndex": 6927,
+      "timestampMs": 347977
+    },
+    {
+      "ax": -460,
+      "ay": -516,
+      "az": 18412,
+      "gx": -367,
+      "gy": 464,
+      "gz": 106,
+      "sampleIndex": 6928,
+      "timestampMs": 348027
+    },
+    {
+      "ax": -456,
+      "ay": -608,
+      "az": 18484,
+      "gx": -353,
+      "gy": 464,
+      "gz": 116,
+      "sampleIndex": 6929,
+      "timestampMs": 348077
+    },
+    {
+      "ax": -496,
+      "ay": -724,
+      "az": 18520,
+      "gx": -336,
+      "gy": 485,
+      "gz": 112,
+      "sampleIndex": 6930,
+      "timestampMs": 348127
+    },
+    {
+      "ax": -516,
+      "ay": -648,
+      "az": 18704,
+      "gx": -370,
+      "gy": 502,
+      "gz": 135,
+      "sampleIndex": 6931,
+      "timestampMs": 348178
+    },
+    {
+      "ax": -564,
+      "ay": -572,
+      "az": 18492,
+      "gx": -326,
+      "gy": 475,
+      "gz": 106,
+      "sampleIndex": 6932,
+      "timestampMs": 348228
+    },
+    {
+      "ax": -460,
+      "ay": -600,
+      "az": 18436,
+      "gx": -357,
+      "gy": 481,
+      "gz": 120,
+      "sampleIndex": 6933,
+      "timestampMs": 348278
+    },
+    {
+      "ax": -412,
+      "ay": -452,
+      "az": 18708,
+      "gx": -386,
+      "gy": 444,
+      "gz": 107,
+      "sampleIndex": 6934,
+      "timestampMs": 348328
+    },
+    {
+      "ax": -428,
+      "ay": -612,
+      "az": 18640,
+      "gx": -284,
+      "gy": 489,
+      "gz": 119,
+      "sampleIndex": 6935,
+      "timestampMs": 348378
+    },
+    {
+      "ax": -396,
+      "ay": -576,
+      "az": 18464,
+      "gx": -324,
+      "gy": 464,
+      "gz": 124,
+      "sampleIndex": 6936,
+      "timestampMs": 348428
+    },
+    {
+      "ax": -452,
+      "ay": -592,
+      "az": 18436,
+      "gx": -401,
+      "gy": 461,
+      "gz": 145,
+      "sampleIndex": 6937,
+      "timestampMs": 348478
+    },
+    {
+      "ax": -456,
+      "ay": -508,
+      "az": 18488,
+      "gx": -333,
+      "gy": 480,
+      "gz": 105,
+      "sampleIndex": 6938,
+      "timestampMs": 348528
+    },
+    {
+      "ax": -456,
+      "ay": -640,
+      "az": 18468,
+      "gx": -316,
+      "gy": 491,
+      "gz": 119,
+      "sampleIndex": 6939,
+      "timestampMs": 348578
+    },
+    {
+      "ax": -488,
+      "ay": -576,
+      "az": 18620,
+      "gx": -369,
+      "gy": 483,
+      "gz": 148,
+      "sampleIndex": 6940,
+      "timestampMs": 348628
+    },
+    {
+      "ax": -544,
+      "ay": -512,
+      "az": 18408,
+      "gx": -315,
+      "gy": 455,
+      "gz": 130,
+      "sampleIndex": 6941,
+      "timestampMs": 348678
+    },
+    {
+      "ax": -500,
+      "ay": -592,
+      "az": 18536,
+      "gx": -329,
+      "gy": 510,
+      "gz": 129,
+      "sampleIndex": 6942,
+      "timestampMs": 348728
+    },
+    {
+      "ax": -500,
+      "ay": -632,
+      "az": 18488,
+      "gx": -369,
+      "gy": 479,
+      "gz": 142,
+      "sampleIndex": 6943,
+      "timestampMs": 348778
+    },
+    {
+      "ax": -432,
+      "ay": -528,
+      "az": 18544,
+      "gx": -378,
+      "gy": 490,
+      "gz": 129,
+      "sampleIndex": 6944,
+      "timestampMs": 348828
+    },
+    {
+      "ax": -560,
+      "ay": -680,
+      "az": 18516,
+      "gx": -326,
+      "gy": 501,
+      "gz": 118,
+      "sampleIndex": 6945,
+      "timestampMs": 348878
+    },
+    {
+      "ax": -468,
+      "ay": -532,
+      "az": 18492,
+      "gx": -435,
+      "gy": 473,
+      "gz": 115,
+      "sampleIndex": 6946,
+      "timestampMs": 348928
+    },
+    {
+      "ax": -604,
+      "ay": -608,
+      "az": 18708,
+      "gx": -492,
+      "gy": 510,
+      "gz": 132,
+      "sampleIndex": 6947,
+      "timestampMs": 348978
+    },
+    {
+      "ax": 20,
+      "ay": -652,
+      "az": 18960,
+      "gx": -564,
+      "gy": 534,
+      "gz": 107,
+      "sampleIndex": 6948,
+      "timestampMs": 349028
+    },
+    {
+      "ax": -700,
+      "ay": -1644,
+      "az": 20696,
+      "gx": -295,
+      "gy": 661,
+      "gz": 159,
+      "sampleIndex": 6949,
+      "timestampMs": 349078
+    },
+    {
+      "ax": -1068,
+      "ay": -728,
+      "az": 21948,
+      "gx": -292,
+      "gy": 681,
+      "gz": 137,
+      "sampleIndex": 6950,
+      "timestampMs": 349128
+    },
+    {
+      "ax": -728,
+      "ay": -1596,
+      "az": 16524,
+      "gx": -395,
+      "gy": 549,
+      "gz": 138,
+      "sampleIndex": 6951,
+      "timestampMs": 349178
+    },
+    {
+      "ax": -832,
+      "ay": -656,
+      "az": 22964,
+      "gx": -88,
+      "gy": 407,
+      "gz": 97,
+      "sampleIndex": 6952,
+      "timestampMs": 349228
+    },
+    {
+      "ax": -1260,
+      "ay": 480,
+      "az": 19632,
+      "gx": -525,
+      "gy": 194,
+      "gz": 141,
+      "sampleIndex": 6953,
+      "timestampMs": 349278
+    },
+    {
+      "ax": -1176,
+      "ay": -2652,
+      "az": 24904,
+      "gx": -120,
+      "gy": 193,
+      "gz": 134,
+      "sampleIndex": 6954,
+      "timestampMs": 349328
+    },
+    {
+      "ax": -600,
+      "ay": -420,
+      "az": 22648,
+      "gx": -322,
+      "gy": 196,
+      "gz": 167,
+      "sampleIndex": 6955,
+      "timestampMs": 349378
+    },
+    {
+      "ax": -1448,
+      "ay": -700,
+      "az": 18312,
+      "gx": -169,
+      "gy": 428,
+      "gz": 203,
+      "sampleIndex": 6956,
+      "timestampMs": 349428
+    },
+    {
+      "ax": 68,
+      "ay": -1632,
+      "az": 12444,
+      "gx": 0,
+      "gy": 850,
+      "gz": 200,
+      "sampleIndex": 6957,
+      "timestampMs": 349478
+    },
+    {
+      "ax": 1124,
+      "ay": 76,
+      "az": 15624,
+      "gx": -362,
+      "gy": 1062,
+      "gz": 156,
+      "sampleIndex": 6958,
+      "timestampMs": 349528
+    },
+    {
+      "ax": 368,
+      "ay": -936,
+      "az": 12768,
+      "gx": 326,
+      "gy": 1152,
+      "gz": 240,
+      "sampleIndex": 6959,
+      "timestampMs": 349578
+    },
+    {
+      "ax": -400,
+      "ay": -468,
+      "az": 9828,
+      "gx": -436,
+      "gy": 1013,
+      "gz": 169,
+      "sampleIndex": 6960,
+      "timestampMs": 349628
+    },
+    {
+      "ax": 996,
+      "ay": 232,
+      "az": 9188,
+      "gx": -355,
+      "gy": 665,
+      "gz": 117,
+      "sampleIndex": 6961,
+      "timestampMs": 349678
+    },
+    {
+      "ax": -388,
+      "ay": -728,
+      "az": 10868,
+      "gx": -419,
+      "gy": 340,
+      "gz": 95,
+      "sampleIndex": 6962,
+      "timestampMs": 349728
+    },
+    {
+      "ax": -836,
+      "ay": -1960,
+      "az": 17704,
+      "gx": -285,
+      "gy": 143,
+      "gz": 113,
+      "sampleIndex": 6963,
+      "timestampMs": 349778
+    },
+    {
+      "ax": 128,
+      "ay": -912,
+      "az": 19732,
+      "gx": -885,
+      "gy": 188,
+      "gz": 80,
+      "sampleIndex": 6964,
+      "timestampMs": 349828
+    },
+    {
+      "ax": -472,
+      "ay": 1940,
+      "az": 17836,
+      "gx": -664,
+      "gy": 113,
+      "gz": 50,
+      "sampleIndex": 6965,
+      "timestampMs": 349878
+    },
+    {
+      "ax": -72,
+      "ay": -792,
+      "az": 19428,
+      "gx": -494,
+      "gy": 143,
+      "gz": 78,
+      "sampleIndex": 6966,
+      "timestampMs": 349928
+    },
+    {
+      "ax": -400,
+      "ay": -596,
+      "az": 19324,
+      "gx": -241,
+      "gy": 272,
+      "gz": 92,
+      "sampleIndex": 6967,
+      "timestampMs": 349978
+    },
+    {
+      "ax": -712,
+      "ay": 448,
+      "az": 19676,
+      "gx": -407,
+      "gy": 492,
+      "gz": 72,
+      "sampleIndex": 6968,
+      "timestampMs": 350028
+    },
+    {
+      "ax": 232,
+      "ay": -612,
+      "az": 17332,
+      "gx": -354,
+      "gy": 667,
+      "gz": 96,
+      "sampleIndex": 6969,
+      "timestampMs": 350078
+    },
+    {
+      "ax": -380,
+      "ay": -2112,
+      "az": 21884,
+      "gx": -354,
+      "gy": 670,
+      "gz": 99,
+      "sampleIndex": 6970,
+      "timestampMs": 350128
+    },
+    {
+      "ax": -36,
+      "ay": 624,
+      "az": 14792,
+      "gx": -398,
+      "gy": 792,
+      "gz": 112,
+      "sampleIndex": 6971,
+      "timestampMs": 350179
+    },
+    {
+      "ax": -916,
+      "ay": 144,
+      "az": 19964,
+      "gx": -180,
+      "gy": 718,
+      "gz": 128,
+      "sampleIndex": 6972,
+      "timestampMs": 350229
+    },
+    {
+      "ax": -404,
+      "ay": 1392,
+      "az": 16208,
+      "gx": -514,
+      "gy": 613,
+      "gz": 152,
+      "sampleIndex": 6973,
+      "timestampMs": 350279
+    },
+    {
+      "ax": -784,
+      "ay": -472,
+      "az": 16420,
+      "gx": -354,
+      "gy": 504,
+      "gz": 146,
+      "sampleIndex": 6974,
+      "timestampMs": 350329
+    },
+    {
+      "ax": -720,
+      "ay": 900,
+      "az": 20108,
+      "gx": -469,
+      "gy": 433,
+      "gz": 134,
+      "sampleIndex": 6975,
+      "timestampMs": 350379
+    },
+    {
+      "ax": -1028,
+      "ay": -1588,
+      "az": 21740,
+      "gx": -305,
+      "gy": 263,
+      "gz": 111,
+      "sampleIndex": 6976,
+      "timestampMs": 350429
+    },
+    {
+      "ax": -576,
+      "ay": -440,
+      "az": 18244,
+      "gx": -433,
+      "gy": 193,
+      "gz": 102,
+      "sampleIndex": 6977,
+      "timestampMs": 350479
+    },
+    {
+      "ax": -640,
+      "ay": -896,
+      "az": 17944,
+      "gx": -305,
+      "gy": 187,
+      "gz": 137,
+      "sampleIndex": 6978,
+      "timestampMs": 350529
+    },
+    {
+      "ax": -1032,
+      "ay": -824,
+      "az": 18736,
+      "gx": -374,
+      "gy": 271,
+      "gz": 99,
+      "sampleIndex": 6979,
+      "timestampMs": 350579
+    },
+    {
+      "ax": -92,
+      "ay": -724,
+      "az": 17560,
+      "gx": -311,
+      "gy": 509,
+      "gz": 103,
+      "sampleIndex": 6980,
+      "timestampMs": 350629
+    },
+    {
+      "ax": -384,
+      "ay": -2208,
+      "az": 19156,
+      "gx": -419,
+      "gy": 608,
+      "gz": 108,
+      "sampleIndex": 6981,
+      "timestampMs": 350679
+    },
+    {
+      "ax": -340,
+      "ay": 312,
+      "az": 18552,
+      "gx": -485,
+      "gy": 645,
+      "gz": 106,
+      "sampleIndex": 6982,
+      "timestampMs": 350729
+    },
+    {
+      "ax": -384,
+      "ay": -2140,
+      "az": 18944,
+      "gx": -336,
+      "gy": 614,
+      "gz": 109,
+      "sampleIndex": 6983,
+      "timestampMs": 350779
+    },
+    {
+      "ax": -512,
+      "ay": -516,
+      "az": 18476,
+      "gx": -249,
+      "gy": 549,
+      "gz": 132,
+      "sampleIndex": 6984,
+      "timestampMs": 350829
+    },
+    {
+      "ax": -772,
+      "ay": -1424,
+      "az": 20012,
+      "gx": -361,
+      "gy": 431,
+      "gz": 133,
+      "sampleIndex": 6985,
+      "timestampMs": 350879
+    },
+    {
+      "ax": -752,
+      "ay": -1332,
+      "az": 18912,
+      "gx": -441,
+      "gy": 342,
+      "gz": 104,
+      "sampleIndex": 6986,
+      "timestampMs": 350929
+    },
+    {
+      "ax": -396,
+      "ay": -1060,
+      "az": 19072,
+      "gx": -400,
+      "gy": 284,
+      "gz": 109,
+      "sampleIndex": 6987,
+      "timestampMs": 350979
+    },
+    {
+      "ax": -540,
+      "ay": -408,
+      "az": 18284,
+      "gx": -184,
+      "gy": 335,
+      "gz": 127,
+      "sampleIndex": 6988,
+      "timestampMs": 351029
+    },
+    {
+      "ax": -460,
+      "ay": -416,
+      "az": 19508,
+      "gx": -308,
+      "gy": 399,
+      "gz": 120,
+      "sampleIndex": 6989,
+      "timestampMs": 351079
+    },
+    {
+      "ax": -432,
+      "ay": -944,
+      "az": 18320,
+      "gx": -305,
+      "gy": 517,
+      "gz": 136,
+      "sampleIndex": 6990,
+      "timestampMs": 351129
+    },
+    {
+      "ax": -472,
+      "ay": -492,
+      "az": 18504,
+      "gx": -408,
+      "gy": 514,
+      "gz": 112,
+      "sampleIndex": 6991,
+      "timestampMs": 351179
+    },
+    {
+      "ax": -436,
+      "ay": -620,
+      "az": 18372,
+      "gx": -351,
+      "gy": 514,
+      "gz": 83,
+      "sampleIndex": 6992,
+      "timestampMs": 351229
+    },
+    {
+      "ax": -452,
+      "ay": -688,
+      "az": 18828,
+      "gx": -324,
+      "gy": 463,
+      "gz": 121,
+      "sampleIndex": 6993,
+      "timestampMs": 351279
+    },
+    {
+      "ax": -420,
+      "ay": -784,
+      "az": 18688,
+      "gx": -331,
+      "gy": 422,
+      "gz": 108,
+      "sampleIndex": 6994,
+      "timestampMs": 351329
+    },
+    {
+      "ax": -392,
+      "ay": -552,
+      "az": 18112,
+      "gx": -315,
+      "gy": 441,
+      "gz": 116,
+      "sampleIndex": 6995,
+      "timestampMs": 351379
+    },
+    {
+      "ax": -468,
+      "ay": -928,
+      "az": 18588,
+      "gx": -306,
+      "gy": 493,
+      "gz": 136,
+      "sampleIndex": 6996,
+      "timestampMs": 351429
+    },
+    {
+      "ax": -504,
+      "ay": -720,
+      "az": 18484,
+      "gx": -388,
+      "gy": 481,
+      "gz": 110,
+      "sampleIndex": 6997,
+      "timestampMs": 351479
+    },
+    {
+      "ax": -552,
+      "ay": -560,
+      "az": 18848,
+      "gx": -365,
+      "gy": 511,
+      "gz": 131,
+      "sampleIndex": 6998,
+      "timestampMs": 351529
+    },
+    {
+      "ax": -432,
+      "ay": -672,
+      "az": 18872,
+      "gx": -323,
+      "gy": 485,
+      "gz": 135,
+      "sampleIndex": 6999,
+      "timestampMs": 351579
+    },
+    {
+      "ax": -492,
+      "ay": -732,
+      "az": 18716,
+      "gx": -347,
+      "gy": 485,
+      "gz": 116,
+      "sampleIndex": 7000,
+      "timestampMs": 351629
+    },
+    {
+      "ax": -484,
+      "ay": -720,
+      "az": 18636,
+      "gx": -307,
+      "gy": 467,
+      "gz": 120,
+      "sampleIndex": 7001,
+      "timestampMs": 351679
+    },
+    {
+      "ax": -460,
+      "ay": -748,
+      "az": 18592,
+      "gx": -347,
+      "gy": 505,
+      "gz": 109,
+      "sampleIndex": 7002,
+      "timestampMs": 351729
+    },
+    {
+      "ax": -472,
+      "ay": -656,
+      "az": 18364,
+      "gx": -374,
+      "gy": 541,
+      "gz": 124,
+      "sampleIndex": 7003,
+      "timestampMs": 351779
+    },
+    {
+      "ax": -368,
+      "ay": -712,
+      "az": 18440,
+      "gx": -329,
+      "gy": 492,
+      "gz": 149,
+      "sampleIndex": 7004,
+      "timestampMs": 351829
+    },
+    {
+      "ax": -464,
+      "ay": -792,
+      "az": 18368,
+      "gx": -360,
+      "gy": 464,
+      "gz": 118,
+      "sampleIndex": 7005,
+      "timestampMs": 351879
+    },
+    {
+      "ax": -488,
+      "ay": -704,
+      "az": 18356,
+      "gx": -331,
+      "gy": 470,
+      "gz": 110,
+      "sampleIndex": 7006,
+      "timestampMs": 351929
+    },
+    {
+      "ax": -336,
+      "ay": -620,
+      "az": 18520,
+      "gx": -328,
+      "gy": 498,
+      "gz": 127,
+      "sampleIndex": 7007,
+      "timestampMs": 351979
+    },
+    {
+      "ax": -564,
+      "ay": -604,
+      "az": 18404,
+      "gx": -336,
+      "gy": 507,
+      "gz": 133,
+      "sampleIndex": 7008,
+      "timestampMs": 352029
+    },
+    {
+      "ax": -424,
+      "ay": -668,
+      "az": 18436,
+      "gx": -354,
+      "gy": 511,
+      "gz": 113,
+      "sampleIndex": 7009,
+      "timestampMs": 352079
+    },
+    {
+      "ax": -464,
+      "ay": -656,
+      "az": 18512,
+      "gx": -348,
+      "gy": 490,
+      "gz": 116,
+      "sampleIndex": 7010,
+      "timestampMs": 352129
+    },
+    {
+      "ax": -348,
+      "ay": -620,
+      "az": 18424,
+      "gx": -299,
+      "gy": 461,
+      "gz": 120,
+      "sampleIndex": 7011,
+      "timestampMs": 352180
+    },
+    {
+      "ax": -396,
+      "ay": -624,
+      "az": 18516,
+      "gx": -330,
+      "gy": 473,
+      "gz": 125,
+      "sampleIndex": 7012,
+      "timestampMs": 352230
+    },
+    {
+      "ax": -424,
+      "ay": -668,
+      "az": 18588,
+      "gx": -355,
+      "gy": 510,
+      "gz": 144,
+      "sampleIndex": 7013,
+      "timestampMs": 352280
+    },
+    {
+      "ax": -436,
+      "ay": -704,
+      "az": 18660,
+      "gx": -370,
+      "gy": 498,
+      "gz": 132,
+      "sampleIndex": 7014,
+      "timestampMs": 352330
+    },
+    {
+      "ax": -492,
+      "ay": -720,
+      "az": 18432,
+      "gx": -348,
+      "gy": 511,
+      "gz": 124,
+      "sampleIndex": 7015,
+      "timestampMs": 352380
+    },
+    {
+      "ax": -424,
+      "ay": -708,
+      "az": 18324,
+      "gx": -306,
+      "gy": 484,
+      "gz": 153,
+      "sampleIndex": 7016,
+      "timestampMs": 352430
+    },
+    {
+      "ax": -424,
+      "ay": -720,
+      "az": 18624,
+      "gx": -351,
+      "gy": 487,
+      "gz": 118,
+      "sampleIndex": 7017,
+      "timestampMs": 352480
+    },
+    {
+      "ax": -444,
+      "ay": -708,
+      "az": 18548,
+      "gx": -370,
+      "gy": 495,
+      "gz": 139,
+      "sampleIndex": 7018,
+      "timestampMs": 352530
+    },
+    {
+      "ax": -448,
+      "ay": -636,
+      "az": 18588,
+      "gx": -389,
+      "gy": 496,
+      "gz": 135,
+      "sampleIndex": 7019,
+      "timestampMs": 352580
+    },
+    {
+      "ax": -488,
+      "ay": -768,
+      "az": 18476,
+      "gx": -327,
+      "gy": 471,
+      "gz": 128,
+      "sampleIndex": 7020,
+      "timestampMs": 352630
+    },
+    {
+      "ax": -424,
+      "ay": -756,
+      "az": 18484,
+      "gx": -338,
+      "gy": 483,
+      "gz": 129,
+      "sampleIndex": 7021,
+      "timestampMs": 352680
+    },
+    {
+      "ax": -448,
+      "ay": -756,
+      "az": 18440,
+      "gx": -337,
+      "gy": 466,
+      "gz": 129,
+      "sampleIndex": 7022,
+      "timestampMs": 352730
+    },
+    {
+      "ax": -432,
+      "ay": -628,
+      "az": 18212,
+      "gx": -335,
+      "gy": 495,
+      "gz": 137,
+      "sampleIndex": 7023,
+      "timestampMs": 352780
+    },
+    {
+      "ax": -408,
+      "ay": -704,
+      "az": 18344,
+      "gx": -337,
+      "gy": 487,
+      "gz": 95,
+      "sampleIndex": 7024,
+      "timestampMs": 352830
+    },
+    {
+      "ax": -448,
+      "ay": -668,
+      "az": 18520,
+      "gx": -325,
+      "gy": 476,
+      "gz": 146,
+      "sampleIndex": 7025,
+      "timestampMs": 352880
+    },
+    {
+      "ax": -452,
+      "ay": -692,
+      "az": 18220,
+      "gx": -323,
+      "gy": 509,
+      "gz": 164,
+      "sampleIndex": 7026,
+      "timestampMs": 352930
+    },
+    {
+      "ax": -348,
+      "ay": -644,
+      "az": 18692,
+      "gx": -337,
+      "gy": 494,
+      "gz": 112,
+      "sampleIndex": 7027,
+      "timestampMs": 352980
+    },
+    {
+      "ax": -544,
+      "ay": -676,
+      "az": 18600,
+      "gx": -331,
+      "gy": 472,
+      "gz": 146,
+      "sampleIndex": 7028,
+      "timestampMs": 353030
+    },
+    {
+      "ax": -508,
+      "ay": -644,
+      "az": 18804,
+      "gx": -317,
+      "gy": 465,
+      "gz": 111,
+      "sampleIndex": 7029,
+      "timestampMs": 353080
+    },
+    {
+      "ax": -468,
+      "ay": -804,
+      "az": 19064,
+      "gx": -337,
+      "gy": 497,
+      "gz": 119,
+      "sampleIndex": 7030,
+      "timestampMs": 353130
+    },
+    {
+      "ax": -376,
+      "ay": -636,
+      "az": 19144,
+      "gx": -367,
+      "gy": 511,
+      "gz": 135,
+      "sampleIndex": 7031,
+      "timestampMs": 353180
+    },
+    {
+      "ax": -456,
+      "ay": -772,
+      "az": 19052,
+      "gx": -348,
+      "gy": 454,
+      "gz": 142,
+      "sampleIndex": 7032,
+      "timestampMs": 353230
+    },
+    {
+      "ax": -512,
+      "ay": -1136,
+      "az": 19408,
+      "gx": -249,
+      "gy": 453,
+      "gz": 125,
+      "sampleIndex": 7033,
+      "timestampMs": 353280
+    },
+    {
+      "ax": -688,
+      "ay": -700,
+      "az": 19584,
+      "gx": -386,
+      "gy": 448,
+      "gz": 110,
+      "sampleIndex": 7034,
+      "timestampMs": 353330
+    },
+    {
+      "ax": -300,
+      "ay": -2644,
+      "az": 20720,
+      "gx": -396,
+      "gy": 430,
+      "gz": 139,
+      "sampleIndex": 7035,
+      "timestampMs": 353380
+    },
+    {
+      "ax": -4,
+      "ay": -356,
+      "az": 19192,
+      "gx": -349,
+      "gy": 456,
+      "gz": 121,
+      "sampleIndex": 7036,
+      "timestampMs": 353430
+    },
+    {
+      "ax": -380,
+      "ay": -2288,
+      "az": 24440,
+      "gx": -264,
+      "gy": 523,
+      "gz": 140,
+      "sampleIndex": 7037,
+      "timestampMs": 353480
+    },
+    {
+      "ax": -340,
+      "ay": -624,
+      "az": 20984,
+      "gx": -263,
+      "gy": 582,
+      "gz": 141,
+      "sampleIndex": 7038,
+      "timestampMs": 353530
+    },
+    {
+      "ax": -1204,
+      "ay": -1556,
+      "az": 22120,
+      "gx": -345,
+      "gy": 515,
+      "gz": 132,
+      "sampleIndex": 7039,
+      "timestampMs": 353580
+    },
+    {
+      "ax": -208,
+      "ay": 612,
+      "az": 16264,
+      "gx": -243,
+      "gy": 522,
+      "gz": 141,
+      "sampleIndex": 7040,
+      "timestampMs": 353630
+    },
+    {
+      "ax": -460,
+      "ay": -1928,
+      "az": 26568,
+      "gx": -273,
+      "gy": 594,
+      "gz": 118,
+      "sampleIndex": 7041,
+      "timestampMs": 353680
+    },
+    {
+      "ax": -464,
+      "ay": 716,
+      "az": 19960,
+      "gx": -391,
+      "gy": 516,
+      "gz": 144,
+      "sampleIndex": 7042,
+      "timestampMs": 353730
+    },
+    {
+      "ax": -1264,
+      "ay": 836,
+      "az": 17012,
+      "gx": -535,
+      "gy": 559,
+      "gz": 134,
+      "sampleIndex": 7043,
+      "timestampMs": 353780
+    },
+    {
+      "ax": 1420,
+      "ay": 248,
+      "az": 13336,
+      "gx": -273,
+      "gy": 605,
+      "gz": 144,
+      "sampleIndex": 7044,
+      "timestampMs": 353830
+    },
+    {
+      "ax": 216,
+      "ay": -3068,
+      "az": 19532,
+      "gx": -232,
+      "gy": 665,
+      "gz": 165,
+      "sampleIndex": 7045,
+      "timestampMs": 353880
+    },
+    {
+      "ax": -1884,
+      "ay": -24,
+      "az": 17436,
+      "gx": -369,
+      "gy": 610,
+      "gz": 148,
+      "sampleIndex": 7046,
+      "timestampMs": 353930
+    },
+    {
+      "ax": -1440,
+      "ay": -240,
+      "az": 19712,
+      "gx": -448,
+      "gy": 650,
+      "gz": 137,
+      "sampleIndex": 7047,
+      "timestampMs": 353980
+    },
+    {
+      "ax": -464,
+      "ay": -456,
+      "az": 17368,
+      "gx": -286,
+      "gy": 668,
+      "gz": 139,
+      "sampleIndex": 7048,
+      "timestampMs": 354030
+    },
+    {
+      "ax": 616,
+      "ay": -12,
+      "az": 13768,
+      "gx": -393,
+      "gy": 645,
+      "gz": 129,
+      "sampleIndex": 7049,
+      "timestampMs": 354080
+    },
+    {
+      "ax": 368,
+      "ay": -72,
+      "az": 15688,
+      "gx": -86,
+      "gy": 554,
+      "gz": 118,
+      "sampleIndex": 7050,
+      "timestampMs": 354130
+    },
+    {
+      "ax": -516,
+      "ay": -172,
+      "az": 17872,
+      "gx": -487,
+      "gy": 424,
+      "gz": 89,
+      "sampleIndex": 7051,
+      "timestampMs": 354181
+    },
+    {
+      "ax": -916,
+      "ay": -2060,
+      "az": 16064,
+      "gx": -226,
+      "gy": 347,
+      "gz": 158,
+      "sampleIndex": 7052,
+      "timestampMs": 354231
+    },
+    {
+      "ax": -388,
+      "ay": 868,
+      "az": 15048,
+      "gx": -369,
+      "gy": 392,
+      "gz": 125,
+      "sampleIndex": 7053,
+      "timestampMs": 354281
+    },
+    {
+      "ax": 28,
+      "ay": -1088,
+      "az": 18244,
+      "gx": -264,
+      "gy": 403,
+      "gz": 146,
+      "sampleIndex": 7054,
+      "timestampMs": 354331
+    },
+    {
+      "ax": -800,
+      "ay": -684,
+      "az": 16136,
+      "gx": -489,
+      "gy": 441,
+      "gz": 144,
+      "sampleIndex": 7055,
+      "timestampMs": 354381
+    },
+    {
+      "ax": -572,
+      "ay": -148,
+      "az": 19512,
+      "gx": -450,
+      "gy": 519,
+      "gz": 132,
+      "sampleIndex": 7056,
+      "timestampMs": 354431
+    },
+    {
+      "ax": 32,
+      "ay": -1340,
+      "az": 17436,
+      "gx": -336,
+      "gy": 611,
+      "gz": 139,
+      "sampleIndex": 7057,
+      "timestampMs": 354481
+    },
+    {
+      "ax": -456,
+      "ay": -240,
+      "az": 16920,
+      "gx": -360,
+      "gy": 555,
+      "gz": 151,
+      "sampleIndex": 7058,
+      "timestampMs": 354531
+    },
+    {
+      "ax": -352,
+      "ay": -940,
+      "az": 16756,
+      "gx": -389,
+      "gy": 489,
+      "gz": 119,
+      "sampleIndex": 7059,
+      "timestampMs": 354581
+    },
+    {
+      "ax": -408,
+      "ay": -1420,
+      "az": 16708,
+      "gx": -297,
+      "gy": 503,
+      "gz": 184,
+      "sampleIndex": 7060,
+      "timestampMs": 354631
+    },
+    {
+      "ax": -628,
+      "ay": -1280,
+      "az": 20020,
+      "gx": -431,
+      "gy": 386,
+      "gz": 68,
+      "sampleIndex": 7061,
+      "timestampMs": 354681
+    },
+    {
+      "ax": -264,
+      "ay": -3104,
+      "az": 16680,
+      "gx": -1,
+      "gy": 402,
+      "gz": 159,
+      "sampleIndex": 7062,
+      "timestampMs": 354731
+    },
+    {
+      "ax": -464,
+      "ay": -2004,
+      "az": 17864,
+      "gx": -62,
+      "gy": 380,
+      "gz": 93,
+      "sampleIndex": 7063,
+      "timestampMs": 354781
+    },
+    {
+      "ax": 172,
+      "ay": -1380,
+      "az": 22500,
+      "gx": -353,
+      "gy": 452,
+      "gz": 89,
+      "sampleIndex": 7064,
+      "timestampMs": 354831
+    },
+    {
+      "ax": -1968,
+      "ay": 1552,
+      "az": 16916,
+      "gx": -309,
+      "gy": 441,
+      "gz": 75,
+      "sampleIndex": 7065,
+      "timestampMs": 354881
+    },
+    {
+      "ax": -152,
+      "ay": -988,
+      "az": 15608,
+      "gx": -387,
+      "gy": 469,
+      "gz": 99,
+      "sampleIndex": 7066,
+      "timestampMs": 354931
+    },
+    {
+      "ax": -412,
+      "ay": -3340,
+      "az": 16780,
+      "gx": -185,
+      "gy": 536,
+      "gz": 125,
+      "sampleIndex": 7067,
+      "timestampMs": 354981
+    },
+    {
+      "ax": -1232,
+      "ay": 512,
+      "az": 10776,
+      "gx": -251,
+      "gy": 404,
+      "gz": 134,
+      "sampleIndex": 7068,
+      "timestampMs": 355031
+    },
+    {
+      "ax": -1128,
+      "ay": 792,
+      "az": 14868,
+      "gx": -525,
+      "gy": 444,
+      "gz": 117,
+      "sampleIndex": 7069,
+      "timestampMs": 355081
+    },
+    {
+      "ax": -440,
+      "ay": -1780,
+      "az": 21536,
+      "gx": -330,
+      "gy": 476,
+      "gz": 94,
+      "sampleIndex": 7070,
+      "timestampMs": 355131
+    },
+    {
+      "ax": -612,
+      "ay": -1188,
+      "az": 17724,
+      "gx": -317,
+      "gy": 467,
+      "gz": 144,
+      "sampleIndex": 7071,
+      "timestampMs": 355181
+    },
+    {
+      "ax": -1172,
+      "ay": 64,
+      "az": 26040,
+      "gx": -438,
+      "gy": 503,
+      "gz": 160,
+      "sampleIndex": 7072,
+      "timestampMs": 355231
+    },
+    {
+      "ax": 736,
+      "ay": -2796,
+      "az": 16572,
+      "gx": -162,
+      "gy": 582,
+      "gz": 123,
+      "sampleIndex": 7073,
+      "timestampMs": 355281
+    },
+    {
+      "ax": -548,
+      "ay": -848,
+      "az": 14208,
+      "gx": -331,
+      "gy": 521,
+      "gz": 162,
+      "sampleIndex": 7074,
+      "timestampMs": 355331
+    },
+    {
+      "ax": -356,
+      "ay": -1548,
+      "az": 25876,
+      "gx": -251,
+      "gy": 573,
+      "gz": 134,
+      "sampleIndex": 7075,
+      "timestampMs": 355381
+    },
+    {
+      "ax": -380,
+      "ay": -680,
+      "az": 17756,
+      "gx": -228,
+      "gy": 583,
+      "gz": 120,
+      "sampleIndex": 7076,
+      "timestampMs": 355431
+    },
+    {
+      "ax": -392,
+      "ay": -304,
+      "az": 18572,
+      "gx": -363,
+      "gy": 477,
+      "gz": 92,
+      "sampleIndex": 7077,
+      "timestampMs": 355481
+    },
+    {
+      "ax": 336,
+      "ay": -1828,
+      "az": 20908,
+      "gx": -378,
+      "gy": 478,
+      "gz": 60,
+      "sampleIndex": 7078,
+      "timestampMs": 355531
+    },
+    {
+      "ax": -560,
+      "ay": 172,
+      "az": 17328,
+      "gx": -266,
+      "gy": 479,
+      "gz": 106,
+      "sampleIndex": 7079,
+      "timestampMs": 355581
+    },
+    {
+      "ax": 172,
+      "ay": -1836,
+      "az": 17120,
+      "gx": -282,
+      "gy": 428,
+      "gz": 140,
+      "sampleIndex": 7080,
+      "timestampMs": 355631
+    },
+    {
+      "ax": 440,
+      "ay": -440,
+      "az": 9728,
+      "gx": -385,
+      "gy": 457,
+      "gz": 130,
+      "sampleIndex": 7081,
+      "timestampMs": 355681
+    },
+    {
+      "ax": -1836,
+      "ay": -56,
+      "az": 29644,
+      "gx": -329,
+      "gy": 344,
+      "gz": 151,
+      "sampleIndex": 7082,
+      "timestampMs": 355731
+    },
+    {
+      "ax": -932,
+      "ay": 776,
+      "az": 17612,
+      "gx": -412,
+      "gy": 363,
+      "gz": 134,
+      "sampleIndex": 7083,
+      "timestampMs": 355781
+    },
+    {
+      "ax": -912,
+      "ay": 1720,
+      "az": 19768,
+      "gx": -428,
+      "gy": 461,
+      "gz": 121,
+      "sampleIndex": 7084,
+      "timestampMs": 355831
+    },
+    {
+      "ax": -404,
+      "ay": 840,
+      "az": 22708,
+      "gx": -361,
+      "gy": 530,
+      "gz": 106,
+      "sampleIndex": 7085,
+      "timestampMs": 355881
+    },
+    {
+      "ax": -896,
+      "ay": -84,
+      "az": 21716,
+      "gx": -345,
+      "gy": 488,
+      "gz": 135,
+      "sampleIndex": 7086,
+      "timestampMs": 355931
+    },
+    {
+      "ax": -440,
+      "ay": -1104,
+      "az": 14804,
+      "gx": -304,
+      "gy": 431,
+      "gz": 121,
+      "sampleIndex": 7087,
+      "timestampMs": 355981
+    },
+    {
+      "ax": -204,
+      "ay": 232,
+      "az": 15272,
+      "gx": -251,
+      "gy": 486,
+      "gz": 123,
+      "sampleIndex": 7088,
+      "timestampMs": 356031
+    },
+    {
+      "ax": -360,
+      "ay": -1512,
+      "az": 17452,
+      "gx": -231,
+      "gy": 507,
+      "gz": 98,
+      "sampleIndex": 7089,
+      "timestampMs": 356081
+    },
+    {
+      "ax": -264,
+      "ay": -812,
+      "az": 20592,
+      "gx": -434,
+      "gy": 497,
+      "gz": 135,
+      "sampleIndex": 7090,
+      "timestampMs": 356131
+    },
+    {
+      "ax": -972,
+      "ay": 1624,
+      "az": 19936,
+      "gx": -390,
+      "gy": 392,
+      "gz": 121,
+      "sampleIndex": 7091,
+      "timestampMs": 356182
+    },
+    {
+      "ax": -148,
+      "ay": -1324,
+      "az": 22544,
+      "gx": -272,
+      "gy": 493,
+      "gz": 159,
+      "sampleIndex": 7092,
+      "timestampMs": 356232
+    },
+    {
+      "ax": -624,
+      "ay": -560,
+      "az": 18892,
+      "gx": -386,
+      "gy": 429,
+      "gz": 123,
+      "sampleIndex": 7093,
+      "timestampMs": 356282
+    },
+    {
+      "ax": -756,
+      "ay": -872,
+      "az": 18692,
+      "gx": -420,
+      "gy": 432,
+      "gz": 114,
+      "sampleIndex": 7094,
+      "timestampMs": 356332
+    },
+    {
+      "ax": -264,
+      "ay": -772,
+      "az": 17580,
+      "gx": -309,
+      "gy": 420,
+      "gz": 129,
+      "sampleIndex": 7095,
+      "timestampMs": 356382
+    },
+    {
+      "ax": -916,
+      "ay": -576,
+      "az": 18992,
+      "gx": -387,
+      "gy": 386,
+      "gz": 134,
+      "sampleIndex": 7096,
+      "timestampMs": 356432
+    },
+    {
+      "ax": -476,
+      "ay": -612,
+      "az": 19532,
+      "gx": -401,
+      "gy": 514,
+      "gz": 71,
+      "sampleIndex": 7097,
+      "timestampMs": 356482
+    },
+    {
+      "ax": -388,
+      "ay": -940,
+      "az": 18492,
+      "gx": -247,
+      "gy": 524,
+      "gz": 117,
+      "sampleIndex": 7098,
+      "timestampMs": 356532
+    },
+    {
+      "ax": -472,
+      "ay": -280,
+      "az": 17732,
+      "gx": -401,
+      "gy": 525,
+      "gz": 128,
+      "sampleIndex": 7099,
+      "timestampMs": 356582
+    },
+    {
+      "ax": -452,
+      "ay": -1048,
+      "az": 18640,
+      "gx": -312,
+      "gy": 499,
+      "gz": 142,
+      "sampleIndex": 7100,
+      "timestampMs": 356632
+    },
+    {
+      "ax": -428,
+      "ay": -916,
+      "az": 19020,
+      "gx": -313,
+      "gy": 481,
+      "gz": 121,
+      "sampleIndex": 7101,
+      "timestampMs": 356682
+    },
+    {
+      "ax": -572,
+      "ay": 640,
+      "az": 18716,
+      "gx": -322,
+      "gy": 458,
+      "gz": 125,
+      "sampleIndex": 7102,
+      "timestampMs": 356732
+    },
+    {
+      "ax": -572,
+      "ay": -464,
+      "az": 17856,
+      "gx": -440,
+      "gy": 463,
+      "gz": 90,
+      "sampleIndex": 7103,
+      "timestampMs": 356782
+    },
+    {
+      "ax": -720,
+      "ay": -80,
+      "az": 19488,
+      "gx": -372,
+      "gy": 452,
+      "gz": 129,
+      "sampleIndex": 7104,
+      "timestampMs": 356832
+    },
+    {
+      "ax": -536,
+      "ay": -112,
+      "az": 19344,
+      "gx": -303,
+      "gy": 462,
+      "gz": 129,
+      "sampleIndex": 7105,
+      "timestampMs": 356882
+    },
+    {
+      "ax": -492,
+      "ay": -1120,
+      "az": 18512,
+      "gx": -310,
+      "gy": 455,
+      "gz": 100,
+      "sampleIndex": 7106,
+      "timestampMs": 356932
+    },
+    {
+      "ax": -404,
+      "ay": -472,
+      "az": 18584,
+      "gx": -449,
+      "gy": 475,
+      "gz": 133,
+      "sampleIndex": 7107,
+      "timestampMs": 356982
+    },
+    {
+      "ax": -528,
+      "ay": -468,
+      "az": 19168,
+      "gx": -353,
+      "gy": 492,
+      "gz": 136,
+      "sampleIndex": 7108,
+      "timestampMs": 357032
+    },
+    {
+      "ax": -488,
+      "ay": -740,
+      "az": 18736,
+      "gx": -319,
+      "gy": 515,
+      "gz": 115,
+      "sampleIndex": 7109,
+      "timestampMs": 357082
+    },
+    {
+      "ax": -576,
+      "ay": -668,
+      "az": 19140,
+      "gx": -340,
+      "gy": 506,
+      "gz": 126,
+      "sampleIndex": 7110,
+      "timestampMs": 357132
+    },
+    {
+      "ax": -480,
+      "ay": -644,
+      "az": 19092,
+      "gx": -335,
+      "gy": 464,
+      "gz": 123,
+      "sampleIndex": 7111,
+      "timestampMs": 357182
+    },
+    {
+      "ax": -556,
+      "ay": -688,
+      "az": 19064,
+      "gx": -339,
+      "gy": 453,
+      "gz": 121,
+      "sampleIndex": 7112,
+      "timestampMs": 357232
+    },
+    {
+      "ax": -580,
+      "ay": -664,
+      "az": 19256,
+      "gx": -317,
+      "gy": 474,
+      "gz": 147,
+      "sampleIndex": 7113,
+      "timestampMs": 357282
+    },
+    {
+      "ax": -468,
+      "ay": -1112,
+      "az": 19428,
+      "gx": -315,
+      "gy": 435,
+      "gz": 144,
+      "sampleIndex": 7114,
+      "timestampMs": 357332
+    },
+    {
+      "ax": -904,
+      "ay": -524,
+      "az": 19568,
+      "gx": -467,
+      "gy": 400,
+      "gz": 114,
+      "sampleIndex": 7115,
+      "timestampMs": 357382
+    },
+    {
+      "ax": -672,
+      "ay": 384,
+      "az": 21268,
+      "gx": -396,
+      "gy": 407,
+      "gz": 116,
+      "sampleIndex": 7116,
+      "timestampMs": 357432
+    },
+    {
+      "ax": -1276,
+      "ay": -264,
+      "az": 23044,
+      "gx": -275,
+      "gy": 372,
+      "gz": 132,
+      "sampleIndex": 7117,
+      "timestampMs": 357482
+    },
+    {
+      "ax": -76,
+      "ay": -2308,
+      "az": 19656,
+      "gx": -349,
+      "gy": 536,
+      "gz": 149,
+      "sampleIndex": 7118,
+      "timestampMs": 357532
+    },
+    {
+      "ax": -264,
+      "ay": -1544,
+      "az": 18612,
+      "gx": -238,
+      "gy": 574,
+      "gz": 103,
+      "sampleIndex": 7119,
+      "timestampMs": 357582
+    },
+    {
+      "ax": -1368,
+      "ay": 96,
+      "az": 22900,
+      "gx": -356,
+      "gy": 489,
+      "gz": 127,
+      "sampleIndex": 7120,
+      "timestampMs": 357632
+    },
+    {
+      "ax": -624,
+      "ay": -96,
+      "az": 17668,
+      "gx": -349,
+      "gy": 551,
+      "gz": 130,
+      "sampleIndex": 7121,
+      "timestampMs": 357682
+    },
+    {
+      "ax": -36,
+      "ay": -256,
+      "az": 19008,
+      "gx": -468,
+      "gy": 579,
+      "gz": 147,
+      "sampleIndex": 7122,
+      "timestampMs": 357732
+    },
+    {
+      "ax": -44,
+      "ay": 416,
+      "az": 8496,
+      "gx": -289,
+      "gy": 590,
+      "gz": 183,
+      "sampleIndex": 7123,
+      "timestampMs": 357782
+    },
+    {
+      "ax": -864,
+      "ay": -596,
+      "az": 20616,
+      "gx": -398,
+      "gy": 630,
+      "gz": 169,
+      "sampleIndex": 7124,
+      "timestampMs": 357832
+    },
+    {
+      "ax": -1088,
+      "ay": -352,
+      "az": 15444,
+      "gx": -364,
+      "gy": 609,
+      "gz": 143,
+      "sampleIndex": 7125,
+      "timestampMs": 357882
+    },
+    {
+      "ax": -1380,
+      "ay": -1000,
+      "az": 23620,
+      "gx": -566,
+      "gy": 607,
+      "gz": 168,
+      "sampleIndex": 7126,
+      "timestampMs": 357932
+    },
+    {
+      "ax": 40,
+      "ay": -1216,
+      "az": 11360,
+      "gx": -229,
+      "gy": 648,
+      "gz": 156,
+      "sampleIndex": 7127,
+      "timestampMs": 357982
+    },
+    {
+      "ax": 436,
+      "ay": -1072,
+      "az": 17712,
+      "gx": -372,
+      "gy": 490,
+      "gz": 195,
+      "sampleIndex": 7128,
+      "timestampMs": 358032
+    },
+    {
+      "ax": -40,
+      "ay": -1804,
+      "az": 16868,
+      "gx": -177,
+      "gy": 545,
+      "gz": 153,
+      "sampleIndex": 7129,
+      "timestampMs": 358082
+    },
+    {
+      "ax": 548,
+      "ay": 320,
+      "az": 13900,
+      "gx": -433,
+      "gy": 523,
+      "gz": 94,
+      "sampleIndex": 7130,
+      "timestampMs": 358132
+    },
+    {
+      "ax": -588,
+      "ay": 1808,
+      "az": 18472,
+      "gx": -433,
+      "gy": 487,
+      "gz": 109,
+      "sampleIndex": 7131,
+      "timestampMs": 358183
+    },
+    {
+      "ax": -84,
+      "ay": 1536,
+      "az": 18468,
+      "gx": -276,
+      "gy": 450,
+      "gz": 101,
+      "sampleIndex": 7132,
+      "timestampMs": 358233
+    },
+    {
+      "ax": -544,
+      "ay": 988,
+      "az": 14536,
+      "gx": -523,
+      "gy": 477,
+      "gz": 127,
+      "sampleIndex": 7133,
+      "timestampMs": 358283
+    },
+    {
+      "ax": 384,
+      "ay": -1308,
+      "az": 14008,
+      "gx": -134,
+      "gy": 521,
+      "gz": 124,
+      "sampleIndex": 7134,
+      "timestampMs": 358333
+    },
+    {
+      "ax": -1044,
+      "ay": -784,
+      "az": 16140,
+      "gx": -344,
+      "gy": 466,
+      "gz": 145,
+      "sampleIndex": 7135,
+      "timestampMs": 358383
+    },
+    {
+      "ax": -1268,
+      "ay": -1776,
+      "az": 17812,
+      "gx": -235,
+      "gy": 471,
+      "gz": 140,
+      "sampleIndex": 7136,
+      "timestampMs": 358433
+    },
+    {
+      "ax": -940,
+      "ay": -808,
+      "az": 18952,
+      "gx": -307,
+      "gy": 515,
+      "gz": 120,
+      "sampleIndex": 7137,
+      "timestampMs": 358483
+    },
+    {
+      "ax": 64,
+      "ay": 380,
+      "az": 14716,
+      "gx": -461,
+      "gy": 487,
+      "gz": 77,
+      "sampleIndex": 7138,
+      "timestampMs": 358533
+    },
+    {
+      "ax": -508,
+      "ay": -272,
+      "az": 16332,
+      "gx": -315,
+      "gy": 444,
+      "gz": 135,
+      "sampleIndex": 7139,
+      "timestampMs": 358583
+    },
+    {
+      "ax": -392,
+      "ay": -624,
+      "az": 16568,
+      "gx": -283,
+      "gy": 471,
+      "gz": 152,
+      "sampleIndex": 7140,
+      "timestampMs": 358633
+    },
+    {
+      "ax": -540,
+      "ay": -552,
+      "az": 16724,
+      "gx": -404,
+      "gy": 466,
+      "gz": 116,
+      "sampleIndex": 7141,
+      "timestampMs": 358683
+    },
+    {
+      "ax": 76,
+      "ay": -1764,
+      "az": 15744,
+      "gx": -409,
+      "gy": 502,
+      "gz": 94,
+      "sampleIndex": 7142,
+      "timestampMs": 358733
+    },
+    {
+      "ax": -320,
+      "ay": 700,
+      "az": 14076,
+      "gx": -214,
+      "gy": 472,
+      "gz": 85,
+      "sampleIndex": 7143,
+      "timestampMs": 358783
+    },
+    {
+      "ax": -500,
+      "ay": 192,
+      "az": 20828,
+      "gx": -450,
+      "gy": 436,
+      "gz": 107,
+      "sampleIndex": 7144,
+      "timestampMs": 358833
+    },
+    {
+      "ax": -248,
+      "ay": -236,
+      "az": 12480,
+      "gx": -275,
+      "gy": 414,
+      "gz": 93,
+      "sampleIndex": 7145,
+      "timestampMs": 358883
+    },
+    {
+      "ax": -852,
+      "ay": -852,
+      "az": 15220,
+      "gx": -481,
+      "gy": 432,
+      "gz": 87,
+      "sampleIndex": 7146,
+      "timestampMs": 358933
+    },
+    {
+      "ax": -836,
+      "ay": -264,
+      "az": 20008,
+      "gx": -360,
+      "gy": 508,
+      "gz": 157,
+      "sampleIndex": 7147,
+      "timestampMs": 358983
+    },
+    {
+      "ax": -116,
+      "ay": -1660,
+      "az": 13720,
+      "gx": -335,
+      "gy": 526,
+      "gz": 96,
+      "sampleIndex": 7148,
+      "timestampMs": 359033
+    },
+    {
+      "ax": -1048,
+      "ay": 292,
+      "az": 21836,
+      "gx": -364,
+      "gy": 490,
+      "gz": 138,
+      "sampleIndex": 7149,
+      "timestampMs": 359083
+    },
+    {
+      "ax": -160,
+      "ay": -184,
+      "az": 15444,
+      "gx": -445,
+      "gy": 462,
+      "gz": 164,
+      "sampleIndex": 7150,
+      "timestampMs": 359133
+    },
+    {
+      "ax": -1704,
+      "ay": -792,
+      "az": 24960,
+      "gx": -308,
+      "gy": 422,
+      "gz": 141,
+      "sampleIndex": 7151,
+      "timestampMs": 359183
+    },
+    {
+      "ax": -1104,
+      "ay": -920,
+      "az": 27208,
+      "gx": -345,
+      "gy": 448,
+      "gz": 90,
+      "sampleIndex": 7152,
+      "timestampMs": 359233
+    },
+    {
+      "ax": -1000,
+      "ay": 284,
+      "az": 15148,
+      "gx": -360,
+      "gy": 484,
+      "gz": 130,
+      "sampleIndex": 7153,
+      "timestampMs": 359283
+    },
+    {
+      "ax": -180,
+      "ay": -1984,
+      "az": 18916,
+      "gx": -222,
+      "gy": 460,
+      "gz": 111,
+      "sampleIndex": 7154,
+      "timestampMs": 359333
+    },
+    {
+      "ax": -652,
+      "ay": -548,
+      "az": 16596,
+      "gx": -207,
+      "gy": 518,
+      "gz": 137,
+      "sampleIndex": 7155,
+      "timestampMs": 359383
+    },
+    {
+      "ax": -472,
+      "ay": 388,
+      "az": 12064,
+      "gx": -152,
+      "gy": 553,
+      "gz": 105,
+      "sampleIndex": 7156,
+      "timestampMs": 359433
+    },
+    {
+      "ax": 652,
+      "ay": -220,
+      "az": 16748,
+      "gx": -367,
+      "gy": 572,
+      "gz": 78,
+      "sampleIndex": 7157,
+      "timestampMs": 359483
+    },
+    {
+      "ax": -944,
+      "ay": -776,
+      "az": 19624,
+      "gx": -8,
+      "gy": 558,
+      "gz": 127,
+      "sampleIndex": 7158,
+      "timestampMs": 359533
+    },
+    {
+      "ax": -1280,
+      "ay": 544,
+      "az": 25152,
+      "gx": -495,
+      "gy": 500,
+      "gz": 132,
+      "sampleIndex": 7159,
+      "timestampMs": 359583
+    },
+    {
+      "ax": -1044,
+      "ay": -196,
+      "az": 23036,
+      "gx": -448,
+      "gy": 427,
+      "gz": 104,
+      "sampleIndex": 7160,
+      "timestampMs": 359633
+    },
+    {
+      "ax": -920,
+      "ay": -144,
+      "az": 21060,
+      "gx": -316,
+      "gy": 548,
+      "gz": 130,
+      "sampleIndex": 7161,
+      "timestampMs": 359683
+    },
+    {
+      "ax": -632,
+      "ay": 1572,
+      "az": 20220,
+      "gx": -337,
+      "gy": 425,
+      "gz": 148,
+      "sampleIndex": 7162,
+      "timestampMs": 359733
+    },
+    {
+      "ax": -384,
+      "ay": 712,
+      "az": 17236,
+      "gx": -388,
+      "gy": 471,
+      "gz": 137,
+      "sampleIndex": 7163,
+      "timestampMs": 359783
+    },
+    {
+      "ax": 412,
+      "ay": 804,
+      "az": 16952,
+      "gx": -388,
+      "gy": 541,
+      "gz": 85,
+      "sampleIndex": 7164,
+      "timestampMs": 359833
+    },
+    {
+      "ax": 132,
+      "ay": -840,
+      "az": 21204,
+      "gx": -537,
+      "gy": 511,
+      "gz": 153,
+      "sampleIndex": 7165,
+      "timestampMs": 359883
+    },
+    {
+      "ax": -376,
+      "ay": -924,
+      "az": 20776,
+      "gx": -408,
+      "gy": 463,
+      "gz": 108,
+      "sampleIndex": 7166,
+      "timestampMs": 359933
+    },
+    {
+      "ax": -1204,
+      "ay": 100,
+      "az": 14812,
+      "gx": -343,
+      "gy": 458,
+      "gz": 135,
+      "sampleIndex": 7167,
+      "timestampMs": 359983
+    },
+    {
+      "ax": -568,
+      "ay": 52,
+      "az": 22836,
+      "gx": -420,
+      "gy": 429,
+      "gz": 104,
+      "sampleIndex": 7168,
+      "timestampMs": 360033
+    },
+    {
+      "ax": -1168,
+      "ay": -532,
+      "az": 18980,
+      "gx": -464,
+      "gy": 414,
+      "gz": 145,
+      "sampleIndex": 7169,
+      "timestampMs": 360083
+    },
+    {
+      "ax": -740,
+      "ay": -1412,
+      "az": 18292,
+      "gx": -347,
+      "gy": 411,
+      "gz": 149,
+      "sampleIndex": 7170,
+      "timestampMs": 360133
+    },
+    {
+      "ax": -768,
+      "ay": -1124,
+      "az": 24200,
+      "gx": -374,
+      "gy": 353,
+      "gz": 105,
+      "sampleIndex": 7171,
+      "timestampMs": 360184
+    },
+    {
+      "ax": 248,
+      "ay": -2416,
+      "az": 15692,
+      "gx": -240,
+      "gy": 395,
+      "gz": 126,
+      "sampleIndex": 7172,
+      "timestampMs": 360234
+    },
+    {
+      "ax": -432,
+      "ay": -1664,
+      "az": 20156,
+      "gx": -316,
+      "gy": 347,
+      "gz": 133,
+      "sampleIndex": 7173,
+      "timestampMs": 360284
+    },
+    {
+      "ax": -732,
+      "ay": -1012,
+      "az": 16872,
+      "gx": -346,
+      "gy": 346,
+      "gz": 114,
+      "sampleIndex": 7174,
+      "timestampMs": 360334
+    },
+    {
+      "ax": -420,
+      "ay": 52,
+      "az": 20856,
+      "gx": -488,
+      "gy": 440,
+      "gz": 132,
+      "sampleIndex": 7175,
+      "timestampMs": 360384
+    },
+    {
+      "ax": -868,
+      "ay": 376,
+      "az": 15948,
+      "gx": -413,
+      "gy": 521,
+      "gz": 99,
+      "sampleIndex": 7176,
+      "timestampMs": 360434
+    },
+    {
+      "ax": -252,
+      "ay": -8,
+      "az": 20012,
+      "gx": -443,
+      "gy": 639,
+      "gz": 100,
+      "sampleIndex": 7177,
+      "timestampMs": 360484
+    },
+    {
+      "ax": -1092,
+      "ay": -128,
+      "az": 18984,
+      "gx": -320,
+      "gy": 498,
+      "gz": 138,
+      "sampleIndex": 7178,
+      "timestampMs": 360534
+    },
+    {
+      "ax": -896,
+      "ay": -320,
+      "az": 19104,
+      "gx": -310,
+      "gy": 533,
+      "gz": 120,
+      "sampleIndex": 7179,
+      "timestampMs": 360584
+    },
+    {
+      "ax": -488,
+      "ay": -728,
+      "az": 19544,
+      "gx": -398,
+      "gy": 490,
+      "gz": 155,
+      "sampleIndex": 7180,
+      "timestampMs": 360634
+    },
+    {
+      "ax": -300,
+      "ay": -740,
+      "az": 17960,
+      "gx": -356,
+      "gy": 440,
+      "gz": 114,
+      "sampleIndex": 7181,
+      "timestampMs": 360684
+    },
+    {
+      "ax": -800,
+      "ay": -460,
+      "az": 18904,
+      "gx": -303,
+      "gy": 416,
+      "gz": 120,
+      "sampleIndex": 7182,
+      "timestampMs": 360734
+    },
+    {
+      "ax": -400,
+      "ay": -656,
+      "az": 18740,
+      "gx": -327,
+      "gy": 446,
+      "gz": 129,
+      "sampleIndex": 7183,
+      "timestampMs": 360784
+    },
+    {
+      "ax": -540,
+      "ay": -676,
+      "az": 18752,
+      "gx": -368,
+      "gy": 483,
+      "gz": 119,
+      "sampleIndex": 7184,
+      "timestampMs": 360834
+    },
+    {
+      "ax": -408,
+      "ay": -888,
+      "az": 18588,
+      "gx": -334,
+      "gy": 534,
+      "gz": 134,
+      "sampleIndex": 7185,
+      "timestampMs": 360884
+    },
+    {
+      "ax": -520,
+      "ay": -880,
+      "az": 19004,
+      "gx": -365,
+      "gy": 581,
+      "gz": 142,
+      "sampleIndex": 7186,
+      "timestampMs": 360934
+    },
+    {
+      "ax": -536,
+      "ay": -740,
+      "az": 18592,
+      "gx": -344,
+      "gy": 529,
+      "gz": 129,
+      "sampleIndex": 7187,
+      "timestampMs": 360984
+    },
+    {
+      "ax": -488,
+      "ay": -676,
+      "az": 18476,
+      "gx": -339,
+      "gy": 503,
+      "gz": 125,
+      "sampleIndex": 7188,
+      "timestampMs": 361034
+    },
+    {
+      "ax": -560,
+      "ay": -784,
+      "az": 18540,
+      "gx": -285,
+      "gy": 455,
+      "gz": 142,
+      "sampleIndex": 7189,
+      "timestampMs": 361084
+    },
+    {
+      "ax": -420,
+      "ay": -648,
+      "az": 18756,
+      "gx": -352,
+      "gy": 414,
+      "gz": 105,
+      "sampleIndex": 7190,
+      "timestampMs": 361134
+    },
+    {
+      "ax": -516,
+      "ay": -724,
+      "az": 19172,
+      "gx": -338,
+      "gy": 425,
+      "gz": 125,
+      "sampleIndex": 7191,
+      "timestampMs": 361184
+    },
+    {
+      "ax": -412,
+      "ay": -848,
+      "az": 19556,
+      "gx": -294,
+      "gy": 449,
+      "gz": 119,
+      "sampleIndex": 7192,
+      "timestampMs": 361234
+    },
+    {
+      "ax": -528,
+      "ay": -612,
+      "az": 20072,
+      "gx": -320,
+      "gy": 478,
+      "gz": 115,
+      "sampleIndex": 7193,
+      "timestampMs": 361284
+    },
+    {
+      "ax": -896,
+      "ay": -988,
+      "az": 20568,
+      "gx": -194,
+      "gy": 373,
+      "gz": 108,
+      "sampleIndex": 7194,
+      "timestampMs": 361334
+    },
+    {
+      "ax": -1152,
+      "ay": -636,
+      "az": 21624,
+      "gx": -305,
+      "gy": 411,
+      "gz": 140,
+      "sampleIndex": 7195,
+      "timestampMs": 361384
+    },
+    {
+      "ax": -296,
+      "ay": -2304,
+      "az": 20076,
+      "gx": -264,
+      "gy": 510,
+      "gz": 152,
+      "sampleIndex": 7196,
+      "timestampMs": 361434
+    },
+    {
+      "ax": -732,
+      "ay": -260,
+      "az": 19380,
+      "gx": -400,
+      "gy": 573,
+      "gz": 165,
+      "sampleIndex": 7197,
+      "timestampMs": 361484
+    },
+    {
+      "ax": 452,
+      "ay": -580,
+      "az": 17164,
+      "gx": -279,
+      "gy": 564,
+      "gz": 138,
+      "sampleIndex": 7198,
+      "timestampMs": 361534
+    },
+    {
+      "ax": -716,
+      "ay": -2336,
+      "az": 20776,
+      "gx": -340,
+      "gy": 603,
+      "gz": 157,
+      "sampleIndex": 7199,
+      "timestampMs": 361584
+    },
+    {
+      "ax": -1172,
+      "ay": -1468,
+      "az": 23148,
+      "gx": -309,
+      "gy": 666,
+      "gz": 131,
+      "sampleIndex": 7200,
+      "timestampMs": 361634
+    },
+    {
+      "ax": 16,
+      "ay": -1444,
+      "az": 24092,
+      "gx": -529,
+      "gy": 744,
+      "gz": 163,
+      "sampleIndex": 7201,
+      "timestampMs": 361684
+    },
+    {
+      "ax": -1064,
+      "ay": -460,
+      "az": 19984,
+      "gx": -249,
+      "gy": 650,
+      "gz": 155,
+      "sampleIndex": 7202,
+      "timestampMs": 361734
+    },
+    {
+      "ax": -1376,
+      "ay": -32,
+      "az": 25316,
+      "gx": -165,
+      "gy": 634,
+      "gz": 103,
+      "sampleIndex": 7203,
+      "timestampMs": 361784
+    },
+    {
+      "ax": 1156,
+      "ay": 988,
+      "az": 11232,
+      "gx": -209,
+      "gy": 814,
+      "gz": 151,
+      "sampleIndex": 7204,
+      "timestampMs": 361834
+    },
+    {
+      "ax": -340,
+      "ay": -2100,
+      "az": 23428,
+      "gx": -70,
+      "gy": 488,
+      "gz": 159,
+      "sampleIndex": 7205,
+      "timestampMs": 361884
+    },
+    {
+      "ax": -880,
+      "ay": -2188,
+      "az": 19676,
+      "gx": -140,
+      "gy": 427,
+      "gz": 185,
+      "sampleIndex": 7206,
+      "timestampMs": 361934
+    },
+    {
+      "ax": -1892,
+      "ay": -1900,
+      "az": 17792,
+      "gx": -402,
+      "gy": 311,
+      "gz": 174,
+      "sampleIndex": 7207,
+      "timestampMs": 361984
+    },
+    {
+      "ax": -912,
+      "ay": -2824,
+      "az": 24860,
+      "gx": -36,
+      "gy": 503,
+      "gz": 163,
+      "sampleIndex": 7208,
+      "timestampMs": 362034
+    },
+    {
+      "ax": -24,
+      "ay": -1444,
+      "az": 14876,
+      "gx": -452,
+      "gy": 496,
+      "gz": 151,
+      "sampleIndex": 7209,
+      "timestampMs": 362084
+    },
+    {
+      "ax": 560,
+      "ay": -208,
+      "az": 17776,
+      "gx": -396,
+      "gy": 551,
+      "gz": 115,
+      "sampleIndex": 7210,
+      "timestampMs": 362134
+    },
+    {
+      "ax": -228,
+      "ay": -124,
+      "az": 16828,
+      "gx": -474,
+      "gy": 595,
+      "gz": 143,
+      "sampleIndex": 7211,
+      "timestampMs": 362185
+    },
+    {
+      "ax": -428,
+      "ay": -584,
+      "az": 16784,
+      "gx": -350,
+      "gy": 475,
+      "gz": 125,
+      "sampleIndex": 7212,
+      "timestampMs": 362235
+    },
+    {
+      "ax": 92,
+      "ay": -288,
+      "az": 14276,
+      "gx": -246,
+      "gy": 530,
+      "gz": 113,
+      "sampleIndex": 7213,
+      "timestampMs": 362285
+    },
+    {
+      "ax": -776,
+      "ay": -476,
+      "az": 17440,
+      "gx": -478,
+      "gy": 518,
+      "gz": 207,
+      "sampleIndex": 7214,
+      "timestampMs": 362335
+    },
+    {
+      "ax": -12,
+      "ay": -2060,
+      "az": 14868,
+      "gx": -158,
+      "gy": 519,
+      "gz": 103,
+      "sampleIndex": 7215,
+      "timestampMs": 362385
+    },
+    {
+      "ax": -380,
+      "ay": -2604,
+      "az": 17172,
+      "gx": -170,
+      "gy": 552,
+      "gz": 124,
+      "sampleIndex": 7216,
+      "timestampMs": 362435
+    },
+    {
+      "ax": -228,
+      "ay": 416,
+      "az": 14988,
+      "gx": -310,
+      "gy": 491,
+      "gz": 110,
+      "sampleIndex": 7217,
+      "timestampMs": 362485
+    },
+    {
+      "ax": -764,
+      "ay": -244,
+      "az": 16424,
+      "gx": -343,
+      "gy": 504,
+      "gz": 96,
+      "sampleIndex": 7218,
+      "timestampMs": 362535
+    },
+    {
+      "ax": -56,
+      "ay": -776,
+      "az": 16820,
+      "gx": -269,
+      "gy": 528,
+      "gz": 118,
+      "sampleIndex": 7219,
+      "timestampMs": 362585
+    },
+    {
+      "ax": -680,
+      "ay": -448,
+      "az": 17040,
+      "gx": -229,
+      "gy": 479,
+      "gz": 131,
+      "sampleIndex": 7220,
+      "timestampMs": 362635
+    },
+    {
+      "ax": -80,
+      "ay": -520,
+      "az": 16020,
+      "gx": -353,
+      "gy": 447,
+      "gz": 98,
+      "sampleIndex": 7221,
+      "timestampMs": 362685
+    },
+    {
+      "ax": -1080,
+      "ay": 1080,
+      "az": 19852,
+      "gx": -403,
+      "gy": 386,
+      "gz": 160,
+      "sampleIndex": 7222,
+      "timestampMs": 362735
+    },
+    {
+      "ax": -668,
+      "ay": -524,
+      "az": 17064,
+      "gx": -299,
+      "gy": 424,
+      "gz": 73,
+      "sampleIndex": 7223,
+      "timestampMs": 362785
+    },
+    {
+      "ax": -624,
+      "ay": -260,
+      "az": 12648,
+      "gx": -370,
+      "gy": 404,
+      "gz": 143,
+      "sampleIndex": 7224,
+      "timestampMs": 362835
+    },
+    {
+      "ax": -956,
+      "ay": 24,
+      "az": 17268,
+      "gx": -358,
+      "gy": 459,
+      "gz": 125,
+      "sampleIndex": 7225,
+      "timestampMs": 362885
+    },
+    {
+      "ax": -724,
+      "ay": -1468,
+      "az": 14064,
+      "gx": -279,
+      "gy": 492,
+      "gz": 124,
+      "sampleIndex": 7226,
+      "timestampMs": 362935
+    },
+    {
+      "ax": -412,
+      "ay": 604,
+      "az": 17696,
+      "gx": -323,
+      "gy": 545,
+      "gz": 107,
+      "sampleIndex": 7227,
+      "timestampMs": 362985
+    },
+    {
+      "ax": -848,
+      "ay": -1820,
+      "az": 22196,
+      "gx": -103,
+      "gy": 480,
+      "gz": 123,
+      "sampleIndex": 7228,
+      "timestampMs": 363035
+    },
+    {
+      "ax": 396,
+      "ay": -864,
+      "az": 9196,
+      "gx": -430,
+      "gy": 491,
+      "gz": 144,
+      "sampleIndex": 7229,
+      "timestampMs": 363085
+    },
+    {
+      "ax": -556,
+      "ay": 508,
+      "az": 12844,
+      "gx": -476,
+      "gy": 447,
+      "gz": 123,
+      "sampleIndex": 7230,
+      "timestampMs": 363135
+    },
+    {
+      "ax": -52,
+      "ay": -524,
+      "az": 19712,
+      "gx": -395,
+      "gy": 449,
+      "gz": 122,
+      "sampleIndex": 7231,
+      "timestampMs": 363185
+    },
+    {
+      "ax": -1160,
+      "ay": 248,
+      "az": 16524,
+      "gx": -451,
+      "gy": 447,
+      "gz": 88,
+      "sampleIndex": 7232,
+      "timestampMs": 363235
+    },
+    {
+      "ax": -156,
+      "ay": -656,
+      "az": 16784,
+      "gx": -295,
+      "gy": 512,
+      "gz": 134,
+      "sampleIndex": 7233,
+      "timestampMs": 363285
+    },
+    {
+      "ax": -872,
+      "ay": -140,
+      "az": 14256,
+      "gx": -408,
+      "gy": 507,
+      "gz": 116,
+      "sampleIndex": 7234,
+      "timestampMs": 363335
+    },
+    {
+      "ax": -620,
+      "ay": 92,
+      "az": 25984,
+      "gx": -406,
+      "gy": 506,
+      "gz": 161,
+      "sampleIndex": 7235,
+      "timestampMs": 363385
+    },
+    {
+      "ax": -204,
+      "ay": 748,
+      "az": 13884,
+      "gx": -486,
+      "gy": 463,
+      "gz": 111,
+      "sampleIndex": 7236,
+      "timestampMs": 363435
+    },
+    {
+      "ax": -356,
+      "ay": -360,
+      "az": 13496,
+      "gx": -190,
+      "gy": 466,
+      "gz": 86,
+      "sampleIndex": 7237,
+      "timestampMs": 363485
+    },
+    {
+      "ax": -1056,
+      "ay": -820,
+      "az": 17968,
+      "gx": -135,
+      "gy": 432,
+      "gz": 94,
+      "sampleIndex": 7238,
+      "timestampMs": 363535
+    },
+    {
+      "ax": -748,
+      "ay": 56,
+      "az": 20116,
+      "gx": -329,
+      "gy": 459,
+      "gz": 142,
+      "sampleIndex": 7239,
+      "timestampMs": 363585
+    },
+    {
+      "ax": -1116,
+      "ay": 764,
+      "az": 15720,
+      "gx": -630,
+      "gy": 510,
+      "gz": 87,
+      "sampleIndex": 7240,
+      "timestampMs": 363635
+    },
+    {
+      "ax": -744,
+      "ay": 448,
+      "az": 24504,
+      "gx": -477,
+      "gy": 468,
+      "gz": 90,
+      "sampleIndex": 7241,
+      "timestampMs": 363685
+    },
+    {
+      "ax": -1428,
+      "ay": -804,
+      "az": 27288,
+      "gx": -378,
+      "gy": 502,
+      "gz": 156,
+      "sampleIndex": 7242,
+      "timestampMs": 363735
+    },
+    {
+      "ax": -1476,
+      "ay": -1092,
+      "az": 25048,
+      "gx": -421,
+      "gy": 400,
+      "gz": 140,
+      "sampleIndex": 7243,
+      "timestampMs": 363785
+    },
+    {
+      "ax": -1836,
+      "ay": -1408,
+      "az": 20056,
+      "gx": -365,
+      "gy": 406,
+      "gz": 67,
+      "sampleIndex": 7244,
+      "timestampMs": 363835
+    },
+    {
+      "ax": 68,
+      "ay": -1004,
+      "az": 11200,
+      "gx": -292,
+      "gy": 500,
+      "gz": 108,
+      "sampleIndex": 7245,
+      "timestampMs": 363885
+    },
+    {
+      "ax": 756,
+      "ay": 480,
+      "az": 16100,
+      "gx": -467,
+      "gy": 424,
+      "gz": 145,
+      "sampleIndex": 7246,
+      "timestampMs": 363935
+    },
+    {
+      "ax": -184,
+      "ay": -892,
+      "az": 22644,
+      "gx": -351,
+      "gy": 375,
+      "gz": 105,
+      "sampleIndex": 7247,
+      "timestampMs": 363985
+    },
+    {
+      "ax": -652,
+      "ay": -2472,
+      "az": 18468,
+      "gx": -234,
+      "gy": 347,
+      "gz": 151,
+      "sampleIndex": 7248,
+      "timestampMs": 364035
+    },
+    {
+      "ax": -336,
+      "ay": 500,
+      "az": 17224,
+      "gx": -429,
+      "gy": 341,
+      "gz": 115,
+      "sampleIndex": 7249,
+      "timestampMs": 364085
+    },
+    {
+      "ax": -972,
+      "ay": -1068,
+      "az": 16836,
+      "gx": -352,
+      "gy": 349,
+      "gz": 124,
+      "sampleIndex": 7250,
+      "timestampMs": 364135
+    },
+    {
+      "ax": -552,
+      "ay": -812,
+      "az": 16588,
+      "gx": -304,
+      "gy": 440,
+      "gz": 142,
+      "sampleIndex": 7251,
+      "timestampMs": 364186
+    },
+    {
+      "ax": -628,
+      "ay": -1568,
+      "az": 19020,
+      "gx": -303,
+      "gy": 479,
+      "gz": 124,
+      "sampleIndex": 7252,
+      "timestampMs": 364236
+    },
+    {
+      "ax": -1024,
+      "ay": -480,
+      "az": 20164,
+      "gx": -370,
+      "gy": 527,
+      "gz": 97,
+      "sampleIndex": 7253,
+      "timestampMs": 364286
+    },
+    {
+      "ax": -444,
+      "ay": -416,
+      "az": 18128,
+      "gx": -381,
+      "gy": 588,
+      "gz": 131,
+      "sampleIndex": 7254,
+      "timestampMs": 364336
+    },
+    {
+      "ax": -472,
+      "ay": -984,
+      "az": 18824,
+      "gx": -404,
+      "gy": 604,
+      "gz": 128,
+      "sampleIndex": 7255,
+      "timestampMs": 364386
+    },
+    {
+      "ax": -460,
+      "ay": -1036,
+      "az": 18612,
+      "gx": -354,
+      "gy": 529,
+      "gz": 146,
+      "sampleIndex": 7256,
+      "timestampMs": 364436
+    },
+    {
+      "ax": -488,
+      "ay": -796,
+      "az": 18860,
+      "gx": -381,
+      "gy": 512,
+      "gz": 128,
+      "sampleIndex": 7257,
+      "timestampMs": 364486
+    },
+    {
+      "ax": -576,
+      "ay": -712,
+      "az": 19332,
+      "gx": -391,
+      "gy": 451,
+      "gz": 89,
+      "sampleIndex": 7258,
+      "timestampMs": 364536
+    },
+    {
+      "ax": -548,
+      "ay": -704,
+      "az": 18620,
+      "gx": -315,
+      "gy": 440,
+      "gz": 111,
+      "sampleIndex": 7259,
+      "timestampMs": 364586
+    },
+    {
+      "ax": -372,
+      "ay": -704,
+      "az": 18576,
+      "gx": -317,
+      "gy": 455,
+      "gz": 113,
+      "sampleIndex": 7260,
+      "timestampMs": 364636
+    },
+    {
+      "ax": -352,
+      "ay": -600,
+      "az": 18384,
+      "gx": -314,
+      "gy": 482,
+      "gz": 134,
+      "sampleIndex": 7261,
+      "timestampMs": 364686
+    },
+    {
+      "ax": -532,
+      "ay": -672,
+      "az": 18188,
+      "gx": -350,
+      "gy": 508,
+      "gz": 125,
+      "sampleIndex": 7262,
+      "timestampMs": 364736
+    },
+    {
+      "ax": -484,
+      "ay": -696,
+      "az": 18564,
+      "gx": -317,
+      "gy": 497,
+      "gz": 107,
+      "sampleIndex": 7263,
+      "timestampMs": 364786
+    },
+    {
+      "ax": -404,
+      "ay": -592,
+      "az": 18464,
+      "gx": -350,
+      "gy": 479,
+      "gz": 109,
+      "sampleIndex": 7264,
+      "timestampMs": 364836
+    },
+    {
+      "ax": -492,
+      "ay": -628,
+      "az": 18560,
+      "gx": -339,
+      "gy": 464,
+      "gz": 122,
+      "sampleIndex": 7265,
+      "timestampMs": 364886
+    },
+    {
+      "ax": -476,
+      "ay": -660,
+      "az": 18712,
+      "gx": -334,
+      "gy": 454,
+      "gz": 114,
+      "sampleIndex": 7266,
+      "timestampMs": 364936
+    },
+    {
+      "ax": -500,
+      "ay": -772,
+      "az": 18872,
+      "gx": -335,
+      "gy": 473,
+      "gz": 99,
+      "sampleIndex": 7267,
+      "timestampMs": 364986
+    },
+    {
+      "ax": -520,
+      "ay": -804,
+      "az": 19336,
+      "gx": -316,
+      "gy": 447,
+      "gz": 131,
+      "sampleIndex": 7268,
+      "timestampMs": 365036
+    },
+    {
+      "ax": -460,
+      "ay": -876,
+      "az": 19580,
+      "gx": -334,
+      "gy": 444,
+      "gz": 113,
+      "sampleIndex": 7269,
+      "timestampMs": 365086
+    },
+    {
+      "ax": -704,
+      "ay": -816,
+      "az": 19816,
+      "gx": -346,
+      "gy": 462,
+      "gz": 124,
+      "sampleIndex": 7270,
+      "timestampMs": 365136
+    },
+    {
+      "ax": -1072,
+      "ay": -1040,
+      "az": 19208,
+      "gx": -223,
+      "gy": 432,
+      "gz": 150,
+      "sampleIndex": 7271,
+      "timestampMs": 365186
+    },
+    {
+      "ax": 568,
+      "ay": -1292,
+      "az": 20992,
+      "gx": -450,
+      "gy": 557,
+      "gz": 145,
+      "sampleIndex": 7272,
+      "timestampMs": 365236
+    },
+    {
+      "ax": -1088,
+      "ay": -1728,
+      "az": 20376,
+      "gx": -238,
+      "gy": 505,
+      "gz": 122,
+      "sampleIndex": 7273,
+      "timestampMs": 365286
+    },
+    {
+      "ax": -716,
+      "ay": 392,
+      "az": 19300,
+      "gx": -378,
+      "gy": 484,
+      "gz": 119,
+      "sampleIndex": 7274,
+      "timestampMs": 365336
+    },
+    {
+      "ax": -1148,
+      "ay": 936,
+      "az": 20872,
+      "gx": -509,
+      "gy": 519,
+      "gz": 127,
+      "sampleIndex": 7275,
+      "timestampMs": 365386
+    },
+    {
+      "ax": -848,
+      "ay": -1428,
+      "az": 17440,
+      "gx": -326,
+      "gy": 603,
+      "gz": 136,
+      "sampleIndex": 7276,
+      "timestampMs": 365436
+    },
+    {
+      "ax": -828,
+      "ay": -988,
+      "az": 15148,
+      "gx": -433,
+      "gy": 565,
+      "gz": 142,
+      "sampleIndex": 7277,
+      "timestampMs": 365486
+    },
+    {
+      "ax": -568,
+      "ay": -2344,
+      "az": 22224,
+      "gx": -205,
+      "gy": 661,
+      "gz": 127,
+      "sampleIndex": 7278,
+      "timestampMs": 365536
+    },
+    {
+      "ax": -1176,
+      "ay": -540,
+      "az": 20916,
+      "gx": -251,
+      "gy": 617,
+      "gz": 150,
+      "sampleIndex": 7279,
+      "timestampMs": 365586
+    },
+    {
+      "ax": -808,
+      "ay": 236,
+      "az": 19980,
+      "gx": -427,
+      "gy": 551,
+      "gz": 154,
+      "sampleIndex": 7280,
+      "timestampMs": 365636
+    },
+    {
+      "ax": -780,
+      "ay": 328,
+      "az": 16520,
+      "gx": -465,
+      "gy": 579,
+      "gz": 133,
+      "sampleIndex": 7281,
+      "timestampMs": 365686
+    },
+    {
+      "ax": -292,
+      "ay": -3828,
+      "az": 15468,
+      "gx": -18,
+      "gy": 642,
+      "gz": 156,
+      "sampleIndex": 7282,
+      "timestampMs": 365736
+    },
+    {
+      "ax": -464,
+      "ay": -1672,
+      "az": 22188,
+      "gx": -250,
+      "gy": 401,
+      "gz": 167,
+      "sampleIndex": 7283,
+      "timestampMs": 365786
+    },
+    {
+      "ax": 240,
+      "ay": -1516,
+      "az": 9284,
+      "gx": -203,
+      "gy": 362,
+      "gz": 173,
+      "sampleIndex": 7284,
+      "timestampMs": 365836
+    },
+    {
+      "ax": -552,
+      "ay": 96,
+      "az": 14236,
+      "gx": -361,
+      "gy": 427,
+      "gz": 128,
+      "sampleIndex": 7285,
+      "timestampMs": 365886
+    },
+    {
+      "ax": 104,
+      "ay": 496,
+      "az": 10112,
+      "gx": -344,
+      "gy": 492,
+      "gz": 181,
+      "sampleIndex": 7286,
+      "timestampMs": 365936
+    },
+    {
+      "ax": -300,
+      "ay": 372,
+      "az": 13332,
+      "gx": -676,
+      "gy": 528,
+      "gz": 128,
+      "sampleIndex": 7287,
+      "timestampMs": 365986
+    },
+    {
+      "ax": -360,
+      "ay": 952,
+      "az": 15144,
+      "gx": -476,
+      "gy": 614,
+      "gz": 179,
+      "sampleIndex": 7288,
+      "timestampMs": 366036
+    },
+    {
+      "ax": -100,
+      "ay": -704,
+      "az": 14576,
+      "gx": -317,
+      "gy": 569,
+      "gz": 103,
+      "sampleIndex": 7289,
+      "timestampMs": 366086
+    },
+    {
+      "ax": 228,
+      "ay": -3984,
+      "az": 19168,
+      "gx": -266,
+      "gy": 538,
+      "gz": 126,
+      "sampleIndex": 7290,
+      "timestampMs": 366136
+    },
+    {
+      "ax": -544,
+      "ay": -320,
+      "az": 13528,
+      "gx": -353,
+      "gy": 457,
+      "gz": 113,
+      "sampleIndex": 7291,
+      "timestampMs": 366187
+    },
+    {
+      "ax": 264,
+      "ay": -768,
+      "az": 19324,
+      "gx": -329,
+      "gy": 525,
+      "gz": 132,
+      "sampleIndex": 7292,
+      "timestampMs": 366237
+    },
+    {
+      "ax": -304,
+      "ay": -968,
+      "az": 15376,
+      "gx": -336,
+      "gy": 505,
+      "gz": 115,
+      "sampleIndex": 7293,
+      "timestampMs": 366287
+    },
+    {
+      "ax": -192,
+      "ay": 268,
+      "az": 16312,
+      "gx": -327,
+      "gy": 461,
+      "gz": 141,
+      "sampleIndex": 7294,
+      "timestampMs": 366337
+    },
+    {
+      "ax": -212,
+      "ay": -620,
+      "az": 16100,
+      "gx": -352,
+      "gy": 473,
+      "gz": 100,
+      "sampleIndex": 7295,
+      "timestampMs": 366387
+    },
+    {
+      "ax": -872,
+      "ay": -576,
+      "az": 16956,
+      "gx": -426,
+      "gy": 432,
+      "gz": 131,
+      "sampleIndex": 7296,
+      "timestampMs": 366437
+    },
+    {
+      "ax": -68,
+      "ay": 504,
+      "az": 17672,
+      "gx": -416,
+      "gy": 468,
+      "gz": 112,
+      "sampleIndex": 7297,
+      "timestampMs": 366487
+    },
+    {
+      "ax": -1408,
+      "ay": -404,
+      "az": 14772,
+      "gx": -300,
+      "gy": 369,
+      "gz": 124,
+      "sampleIndex": 7298,
+      "timestampMs": 366537
+    },
+    {
+      "ax": 104,
+      "ay": -460,
+      "az": 12928,
+      "gx": -263,
+      "gy": 457,
+      "gz": 122,
+      "sampleIndex": 7299,
+      "timestampMs": 366587
+    },
+    {
+      "ax": -644,
+      "ay": 3004,
+      "az": 18372,
+      "gx": -270,
+      "gy": 485,
+      "gz": 134,
+      "sampleIndex": 7300,
+      "timestampMs": 366637
+    },
+    {
+      "ax": 60,
+      "ay": 4,
+      "az": 13544,
+      "gx": -429,
+      "gy": 533,
+      "gz": 96,
+      "sampleIndex": 7301,
+      "timestampMs": 366687
+    },
+    {
+      "ax": -808,
+      "ay": 1244,
+      "az": 17688,
+      "gx": -521,
+      "gy": 438,
+      "gz": 139,
+      "sampleIndex": 7302,
+      "timestampMs": 366737
+    },
+    {
+      "ax": 436,
+      "ay": -2048,
+      "az": 15544,
+      "gx": -326,
+      "gy": 486,
+      "gz": 123,
+      "sampleIndex": 7303,
+      "timestampMs": 366787
+    },
+    {
+      "ax": -1320,
+      "ay": -2116,
+      "az": 21668,
+      "gx": -311,
+      "gy": 420,
+      "gz": 148,
+      "sampleIndex": 7304,
+      "timestampMs": 366837
+    },
+    {
+      "ax": -1336,
+      "ay": 628,
+      "az": 25924,
+      "gx": -319,
+      "gy": 421,
+      "gz": 67,
+      "sampleIndex": 7305,
+      "timestampMs": 366887
+    },
+    {
+      "ax": -832,
+      "ay": -1420,
+      "az": 21432,
+      "gx": -242,
+      "gy": 359,
+      "gz": 132,
+      "sampleIndex": 7306,
+      "timestampMs": 366937
+    },
+    {
+      "ax": 592,
+      "ay": -912,
+      "az": 14736,
+      "gx": -454,
+      "gy": 445,
+      "gz": 124,
+      "sampleIndex": 7307,
+      "timestampMs": 366987
+    },
+    {
+      "ax": -560,
+      "ay": 680,
+      "az": 23392,
+      "gx": -71,
+      "gy": 455,
+      "gz": 140,
+      "sampleIndex": 7308,
+      "timestampMs": 367037
+    },
+    {
+      "ax": -588,
+      "ay": 784,
+      "az": 15152,
+      "gx": -250,
+      "gy": 571,
+      "gz": 103,
+      "sampleIndex": 7309,
+      "timestampMs": 367087
+    },
+    {
+      "ax": -552,
+      "ay": -40,
+      "az": 18816,
+      "gx": -338,
+      "gy": 518,
+      "gz": 97,
+      "sampleIndex": 7310,
+      "timestampMs": 367137
+    },
+    {
+      "ax": -424,
+      "ay": -1456,
+      "az": 14620,
+      "gx": -176,
+      "gy": 607,
+      "gz": 82,
+      "sampleIndex": 7311,
+      "timestampMs": 367187
+    },
+    {
+      "ax": -692,
+      "ay": -788,
+      "az": 12228,
+      "gx": -496,
+      "gy": 538,
+      "gz": 140,
+      "sampleIndex": 7312,
+      "timestampMs": 367237
+    },
+    {
+      "ax": -664,
+      "ay": -1832,
+      "az": 20916,
+      "gx": -294,
+      "gy": 666,
+      "gz": 131,
+      "sampleIndex": 7313,
+      "timestampMs": 367287
+    },
+    {
+      "ax": -1532,
+      "ay": -1336,
+      "az": 19360,
+      "gx": -500,
+      "gy": 406,
+      "gz": 129,
+      "sampleIndex": 7314,
+      "timestampMs": 367337
+    },
+    {
+      "ax": -672,
+      "ay": 1292,
+      "az": 19892,
+      "gx": -400,
+      "gy": 409,
+      "gz": 100,
+      "sampleIndex": 7315,
+      "timestampMs": 367387
+    },
+    {
+      "ax": -1472,
+      "ay": -52,
+      "az": 19616,
+      "gx": -491,
+      "gy": 330,
+      "gz": 123,
+      "sampleIndex": 7316,
+      "timestampMs": 367437
+    },
+    {
+      "ax": -1408,
+      "ay": -2884,
+      "az": 19972,
+      "gx": -329,
+      "gy": 315,
+      "gz": 135,
+      "sampleIndex": 7317,
+      "timestampMs": 367487
+    },
+    {
+      "ax": -824,
+      "ay": 1432,
+      "az": 21424,
+      "gx": -460,
+      "gy": 453,
+      "gz": 107,
+      "sampleIndex": 7318,
+      "timestampMs": 367537
+    },
+    {
+      "ax": -1708,
+      "ay": 376,
+      "az": 23404,
+      "gx": -393,
+      "gy": 366,
+      "gz": 82,
+      "sampleIndex": 7319,
+      "timestampMs": 367587
+    },
+    {
+      "ax": -1072,
+      "ay": -912,
+      "az": 20052,
+      "gx": -386,
+      "gy": 359,
+      "gz": 155,
+      "sampleIndex": 7320,
+      "timestampMs": 367637
+    },
+    {
+      "ax": -812,
+      "ay": 360,
+      "az": 21276,
+      "gx": -388,
+      "gy": 428,
+      "gz": 54,
+      "sampleIndex": 7321,
+      "timestampMs": 367687
+    },
+    {
+      "ax": 24,
+      "ay": 904,
+      "az": 12552,
+      "gx": -364,
+      "gy": 411,
+      "gz": 106,
+      "sampleIndex": 7322,
+      "timestampMs": 367737
+    },
+    {
+      "ax": -1004,
+      "ay": -60,
+      "az": 22376,
+      "gx": -312,
+      "gy": 426,
+      "gz": 124,
+      "sampleIndex": 7323,
+      "timestampMs": 367787
+    },
+    {
+      "ax": -1044,
+      "ay": 244,
+      "az": 18308,
+      "gx": -445,
+      "gy": 419,
+      "gz": 135,
+      "sampleIndex": 7324,
+      "timestampMs": 367837
+    },
+    {
+      "ax": -500,
+      "ay": 28,
+      "az": 18404,
+      "gx": -371,
+      "gy": 476,
+      "gz": 134,
+      "sampleIndex": 7325,
+      "timestampMs": 367887
+    },
+    {
+      "ax": -700,
+      "ay": -1704,
+      "az": 18996,
+      "gx": -263,
+      "gy": 504,
+      "gz": 117,
+      "sampleIndex": 7326,
+      "timestampMs": 367937
+    },
+    {
+      "ax": -800,
+      "ay": -268,
+      "az": 19468,
+      "gx": -381,
+      "gy": 535,
+      "gz": 151,
+      "sampleIndex": 7327,
+      "timestampMs": 367987
+    },
+    {
+      "ax": -512,
+      "ay": 780,
+      "az": 18116,
+      "gx": -463,
+      "gy": 610,
+      "gz": 121,
+      "sampleIndex": 7328,
+      "timestampMs": 368037
+    },
+    {
+      "ax": -716,
+      "ay": -1320,
+      "az": 18156,
+      "gx": -332,
+      "gy": 578,
+      "gz": 144,
+      "sampleIndex": 7329,
+      "timestampMs": 368087
+    },
+    {
+      "ax": -432,
+      "ay": -356,
+      "az": 18096,
+      "gx": -365,
+      "gy": 569,
+      "gz": 111,
+      "sampleIndex": 7330,
+      "timestampMs": 368137
+    },
+    {
+      "ax": -680,
+      "ay": -1404,
+      "az": 19620,
+      "gx": -305,
+      "gy": 515,
+      "gz": 134,
+      "sampleIndex": 7331,
+      "timestampMs": 368188
+    },
+    {
+      "ax": -516,
+      "ay": -984,
+      "az": 18864,
+      "gx": -329,
+      "gy": 443,
+      "gz": 118,
+      "sampleIndex": 7332,
+      "timestampMs": 368238
+    },
+    {
+      "ax": -624,
+      "ay": -956,
+      "az": 18308,
+      "gx": -335,
+      "gy": 422,
+      "gz": 134,
+      "sampleIndex": 7333,
+      "timestampMs": 368288
+    },
+    {
+      "ax": -468,
+      "ay": -992,
+      "az": 19152,
+      "gx": -339,
+      "gy": 409,
+      "gz": 137,
+      "sampleIndex": 7334,
+      "timestampMs": 368338
+    },
+    {
+      "ax": -428,
+      "ay": -992,
+      "az": 18540,
+      "gx": -284,
+      "gy": 403,
+      "gz": 102,
+      "sampleIndex": 7335,
+      "timestampMs": 368388
+    },
+    {
+      "ax": -588,
+      "ay": -708,
+      "az": 18948,
+      "gx": -314,
+      "gy": 428,
+      "gz": 132,
+      "sampleIndex": 7336,
+      "timestampMs": 368438
+    },
+    {
+      "ax": -496,
+      "ay": -752,
+      "az": 18792,
+      "gx": -320,
+      "gy": 499,
+      "gz": 107,
+      "sampleIndex": 7337,
+      "timestampMs": 368488
+    },
+    {
+      "ax": -512,
+      "ay": -700,
+      "az": 18780,
+      "gx": -377,
+      "gy": 510,
+      "gz": 118,
+      "sampleIndex": 7338,
+      "timestampMs": 368538
+    },
+    {
+      "ax": -488,
+      "ay": -652,
+      "az": 18664,
+      "gx": -334,
+      "gy": 526,
+      "gz": 138,
+      "sampleIndex": 7339,
+      "timestampMs": 368588
+    },
+    {
+      "ax": -464,
+      "ay": -768,
+      "az": 18420,
+      "gx": -313,
+      "gy": 507,
+      "gz": 144,
+      "sampleIndex": 7340,
+      "timestampMs": 368638
+    },
+    {
+      "ax": -508,
+      "ay": -792,
+      "az": 18532,
+      "gx": -364,
+      "gy": 505,
+      "gz": 109,
+      "sampleIndex": 7341,
+      "timestampMs": 368688
+    },
+    {
+      "ax": -588,
+      "ay": -680,
+      "az": 19636,
+      "gx": -326,
+      "gy": 449,
+      "gz": 127,
+      "sampleIndex": 7342,
+      "timestampMs": 368738
+    },
+    {
+      "ax": -716,
+      "ay": -728,
+      "az": 20364,
+      "gx": -301,
+      "gy": 388,
+      "gz": 98,
+      "sampleIndex": 7343,
+      "timestampMs": 368788
+    },
+    {
+      "ax": -488,
+      "ay": -668,
+      "az": 21684,
+      "gx": -336,
+      "gy": 334,
+      "gz": 106,
+      "sampleIndex": 7344,
+      "timestampMs": 368838
+    },
+    {
+      "ax": -1000,
+      "ay": -116,
+      "az": 22724,
+      "gx": -235,
+      "gy": 336,
+      "gz": 121,
+      "sampleIndex": 7345,
+      "timestampMs": 368888
+    },
+    {
+      "ax": -872,
+      "ay": 252,
+      "az": 23616,
+      "gx": -314,
+      "gy": 399,
+      "gz": 113,
+      "sampleIndex": 7346,
+      "timestampMs": 368938
+    },
+    {
+      "ax": -264,
+      "ay": -1720,
+      "az": 21720,
+      "gx": -352,
+      "gy": 457,
+      "gz": 157,
+      "sampleIndex": 7347,
+      "timestampMs": 368988
+    },
+    {
+      "ax": -856,
+      "ay": -104,
+      "az": 16816,
+      "gx": -452,
+      "gy": 555,
+      "gz": 117,
+      "sampleIndex": 7348,
+      "timestampMs": 369038
+    },
+    {
+      "ax": -1480,
+      "ay": 1032,
+      "az": 23820,
+      "gx": -580,
+      "gy": 514,
+      "gz": 141,
+      "sampleIndex": 7349,
+      "timestampMs": 369088
+    },
+    {
+      "ax": 20,
+      "ay": -2624,
+      "az": 29256,
+      "gx": -276,
+      "gy": 640,
+      "gz": 174,
+      "sampleIndex": 7350,
+      "timestampMs": 369138
+    },
+    {
+      "ax": -2100,
+      "ay": -2208,
+      "az": 19272,
+      "gx": -371,
+      "gy": 558,
+      "gz": 125,
+      "sampleIndex": 7351,
+      "timestampMs": 369188
+    },
+    {
+      "ax": 284,
+      "ay": -2252,
+      "az": 17568,
+      "gx": -507,
+      "gy": 669,
+      "gz": 175,
+      "sampleIndex": 7352,
+      "timestampMs": 369238
+    },
+    {
+      "ax": 16,
+      "ay": 184,
+      "az": 15168,
+      "gx": -309,
+      "gy": 638,
+      "gz": 133,
+      "sampleIndex": 7353,
+      "timestampMs": 369288
+    },
+    {
+      "ax": -932,
+      "ay": -424,
+      "az": 13256,
+      "gx": -285,
+      "gy": 684,
+      "gz": 127,
+      "sampleIndex": 7354,
+      "timestampMs": 369338
+    },
+    {
+      "ax": -64,
+      "ay": 128,
+      "az": 19172,
+      "gx": -451,
+      "gy": 699,
+      "gz": 142,
+      "sampleIndex": 7355,
+      "timestampMs": 369388
+    },
+    {
+      "ax": 472,
+      "ay": -2688,
+      "az": 19432,
+      "gx": -309,
+      "gy": 568,
+      "gz": 187,
+      "sampleIndex": 7356,
+      "timestampMs": 369438
+    },
+    {
+      "ax": -416,
+      "ay": -840,
+      "az": 20008,
+      "gx": -211,
+      "gy": 562,
+      "gz": 153,
+      "sampleIndex": 7357,
+      "timestampMs": 369488
+    },
+    {
+      "ax": 60,
+      "ay": -856,
+      "az": 16476,
+      "gx": -187,
+      "gy": 504,
+      "gz": 112,
+      "sampleIndex": 7358,
+      "timestampMs": 369538
+    },
+    {
+      "ax": 564,
+      "ay": -252,
+      "az": 17204,
+      "gx": -376,
+      "gy": 561,
+      "gz": 183,
+      "sampleIndex": 7359,
+      "timestampMs": 369588
+    },
+    {
+      "ax": -548,
+      "ay": 1344,
+      "az": 18852,
+      "gx": -262,
+      "gy": 492,
+      "gz": 101,
+      "sampleIndex": 7360,
+      "timestampMs": 369638
+    },
+    {
+      "ax": -652,
+      "ay": -496,
+      "az": 17204,
+      "gx": -360,
+      "gy": 380,
+      "gz": 169,
+      "sampleIndex": 7361,
+      "timestampMs": 369688
+    },
+    {
+      "ax": 192,
+      "ay": -556,
+      "az": 14392,
+      "gx": -346,
+      "gy": 507,
+      "gz": 75,
+      "sampleIndex": 7362,
+      "timestampMs": 369738
+    },
+    {
+      "ax": -856,
+      "ay": -1016,
+      "az": 14120,
+      "gx": -237,
+      "gy": 447,
+      "gz": 197,
+      "sampleIndex": 7363,
+      "timestampMs": 369788
+    },
+    {
+      "ax": 152,
+      "ay": -944,
+      "az": 16532,
+      "gx": -314,
+      "gy": 494,
+      "gz": 85,
+      "sampleIndex": 7364,
+      "timestampMs": 369838
+    },
+    {
+      "ax": -600,
+      "ay": 432,
+      "az": 16640,
+      "gx": -403,
+      "gy": 482,
+      "gz": 175,
+      "sampleIndex": 7365,
+      "timestampMs": 369888
+    },
+    {
+      "ax": 0,
+      "ay": -408,
+      "az": 15868,
+      "gx": -351,
+      "gy": 502,
+      "gz": 99,
+      "sampleIndex": 7366,
+      "timestampMs": 369938
+    },
+    {
+      "ax": -680,
+      "ay": -772,
+      "az": 15708,
+      "gx": -301,
+      "gy": 456,
+      "gz": 126,
+      "sampleIndex": 7367,
+      "timestampMs": 369988
+    },
+    {
+      "ax": -264,
+      "ay": -984,
+      "az": 14780,
+      "gx": -292,
+      "gy": 485,
+      "gz": 105,
+      "sampleIndex": 7368,
+      "timestampMs": 370038
+    },
+    {
+      "ax": -416,
+      "ay": 112,
+      "az": 16388,
+      "gx": -396,
+      "gy": 417,
+      "gz": 129,
+      "sampleIndex": 7369,
+      "timestampMs": 370088
+    },
+    {
+      "ax": -564,
+      "ay": -548,
+      "az": 9440,
+      "gx": -361,
+      "gy": 423,
+      "gz": 117,
+      "sampleIndex": 7370,
+      "timestampMs": 370138
+    },
+    {
+      "ax": 588,
+      "ay": -2292,
+      "az": 15416,
+      "gx": -210,
+      "gy": 449,
+      "gz": 122,
+      "sampleIndex": 7371,
+      "timestampMs": 370189
+    },
+    {
+      "ax": -1500,
+      "ay": -84,
+      "az": 12292,
+      "gx": -423,
+      "gy": 447,
+      "gz": 75,
+      "sampleIndex": 7372,
+      "timestampMs": 370239
+    },
+    {
+      "ax": -304,
+      "ay": -1332,
+      "az": 20312,
+      "gx": -235,
+      "gy": 465,
+      "gz": 117,
+      "sampleIndex": 7373,
+      "timestampMs": 370289
+    },
+    {
+      "ax": -540,
+      "ay": 704,
+      "az": 21752,
+      "gx": -358,
+      "gy": 454,
+      "gz": 114,
+      "sampleIndex": 7374,
+      "timestampMs": 370339
+    },
+    {
+      "ax": -1264,
+      "ay": -700,
+      "az": 24272,
+      "gx": -358,
+      "gy": 417,
+      "gz": 99,
+      "sampleIndex": 7375,
+      "timestampMs": 370389
+    },
+    {
+      "ax": 124,
+      "ay": 680,
+      "az": 15580,
+      "gx": -381,
+      "gy": 493,
+      "gz": 185,
+      "sampleIndex": 7376,
+      "timestampMs": 370439
+    },
+    {
+      "ax": -64,
+      "ay": -100,
+      "az": 10632,
+      "gx": -387,
+      "gy": 525,
+      "gz": 87,
+      "sampleIndex": 7377,
+      "timestampMs": 370489
+    },
+    {
+      "ax": -564,
+      "ay": 220,
+      "az": 18524,
+      "gx": -378,
+      "gy": 473,
+      "gz": 118,
+      "sampleIndex": 7378,
+      "timestampMs": 370539
+    },
+    {
+      "ax": -988,
+      "ay": -940,
+      "az": 16448,
+      "gx": -345,
+      "gy": 462,
+      "gz": 95,
+      "sampleIndex": 7379,
+      "timestampMs": 370589
+    },
+    {
+      "ax": -312,
+      "ay": 520,
+      "az": 17620,
+      "gx": -436,
+      "gy": 545,
+      "gz": 116,
+      "sampleIndex": 7380,
+      "timestampMs": 370639
+    },
+    {
+      "ax": 52,
+      "ay": 1336,
+      "az": 20732,
+      "gx": -516,
+      "gy": 546,
+      "gz": 122,
+      "sampleIndex": 7381,
+      "timestampMs": 370689
+    },
+    {
+      "ax": -676,
+      "ay": -932,
+      "az": 22444,
+      "gx": -315,
+      "gy": 612,
+      "gz": 154,
+      "sampleIndex": 7382,
+      "timestampMs": 370739
+    },
+    {
+      "ax": -460,
+      "ay": -2920,
+      "az": 16376,
+      "gx": -586,
+      "gy": 591,
+      "gz": 142,
+      "sampleIndex": 7383,
+      "timestampMs": 370789
+    },
+    {
+      "ax": -456,
+      "ay": 1304,
+      "az": 16472,
+      "gx": -274,
+      "gy": 412,
+      "gz": 100,
+      "sampleIndex": 7384,
+      "timestampMs": 370839
+    },
+    {
+      "ax": -868,
+      "ay": -708,
+      "az": 16068,
+      "gx": -562,
+      "gy": 499,
+      "gz": 106,
+      "sampleIndex": 7385,
+      "timestampMs": 370889
+    },
+    {
+      "ax": -920,
+      "ay": -2288,
+      "az": 17204,
+      "gx": -97,
+      "gy": 332,
+      "gz": 87,
+      "sampleIndex": 7386,
+      "timestampMs": 370939
+    },
+    {
+      "ax": -752,
+      "ay": -1484,
+      "az": 21768,
+      "gx": -525,
+      "gy": 370,
+      "gz": 94,
+      "sampleIndex": 7387,
+      "timestampMs": 370989
+    },
+    {
+      "ax": -1108,
+      "ay": -2164,
+      "az": 20444,
+      "gx": -255,
+      "gy": 367,
+      "gz": 129,
+      "sampleIndex": 7388,
+      "timestampMs": 371039
+    },
+    {
+      "ax": 812,
+      "ay": -2592,
+      "az": 11600,
+      "gx": -161,
+      "gy": 478,
+      "gz": 120,
+      "sampleIndex": 7389,
+      "timestampMs": 371089
+    },
+    {
+      "ax": -552,
+      "ay": -920,
+      "az": 20568,
+      "gx": -258,
+      "gy": 541,
+      "gz": 129,
+      "sampleIndex": 7390,
+      "timestampMs": 371139
+    },
+    {
+      "ax": -612,
+      "ay": 788,
+      "az": 16316,
+      "gx": -308,
+      "gy": 592,
+      "gz": 85,
+      "sampleIndex": 7391,
+      "timestampMs": 371189
+    },
+    {
+      "ax": -768,
+      "ay": -616,
+      "az": 17148,
+      "gx": -343,
+      "gy": 544,
+      "gz": 137,
+      "sampleIndex": 7392,
+      "timestampMs": 371239
+    },
+    {
+      "ax": -136,
+      "ay": 1772,
+      "az": 13604,
+      "gx": -292,
+      "gy": 551,
+      "gz": 109,
+      "sampleIndex": 7393,
+      "timestampMs": 371289
+    },
+    {
+      "ax": -52,
+      "ay": -1392,
+      "az": 17988,
+      "gx": -457,
+      "gy": 448,
+      "gz": 93,
+      "sampleIndex": 7394,
+      "timestampMs": 371339
+    },
+    {
+      "ax": -908,
+      "ay": -228,
+      "az": 20160,
+      "gx": -342,
+      "gy": 390,
+      "gz": 140,
+      "sampleIndex": 7395,
+      "timestampMs": 371389
+    },
+    {
+      "ax": -916,
+      "ay": -2124,
+      "az": 20416,
+      "gx": -48,
+      "gy": 401,
+      "gz": 139,
+      "sampleIndex": 7396,
+      "timestampMs": 371439
+    },
+    {
+      "ax": -248,
+      "ay": -1476,
+      "az": 15120,
+      "gx": -259,
+      "gy": 361,
+      "gz": 118,
+      "sampleIndex": 7397,
+      "timestampMs": 371489
+    },
+    {
+      "ax": -564,
+      "ay": -1996,
+      "az": 18972,
+      "gx": -396,
+      "gy": 374,
+      "gz": 108,
+      "sampleIndex": 7398,
+      "timestampMs": 371539
+    },
+    {
+      "ax": -128,
+      "ay": -1016,
+      "az": 16460,
+      "gx": -269,
+      "gy": 417,
+      "gz": 94,
+      "sampleIndex": 7399,
+      "timestampMs": 371589
+    },
+    {
+      "ax": -488,
+      "ay": -824,
+      "az": 16764,
+      "gx": -265,
+      "gy": 408,
+      "gz": 88,
+      "sampleIndex": 7400,
+      "timestampMs": 371639
+    },
+    {
+      "ax": -456,
+      "ay": -968,
+      "az": 18760,
+      "gx": -358,
+      "gy": 407,
+      "gz": 84,
+      "sampleIndex": 7401,
+      "timestampMs": 371689
+    },
+    {
+      "ax": -288,
+      "ay": -1748,
+      "az": 17768,
+      "gx": -311,
+      "gy": 434,
+      "gz": 135,
+      "sampleIndex": 7402,
+      "timestampMs": 371739
+    },
+    {
+      "ax": -336,
+      "ay": -956,
+      "az": 19384,
+      "gx": -389,
+      "gy": 402,
+      "gz": 123,
+      "sampleIndex": 7403,
+      "timestampMs": 371789
+    },
+    {
+      "ax": -352,
+      "ay": 92,
+      "az": 18532,
+      "gx": -333,
+      "gy": 442,
+      "gz": 136,
+      "sampleIndex": 7404,
+      "timestampMs": 371839
+    },
+    {
+      "ax": -572,
+      "ay": -552,
+      "az": 19168,
+      "gx": -358,
+      "gy": 487,
+      "gz": 146,
+      "sampleIndex": 7405,
+      "timestampMs": 371889
+    },
+    {
+      "ax": -560,
+      "ay": -772,
+      "az": 19384,
+      "gx": -337,
+      "gy": 518,
+      "gz": 126,
+      "sampleIndex": 7406,
+      "timestampMs": 371939
+    },
+    {
+      "ax": -428,
+      "ay": -600,
+      "az": 18960,
+      "gx": -382,
+      "gy": 527,
+      "gz": 108,
+      "sampleIndex": 7407,
+      "timestampMs": 371989
+    },
+    {
+      "ax": -484,
+      "ay": -488,
+      "az": 18768,
+      "gx": -325,
+      "gy": 542,
+      "gz": 124,
+      "sampleIndex": 7408,
+      "timestampMs": 372039
+    },
+    {
+      "ax": -540,
+      "ay": -504,
+      "az": 18712,
+      "gx": -322,
+      "gy": 458,
+      "gz": 141,
+      "sampleIndex": 7409,
+      "timestampMs": 372089
+    },
+    {
+      "ax": -484,
+      "ay": -596,
+      "az": 18492,
+      "gx": -353,
+      "gy": 454,
+      "gz": 124,
+      "sampleIndex": 7410,
+      "timestampMs": 372139
+    },
+    {
+      "ax": -592,
+      "ay": -632,
+      "az": 18504,
+      "gx": -344,
+      "gy": 488,
+      "gz": 112,
+      "sampleIndex": 7411,
+      "timestampMs": 372190
+    },
+    {
+      "ax": -508,
+      "ay": -624,
+      "az": 18324,
+      "gx": -326,
+      "gy": 487,
+      "gz": 122,
+      "sampleIndex": 7412,
+      "timestampMs": 372240
+    },
+    {
+      "ax": -480,
+      "ay": -776,
+      "az": 18576,
+      "gx": -344,
+      "gy": 506,
+      "gz": 144,
+      "sampleIndex": 7413,
+      "timestampMs": 372290
+    },
+    {
+      "ax": -372,
+      "ay": -816,
+      "az": 18376,
+      "gx": -347,
+      "gy": 508,
+      "gz": 132,
+      "sampleIndex": 7414,
+      "timestampMs": 372340
+    },
+    {
+      "ax": -444,
+      "ay": -628,
+      "az": 18496,
+      "gx": -332,
+      "gy": 507,
+      "gz": 131,
+      "sampleIndex": 7415,
+      "timestampMs": 372390
+    },
+    {
+      "ax": -420,
+      "ay": -856,
+      "az": 18156,
+      "gx": -320,
+      "gy": 477,
+      "gz": 134,
+      "sampleIndex": 7416,
+      "timestampMs": 372440
+    },
+    {
+      "ax": -444,
+      "ay": -720,
+      "az": 18624,
+      "gx": -359,
+      "gy": 500,
+      "gz": 125,
+      "sampleIndex": 7417,
+      "timestampMs": 372490
+    },
+    {
+      "ax": -516,
+      "ay": -588,
+      "az": 18404,
+      "gx": -325,
+      "gy": 467,
+      "gz": 137,
+      "sampleIndex": 7418,
+      "timestampMs": 372540
+    },
+    {
+      "ax": -448,
+      "ay": -612,
+      "az": 18780,
+      "gx": -326,
+      "gy": 466,
+      "gz": 131,
+      "sampleIndex": 7419,
+      "timestampMs": 372590
+    },
+    {
+      "ax": -472,
+      "ay": -652,
+      "az": 18476,
+      "gx": -338,
+      "gy": 454,
+      "gz": 140,
+      "sampleIndex": 7420,
+      "timestampMs": 372640
+    },
+    {
+      "ax": -436,
+      "ay": -692,
+      "az": 18428,
+      "gx": -313,
+      "gy": 459,
+      "gz": 124,
+      "sampleIndex": 7421,
+      "timestampMs": 372690
+    },
+    {
+      "ax": -424,
+      "ay": -660,
+      "az": 18232,
+      "gx": -350,
+      "gy": 446,
+      "gz": 128,
+      "sampleIndex": 7422,
+      "timestampMs": 372740
+    },
+    {
+      "ax": -368,
+      "ay": -612,
+      "az": 17928,
+      "gx": -304,
+      "gy": 457,
+      "gz": 129,
+      "sampleIndex": 7423,
+      "timestampMs": 372790
+    },
+    {
+      "ax": -404,
+      "ay": -668,
+      "az": 18312,
+      "gx": -329,
+      "gy": 459,
+      "gz": 133,
+      "sampleIndex": 7424,
+      "timestampMs": 372840
+    },
+    {
+      "ax": -352,
+      "ay": -752,
+      "az": 17728,
+      "gx": -393,
+      "gy": 471,
+      "gz": 138,
+      "sampleIndex": 7425,
+      "timestampMs": 372890
+    },
+    {
+      "ax": -508,
+      "ay": -216,
+      "az": 18632,
+      "gx": -378,
+      "gy": 474,
+      "gz": 92,
+      "sampleIndex": 7426,
+      "timestampMs": 372940
+    },
+    {
+      "ax": -332,
+      "ay": -1064,
+      "az": 18464,
+      "gx": -395,
+      "gy": 500,
+      "gz": 131,
+      "sampleIndex": 7427,
+      "timestampMs": 372990
+    },
+    {
+      "ax": -472,
+      "ay": -1452,
+      "az": 20024,
+      "gx": -280,
+      "gy": 496,
+      "gz": 105,
+      "sampleIndex": 7428,
+      "timestampMs": 373040
+    },
+    {
+      "ax": -396,
+      "ay": -748,
+      "az": 18216,
+      "gx": -325,
+      "gy": 454,
+      "gz": 158,
+      "sampleIndex": 7429,
+      "timestampMs": 373090
+    },
+    {
+      "ax": -468,
+      "ay": -712,
+      "az": 19080,
+      "gx": -350,
+      "gy": 424,
+      "gz": 132,
+      "sampleIndex": 7430,
+      "timestampMs": 373140
+    },
+    {
+      "ax": -380,
+      "ay": -812,
+      "az": 18640,
+      "gx": -340,
+      "gy": 485,
+      "gz": 130,
+      "sampleIndex": 7431,
+      "timestampMs": 373190
+    },
+    {
+      "ax": -548,
+      "ay": -616,
+      "az": 17832,
+      "gx": -391,
+      "gy": 468,
+      "gz": 140,
+      "sampleIndex": 7432,
+      "timestampMs": 373240
+    },
+    {
+      "ax": 232,
+      "ay": 848,
+      "az": 9384,
+      "gx": -772,
+      "gy": 1143,
+      "gz": 152,
+      "sampleIndex": 7433,
+      "timestampMs": 373290
+    },
+    {
+      "ax": -792,
+      "ay": -1540,
+      "az": 23760,
+      "gx": -1353,
+      "gy": 418,
+      "gz": 97,
+      "sampleIndex": 7434,
+      "timestampMs": 373340
+    },
+    {
+      "ax": -892,
+      "ay": -4128,
+      "az": 17532,
+      "gx": 63,
+      "gy": 588,
+      "gz": 136,
+      "sampleIndex": 7435,
+      "timestampMs": 373390
+    },
+    {
+      "ax": -624,
+      "ay": -1264,
+      "az": 18124,
+      "gx": -355,
+      "gy": 511,
+      "gz": 144,
+      "sampleIndex": 7436,
+      "timestampMs": 373440
+    },
+    {
+      "ax": 20,
+      "ay": -452,
+      "az": 18124,
+      "gx": -215,
+      "gy": 484,
+      "gz": 152,
+      "sampleIndex": 7437,
+      "timestampMs": 373490
+    },
+    {
+      "ax": -736,
+      "ay": 932,
+      "az": 19332,
+      "gx": 199,
+      "gy": 450,
+      "gz": 166,
+      "sampleIndex": 7438,
+      "timestampMs": 373540
+    },
+    {
+      "ax": -664,
+      "ay": -880,
+      "az": 17256,
+      "gx": -5,
+      "gy": 470,
+      "gz": 165,
+      "sampleIndex": 7439,
+      "timestampMs": 373590
+    },
+    {
+      "ax": -244,
+      "ay": -988,
+      "az": 17268,
+      "gx": -356,
+      "gy": 473,
+      "gz": 127,
+      "sampleIndex": 7440,
+      "timestampMs": 373640
+    },
+    {
+      "ax": -224,
+      "ay": -328,
+      "az": 18604,
+      "gx": -440,
+      "gy": 469,
+      "gz": 125,
+      "sampleIndex": 7441,
+      "timestampMs": 373690
+    },
+    {
+      "ax": -220,
+      "ay": -324,
+      "az": 19000,
+      "gx": -263,
+      "gy": 473,
+      "gz": 141,
+      "sampleIndex": 7442,
+      "timestampMs": 373740
+    },
+    {
+      "ax": -156,
+      "ay": -472,
+      "az": 19060,
+      "gx": 15,
+      "gy": 488,
+      "gz": 149,
+      "sampleIndex": 7443,
+      "timestampMs": 373790
+    },
+    {
+      "ax": -196,
+      "ay": -172,
+      "az": 19180,
+      "gx": -360,
+      "gy": 477,
+      "gz": 138,
+      "sampleIndex": 7444,
+      "timestampMs": 373840
+    },
+    {
+      "ax": -204,
+      "ay": -436,
+      "az": 18716,
+      "gx": -350,
+      "gy": 516,
+      "gz": 116,
+      "sampleIndex": 7445,
+      "timestampMs": 373890
+    },
+    {
+      "ax": -420,
+      "ay": -508,
+      "az": 18620,
+      "gx": -358,
+      "gy": 489,
+      "gz": 126,
+      "sampleIndex": 7446,
+      "timestampMs": 373940
+    },
+    {
+      "ax": -484,
+      "ay": -692,
+      "az": 18096,
+      "gx": -327,
+      "gy": 483,
+      "gz": 129,
+      "sampleIndex": 7447,
+      "timestampMs": 373990
+    },
+    {
+      "ax": -372,
+      "ay": -640,
+      "az": 17816,
+      "gx": -361,
+      "gy": 478,
+      "gz": 146,
+      "sampleIndex": 7448,
+      "timestampMs": 374040
+    },
+    {
+      "ax": -428,
+      "ay": -648,
+      "az": 18232,
+      "gx": -374,
+      "gy": 467,
+      "gz": 135,
+      "sampleIndex": 7449,
+      "timestampMs": 374090
+    },
+    {
+      "ax": -504,
+      "ay": -484,
+      "az": 18596,
+      "gx": -306,
+      "gy": 504,
+      "gz": 120,
+      "sampleIndex": 7450,
+      "timestampMs": 374140
+    },
+    {
+      "ax": -380,
+      "ay": -484,
+      "az": 18556,
+      "gx": -339,
+      "gy": 468,
+      "gz": 130,
+      "sampleIndex": 7451,
+      "timestampMs": 374191
+    },
+    {
+      "ax": -472,
+      "ay": -520,
+      "az": 18764,
+      "gx": -334,
+      "gy": 479,
+      "gz": 125,
+      "sampleIndex": 7452,
+      "timestampMs": 374241
+    },
+    {
+      "ax": -428,
+      "ay": -576,
+      "az": 18592,
+      "gx": -363,
+      "gy": 474,
+      "gz": 123,
+      "sampleIndex": 7453,
+      "timestampMs": 374291
+    },
+    {
+      "ax": -408,
+      "ay": -536,
+      "az": 18552,
+      "gx": -350,
+      "gy": 514,
+      "gz": 112,
+      "sampleIndex": 7454,
+      "timestampMs": 374341
+    },
+    {
+      "ax": -448,
+      "ay": -468,
+      "az": 18364,
+      "gx": -347,
+      "gy": 479,
+      "gz": 107,
+      "sampleIndex": 7455,
+      "timestampMs": 374391
+    },
+    {
+      "ax": -388,
+      "ay": -556,
+      "az": 18424,
+      "gx": -334,
+      "gy": 481,
+      "gz": 138,
+      "sampleIndex": 7456,
+      "timestampMs": 374441
+    },
+    {
+      "ax": -524,
+      "ay": -604,
+      "az": 18360,
+      "gx": -355,
+      "gy": 477,
+      "gz": 135,
+      "sampleIndex": 7457,
+      "timestampMs": 374491
+    },
+    {
+      "ax": -468,
+      "ay": -704,
+      "az": 18524,
+      "gx": -347,
+      "gy": 521,
+      "gz": 137,
+      "sampleIndex": 7458,
+      "timestampMs": 374541
+    },
+    {
+      "ax": -488,
+      "ay": -756,
+      "az": 18532,
+      "gx": -323,
+      "gy": 503,
+      "gz": 127,
+      "sampleIndex": 7459,
+      "timestampMs": 374591
+    },
+    {
+      "ax": -512,
+      "ay": -504,
+      "az": 18544,
+      "gx": -310,
+      "gy": 473,
+      "gz": 134,
+      "sampleIndex": 7460,
+      "timestampMs": 374641
+    },
+    {
+      "ax": -460,
+      "ay": -532,
+      "az": 18468,
+      "gx": -287,
+      "gy": 486,
+      "gz": 96,
+      "sampleIndex": 7461,
+      "timestampMs": 374691
+    },
+    {
+      "ax": -556,
+      "ay": -576,
+      "az": 18408,
+      "gx": -327,
+      "gy": 493,
+      "gz": 109,
+      "sampleIndex": 7462,
+      "timestampMs": 374741
+    },
+    {
+      "ax": -376,
+      "ay": -596,
+      "az": 18472,
+      "gx": -323,
+      "gy": 499,
+      "gz": 123,
+      "sampleIndex": 7463,
+      "timestampMs": 374791
+    },
+    {
+      "ax": -428,
+      "ay": -516,
+      "az": 18464,
+      "gx": -362,
+      "gy": 484,
+      "gz": 134,
+      "sampleIndex": 7464,
+      "timestampMs": 374841
+    },
+    {
+      "ax": -448,
+      "ay": -628,
+      "az": 18556,
+      "gx": -339,
+      "gy": 493,
+      "gz": 122,
+      "sampleIndex": 7465,
+      "timestampMs": 374891
+    },
+    {
+      "ax": -408,
+      "ay": -408,
+      "az": 18548,
+      "gx": -317,
+      "gy": 472,
+      "gz": 127,
+      "sampleIndex": 7466,
+      "timestampMs": 374941
+    },
+    {
+      "ax": -488,
+      "ay": -504,
+      "az": 18636,
+      "gx": -326,
+      "gy": 480,
+      "gz": 127,
+      "sampleIndex": 7467,
+      "timestampMs": 374991
+    },
+    {
+      "ax": -344,
+      "ay": -540,
+      "az": 18584,
+      "gx": -372,
+      "gy": 468,
+      "gz": 105,
+      "sampleIndex": 7468,
+      "timestampMs": 375041
+    },
+    {
+      "ax": -456,
+      "ay": -540,
+      "az": 18236,
+      "gx": -344,
+      "gy": 473,
+      "gz": 125,
+      "sampleIndex": 7469,
+      "timestampMs": 375091
+    },
+    {
+      "ax": -424,
+      "ay": -608,
+      "az": 18408,
+      "gx": -342,
+      "gy": 504,
+      "gz": 97,
+      "sampleIndex": 7470,
+      "timestampMs": 375141
+    },
+    {
+      "ax": -572,
+      "ay": -612,
+      "az": 18468,
+      "gx": -356,
+      "gy": 476,
+      "gz": 116,
+      "sampleIndex": 7471,
+      "timestampMs": 375191
+    },
+    {
+      "ax": -524,
+      "ay": -524,
+      "az": 18308,
+      "gx": -331,
+      "gy": 475,
+      "gz": 137,
+      "sampleIndex": 7472,
+      "timestampMs": 375241
+    },
+    {
+      "ax": -468,
+      "ay": -492,
+      "az": 18604,
+      "gx": -335,
+      "gy": 493,
+      "gz": 128,
+      "sampleIndex": 7473,
+      "timestampMs": 375291
+    },
+    {
+      "ax": -448,
+      "ay": -536,
+      "az": 18576,
+      "gx": -326,
+      "gy": 492,
+      "gz": 108,
+      "sampleIndex": 7474,
+      "timestampMs": 375341
+    },
+    {
+      "ax": -400,
+      "ay": -476,
+      "az": 18684,
+      "gx": -329,
+      "gy": 502,
+      "gz": 98,
+      "sampleIndex": 7475,
+      "timestampMs": 375391
+    },
+    {
+      "ax": -424,
+      "ay": -524,
+      "az": 18648,
+      "gx": -344,
+      "gy": 489,
+      "gz": 105,
+      "sampleIndex": 7476,
+      "timestampMs": 375441
+    },
+    {
+      "ax": -504,
+      "ay": -552,
+      "az": 18472,
+      "gx": -369,
+      "gy": 484,
+      "gz": 142,
+      "sampleIndex": 7477,
+      "timestampMs": 375491
+    },
+    {
+      "ax": -548,
+      "ay": -468,
+      "az": 18440,
+      "gx": -338,
+      "gy": 493,
+      "gz": 111,
+      "sampleIndex": 7478,
+      "timestampMs": 375541
+    },
+    {
+      "ax": -532,
+      "ay": -628,
+      "az": 18400,
+      "gx": -339,
+      "gy": 477,
+      "gz": 139,
+      "sampleIndex": 7479,
+      "timestampMs": 375591
+    },
+    {
+      "ax": -456,
+      "ay": -460,
+      "az": 18320,
+      "gx": -326,
+      "gy": 489,
+      "gz": 133,
+      "sampleIndex": 7480,
+      "timestampMs": 375641
+    },
+    {
+      "ax": -364,
+      "ay": -572,
+      "az": 18332,
+      "gx": -337,
+      "gy": 487,
+      "gz": 105,
+      "sampleIndex": 7481,
+      "timestampMs": 375691
+    },
+    {
+      "ax": -420,
+      "ay": -580,
+      "az": 18520,
+      "gx": -322,
+      "gy": 494,
+      "gz": 137,
+      "sampleIndex": 7482,
+      "timestampMs": 375741
+    },
+    {
+      "ax": -444,
+      "ay": -412,
+      "az": 18472,
+      "gx": -315,
+      "gy": 472,
+      "gz": 113,
+      "sampleIndex": 7483,
+      "timestampMs": 375791
+    }
+  ],
+  "captureDiagnostics": {
+    "missingSampleCount": 0,
+    "nonContiguousSampleCount": 0
+  },
+  "notes": "manual calibration capture"
+}

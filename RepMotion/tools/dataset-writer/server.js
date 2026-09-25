@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs/promises");
 const path = require("path");
+const { validateCalibrationDataset } = require("./datasetValidation");
 
 const app = express();
 const PORT = 4000;
@@ -64,10 +65,12 @@ app.post("/datasets/calibration", async (req, res) => {
   try {
     const dataset = req.body;
 
-    if (!dataset || !dataset.exercise || !Array.isArray(dataset.samples)) {
+    const validationError = validateCalibrationDataset(dataset);
+
+    if (validationError) {
       return res.status(400).json({
         ok: false,
-        error: "Invalid CalibrationDataset payload.",
+        error: validationError,
       });
     }
 
