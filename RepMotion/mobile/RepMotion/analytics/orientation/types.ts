@@ -1,5 +1,7 @@
 import type { NormalizedImuSample } from "../imu/types";
 
+export type Vector3 = NormalizedImuSample["accelMps2"];
+
 export type Quaternion = {
   w: number;
   x: number;
