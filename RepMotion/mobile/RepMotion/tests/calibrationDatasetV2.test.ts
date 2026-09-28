@@ -32,6 +32,12 @@ const v2Samples: ImuSampleV2[] = [
   },
 ];
 
+const historicalSamples: MotionSample[] = v2Samples.map(({ ax, ay, az }) => ({
+  ax,
+  ay,
+  az,
+}));
+
 test("creates a V2 dataset without losing any sample field", () => {
   const dataset = createCalibrationDatasetV2(
     v2Samples,
@@ -58,15 +64,49 @@ test("creates a V2 dataset without losing any sample field", () => {
 });
 
 test("historical calibration calculations ignore additional V2 fields", () => {
-  const historicalSamples: MotionSample[] = v2Samples.map(({ ax, ay, az }) => ({
-    ax,
-    ay,
-    az,
-  }));
-
   assert.deepEqual(
     calculateCalibration(v2Samples),
     calculateCalibration(historicalSamples),
+  );
+});
+
+test("keeps both legacy raw detectors accessible", () => {
+  assert.deepEqual(
+    calculateCalibration(historicalSamples, undefined, {
+      rawGenerationStrategy: "legacy",
+      rawDetectionStrategy: "direction_change",
+    }),
+    calculateCalibration(historicalSamples),
+  );
+
+  assert.doesNotThrow(() =>
+    calculateCalibration(historicalSamples, undefined, {
+      rawGenerationStrategy: "legacy",
+      rawDetectionStrategy: "local_extrema",
+    }),
+  );
+});
+
+test("passes complete IMU samples to the phase_blocks stub without mutation", () => {
+  const samplesBeforeCall = v2Samples.map((sample) => ({ ...sample }));
+
+  assert.throws(
+    () =>
+      calculateCalibration(v2Samples, undefined, {
+        rawGenerationStrategy: "phase_blocks",
+      }),
+    /phase_blocks RAW generation is not implemented/,
+  );
+  assert.deepEqual(v2Samples, samplesBeforeCall);
+});
+
+test("does not synthesize missing IMU fields for phase_blocks", () => {
+  assert.throws(
+    () =>
+      calculateCalibration(historicalSamples, undefined, {
+        rawGenerationStrategy: "phase_blocks",
+      }),
+    /phase_blocks requires complete ImuSampleV2 samples/,
   );
 });
 
