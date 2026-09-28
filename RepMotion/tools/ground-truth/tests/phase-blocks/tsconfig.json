@@ -12,6 +12,10 @@
   },
   "include": [
     "prepareLinearAcceleration1D.test.ts",
-    "../../../benchmark/phase-blocks/diagnoseAccelerationPreparation.ts"
+    "../../../benchmark/phase-blocks/diagnoseAccelerationPreparation.ts",
+    "../../../benchmark/phase-blocks/diagnoseVelocityV2.ts",
+    "../../../benchmark/phase-blocks/diagnoseVelocityV2.test.ts",
+    "../../../benchmark/phase-blocks/diagnoseGyroV2.ts",
+    "../../../benchmark/phase-blocks/diagnoseGyroV2.test.ts"
   ]
 }
