@@ -17,3 +17,5 @@ export type NormalizedImuSample = {
   sampleIndex: number;
   timestampMs: number;
 };
+
+export type GyroBias = NormalizedImuSample["gyroRadPerSec"];
