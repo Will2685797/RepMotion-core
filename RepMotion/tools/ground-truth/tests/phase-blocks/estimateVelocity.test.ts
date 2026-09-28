@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { estimateVelocity } from '../../../../mobile/RepMotion/analytics/raw-generation/phase-blocks/estimateVelocity';
+import {
+  estimateVelocity,
+  estimateVelocityWithIntervalDts,
+} from '../../../../mobile/RepMotion/analytics/raw-generation/phase-blocks/estimateVelocity';
 
 test('empty input returns an empty array', () => {
   assert.deepEqual(estimateVelocity([], 0.5), []);
@@ -40,4 +43,18 @@ test('input remains unchanged and repeated calls are independent', () => {
   assert.deepEqual(values, original);
   assert.deepEqual(estimateVelocity(values, 0.5), first);
   assert.notStrictEqual(first, values);
+});
+
+test('variable dt integration applies the trapezoidal rule interval by interval', () => {
+  assert.deepEqual(
+    estimateVelocityWithIntervalDts([0, 4, 8], [0.25, 0.5]),
+    [0, 0.5, 3.5],
+  );
+});
+
+test('variable dt integration requires one finite positive duration per interval', () => {
+  assert.throws(() => estimateVelocityWithIntervalDts([1, 2], []), /exactly/);
+  assert.throws(() => estimateVelocityWithIntervalDts([1, 2], [0]), /strictly positive/);
+  assert.throws(() => estimateVelocityWithIntervalDts([1, 2], [Number.NaN]), /strictly positive/);
+  assert.deepEqual(estimateVelocityWithIntervalDts([], []), []);
 });
