@@ -178,6 +178,32 @@ const DEFAULT_MIN_DISTANCE_STRATEGY: MinDistanceStrategy = "current";
 const DEFAULT_SELECTION_STRATEGY: CalibrationSelectionStrategy =
   "current_filters";
 
+function isImuSampleV2(sample: MotionSample): sample is ImuSampleV2 {
+  const candidate = sample as Partial<ImuSampleV2>;
+
+  return (
+    typeof candidate.gx === "number" &&
+    typeof candidate.gy === "number" &&
+    typeof candidate.gz === "number" &&
+    typeof candidate.sampleIndex === "number" &&
+    typeof candidate.timestampMs === "number"
+  );
+}
+
+function assertImuSampleV2Samples(
+  samples: MotionSample[],
+): asserts samples is ImuSampleV2[] {
+  const incompleteSampleIndex = samples.findIndex(
+    (sample) => !isImuSampleV2(sample),
+  );
+
+  if (incompleteSampleIndex !== -1) {
+    throw new Error(
+      `phase_blocks requires complete ImuSampleV2 samples; sample ${incompleteSampleIndex} is incomplete`,
+    );
+  }
+}
+
 type AxisDiagnostics = {
   min: number;
   max: number;
@@ -1747,7 +1773,8 @@ export function calculateCalibration(
   const rawDetectionStrategy = resolvedParameters.rawDetectionStrategy;
 
   if (resolvedParameters.rawGenerationStrategy === "phase_blocks") {
-    detectedEvents = generatePhaseBlockCandidates(values);
+    assertImuSampleV2Samples(samples);
+    detectedEvents = generatePhaseBlockCandidates(samples);
   } else if (rawDetectionStrategy === "direction_change") {
     detectedEvents = detectBottomsAndTopsV25(
       values,

@@ -1,0 +1,12 @@
+{
+  "extends": "../../../calibration-runner/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "typeRoots": [
+      "../../../calibration-runner/node_modules/@types"
+    ]
+  },
+  "include": [
+    "*.ts"
+  ]
+}
