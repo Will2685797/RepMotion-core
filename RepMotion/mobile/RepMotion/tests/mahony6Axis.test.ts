@@ -64,6 +64,90 @@ test("starts at identity and does not integrate the first sample", () => {
   );
 });
 
+test("preserves historical behavior when no initial quaternion is provided", () => {
+  const implicitIdentity = createMahony6Axis({ kp: 1, ki: 0 });
+  const explicitIdentity = createMahony6Axis(
+    { kp: 1, ki: 0 },
+    IDENTITY_QUATERNION,
+  );
+  const samples = [
+    createSample(0, { accelMps2: { x: 1, y: 2, z: 9 } }),
+    createSample(50, {
+      accelMps2: { x: 1.1, y: 1.9, z: 9.1 },
+      gyroRadPerSec: { x: 0.01, y: -0.02, z: 0.03 },
+    }),
+  ];
+
+  assert.deepEqual(
+    samples.map((sample) => implicitIdentity.update(sample)),
+    samples.map((sample) => explicitIdentity.update(sample)),
+  );
+});
+
+test("starts exactly at a normalized supplied initial quaternion", () => {
+  const supplied = Object.freeze({ w: 2, x: 2, y: 0, z: 0 });
+  const filter = createMahony6Axis({ kp: 1, ki: 0 }, supplied);
+  const expected = {
+    w: Math.SQRT1_2,
+    x: Math.SQRT1_2,
+    y: 0,
+    z: 0,
+  };
+  const actual = filter.getQuaternion();
+
+  assertApproximatelyEqual(actual.w, expected.w);
+  assertApproximatelyEqual(actual.x, expected.x);
+  assertApproximatelyEqual(actual.y, expected.y);
+  assertApproximatelyEqual(actual.z, expected.z);
+  assert.deepEqual(filter.update(createSample(100)), actual);
+  assert.deepEqual(supplied, { w: 2, x: 2, y: 0, z: 0 });
+});
+
+test("reset restores the supplied initial quaternion", () => {
+  const initial = { w: Math.SQRT1_2, x: 0, y: Math.SQRT1_2, z: 0 };
+  const filter = createMahony6Axis({ kp: 0, ki: 0 }, initial);
+  const normalizedInitial = filter.getQuaternion();
+  filter.update(createSample(0));
+  filter.update(
+    createSample(100, {
+      accelMps2: { x: 0, y: 0, z: 0 },
+      gyroRadPerSec: { x: 1, y: 0, z: 0 },
+    }),
+  );
+
+  filter.reset();
+
+  assert.deepEqual(filter.getQuaternion(), normalizedInitial);
+  assert.deepEqual(filter.update(createSample(200)), normalizedInitial);
+});
+
+test("rejects invalid initial quaternions", () => {
+  assert.throws(
+    () =>
+      createMahony6Axis(
+        { kp: 1, ki: 0 },
+        { w: Number.NaN, x: 0, y: 0, z: 0 },
+      ),
+    /must be finite/,
+  );
+  assert.throws(
+    () =>
+      createMahony6Axis(
+        { kp: 1, ki: 0 },
+        { w: Number.POSITIVE_INFINITY, x: 0, y: 0, z: 0 },
+      ),
+    /must be finite/,
+  );
+  assert.throws(
+    () =>
+      createMahony6Axis(
+        { kp: 1, ki: 0 },
+        { w: 0, x: 0, y: 0, z: 0 },
+      ),
+    /norm must be finite and non-zero/,
+  );
+});
+
 test("keeps a normalized quaternion at aligned rest", () => {
   const filter = createMahony6Axis({ kp: 1, ki: 0 });
   filter.update(createSample(0));

@@ -4,13 +4,24 @@ import type { Mahony6Axis, Mahony6AxisConfig, Quaternion } from "./types";
 const IDENTITY_QUATERNION: Quaternion = { w: 1, x: 0, y: 0, z: 0 };
 const MIN_ACCEL_NORM = 1e-12;
 
-function normalizeQuaternion(quaternion: Quaternion): Quaternion {
+function normalizeQuaternion(
+  quaternion: Quaternion,
+  label = "Mahony quaternion",
+): Quaternion {
+  for (const component of ["w", "x", "y", "z"] as const) {
+    if (!Number.isFinite(quaternion[component])) {
+      throw new TypeError(`${label} ${component} must be finite.`);
+    }
+  }
   const norm = Math.hypot(
     quaternion.w,
     quaternion.x,
     quaternion.y,
     quaternion.z,
   );
+  if (!Number.isFinite(norm) || norm <= 0) {
+    throw new RangeError(`${label} norm must be finite and non-zero.`);
+  }
 
   return {
     w: quaternion.w / norm,
@@ -31,6 +42,7 @@ function normalizeQuaternion(quaternion: Quaternion): Quaternion {
  */
 export function createMahony6Axis(
   config: Readonly<Mahony6AxisConfig>,
+  initialQuaternion: Readonly<Quaternion> = IDENTITY_QUATERNION,
 ): Mahony6Axis {
   if (!Number.isFinite(config.kp) || config.kp < 0) {
     throw new RangeError("Mahony kp must be finite and non-negative.");
@@ -41,14 +53,18 @@ export function createMahony6Axis(
 
   const kp = config.kp;
   const ki = config.ki;
-  let quaternion = { ...IDENTITY_QUATERNION };
+  const normalizedInitialQuaternion = normalizeQuaternion(
+    { ...initialQuaternion },
+    "Mahony initial quaternion",
+  );
+  let quaternion = { ...normalizedInitialQuaternion };
   let integralError = { x: 0, y: 0, z: 0 };
   let previousTimestampMs: number | null = null;
 
   const getQuaternion = (): Quaternion => ({ ...quaternion });
 
   const reset = (): void => {
-    quaternion = { ...IDENTITY_QUATERNION };
+    quaternion = { ...normalizedInitialQuaternion };
     integralError = { x: 0, y: 0, z: 0 };
     previousTimestampMs = null;
   };
